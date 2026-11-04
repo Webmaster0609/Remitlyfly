@@ -1067,16 +1067,23 @@ body { margin:0; }
 
 <script type="module">
 
-// STEP: Replace these two placeholders with values from your Supabase project's Connect/API page.
-// The publishable/anon key is intended for browser use; NEVER put a service_role/secret key here.
+// Supabase connection settings
 const SUPABASE_URL = 'https://yzjktqrmgdatdyvcpapa.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_esjAHbcWJcV5EyeX4kUFZg_tahwwo_G';
-const configured = SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.includes('PASTE_');
+
+const configured =
+  SUPABASE_URL.startsWith('https://') &&
+  !SUPABASE_URL.includes('PASTE_') &&
+  !SUPABASE_ANON_KEY.includes('PASTE_');
+
 let supabase = null;
 let supabaseLoadError = false;
+
 if (configured) {
   try {
-    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    const { createClient } = await import(
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+    );
     supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   } catch (e) {
     supabaseLoadError = true;
