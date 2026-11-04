@@ -1071,7 +1071,6 @@ body { margin:0; }
 // The publishable/anon key is intended for browser use; NEVER put a service_role/secret key here.
 const SUPABASE_URL = 'https://yzjktqrmgdatdyvcpapa.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_esjAHbcWJcV5EyeX4kUFZg_tahwwo_G';
-
 const configured = SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.includes('PASTE_');
 let supabase = null;
 let supabaseLoadError = false;
