@@ -1262,6 +1262,13 @@ function refreshTransferSummary() {
   const fee = Math.max(0, Number($('demoFee').value) || 0);
   $('summarySend').textContent = money(amount, currency);
   $('summaryFee').textContent = money(fee, currency);
+ const selectedRecipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
+
+if (selectedRecipient && selectedRecipient.country !== 'Ethiopia') {
+  $('summaryReceive').textContent = 'Unavailable';
+  $('summaryRate').textContent = 'Exchange rate not configured for ' + selectedRecipient.country;
+  return;
+}
   $('summaryTotal').textContent = money(amount + fee, currency);
   $('summaryReceive').textContent = 'ETB ' + (amount * rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   $('summaryRate').textContent = '1 ' + currency + ' = ' + rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ETB';
