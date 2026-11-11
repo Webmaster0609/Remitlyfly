@@ -1498,8 +1498,6 @@ if (recipient.country !== 'Ethiopia') {
   pendingTestPreview = null;
   return;
 }
-  const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
-  if (!recipient) return;
   if (($('payoutMethod')?.value||'bank')==='wallet'&&!$('transferWallet')?.value) { $('transferStatus').textContent='Choose a receiving mobile wallet before saving this test preview.'; $('transferStatus').className='profile-status show err'; pendingTestPreview=null; return; }
   const amount = Number($('sendAmount').value), rate = Number($('demoRate').value), fee = Number($('demoFee').value), currency=currentCurrency();
   if (!(amount > 0 && rate > 0 && fee >= 0)) return;
