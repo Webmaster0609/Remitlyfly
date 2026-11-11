@@ -986,7 +986,17 @@ body { margin:0; }
    <input id="recipientEditId" type="hidden" value="">
    <div class="field"><label for="recipientName">Recipient full name</label><input id="recipientName" autocomplete="name" placeholder="Full name" required></div>
    <div class="field"><label for="recipientRelationship">Relationship (optional)</label><input id="recipientRelationship" placeholder="e.g. Family, friend"></div>
-   <div class="field"><label for="recipientCountry">Recipient country</label><select id="recipientCountry" required><option value="Ethiopia" selected>Ethiopia</option></select><small class="muted">This prototype is configured for sending to Ethiopia.</small></div>
+<div class="field">
+  <label for="recipientCountry">Recipient country</label>
+  <select id="recipientCountry" required>
+    <option value="Ethiopia" selected>Ethiopia</option>
+    <option value="Kenya">Kenya</option>
+    <option value="Nigeria">Nigeria</option>
+    <option value="Uganda">Uganda</option>
+  </select>
+  <small class="muted">Select the recipient's destination country. Test mode only.</small>
+</div>
+
    <div class="field"><label for="recipientPhone">Phone number (optional)</label><input id="recipientPhone" type="tel" autocomplete="tel" placeholder="Phone number"></div>
    <div class="field"><label for="recipientNote">Note (optional)</label><input id="recipientNote" placeholder="Personal note"></div>
    <div class="rowline" style="justify-content:flex-start"><button class="primary" style="width:auto;flex:1" id="recipientSubmit" type="submit">Add recipient</button><button class="secondary hidden" id="cancelRecipientEdit" type="button">Cancel edit</button></div>
