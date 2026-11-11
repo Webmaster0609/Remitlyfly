@@ -1489,6 +1489,15 @@ $('transferForm').addEventListener('submit', e => {
 });
 let pendingTestPreview = null;
 $('transferForm').addEventListener('submit', () => {
+ const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
+if (!recipient) return;
+
+if (recipient.country !== 'Ethiopia') {
+  $('transferStatus').textContent = 'Test transfers to ' + recipient.country + ' are not available yet. Recipient saving is supported, but payout setup is coming soon.';
+  $('transferStatus').className = 'profile-status show err';
+  pendingTestPreview = null;
+  return;
+}
   const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
   if (!recipient) return;
   if (($('payoutMethod')?.value||'bank')==='wallet'&&!$('transferWallet')?.value) { $('transferStatus').textContent='Choose a receiving mobile wallet before saving this test preview.'; $('transferStatus').className='profile-status show err'; pendingTestPreview=null; return; }
