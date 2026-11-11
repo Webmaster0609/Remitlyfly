@@ -1256,24 +1256,33 @@ function money(value, currency='USD') {
 function currentCurrency(){const country=$('senderCountry')?.value||'United States';return country==='United Kingdom'?'GBP':(['United States'].includes(country)?'USD':'EUR');}
 function refreshCurrencyLabels(){const currency=currentCurrency();$('sendCurrencyLabel').textContent=currency;$('rateCurrencyLabel').textContent=currency;$('feeCurrencyLabel').textContent=currency;const walletCurrency=$('walletSendCurrencyLabel');if(walletCurrency)walletCurrency.textContent=currency;if(!$('demoRate').dataset.userEdited){const live=window.remitlyFlyLiveRates?.bestByCurrency?.[currency];if(live?.rate){$('demoRate').value=String(live.rate);$('demoRate').dataset.liveApplied='1';}else{$('demoRate').value=String(({USD:150,EUR:162,GBP:190})[currency]||150);delete $('demoRate').dataset.liveApplied;}}refreshTransferSummary();updateCalculatorRateStatus();if(typeof updateWalletSendPreview==='function')updateWalletSendPreview();}
 function refreshTransferSummary() {
-  const currency=currentCurrency();
+  const currency = currentCurrency();
   const amount = Math.max(0, Number($('sendAmount').value) || 0);
   const rate = Math.max(0, Number($('demoRate').value) || 0);
   const fee = Math.max(0, Number($('demoFee').value) || 0);
+
   $('summarySend').textContent = money(amount, currency);
   $('summaryFee').textContent = money(fee, currency);
- const selectedRecipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
-
-if (selectedRecipient && selectedRecipient.country !== 'Ethiopia') {
-  $('summaryReceive').textContent = 'Unavailable';
-  $('summaryRate').textContent = 'Exchange rate not configured for ' + selectedRecipient.country;
-  return;
-}
   $('summaryTotal').textContent = money(amount + fee, currency);
-  $('summaryReceive').textContent = 'ETB ' + (amount * rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  $('summaryRate').textContent = '1 ' + currency + ' = ' + rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ETB';
-}
 
+  const selectedRecipient = recipientState.items.find(
+    r => r.id === $('transferRecipient').value
+  );
+
+  if (selectedRecipient && selectedRecipient.country !== 'Ethiopia') {
+    $('summaryReceive').textContent = 'Unavailable';
+    $('summaryRate').textContent =
+      'Exchange rate not configured for ' + selectedRecipient.country;
+    return;
+  }
+
+  $('summaryReceive').textContent = 'ETB ' +
+    (amount * rate).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+ }
 
 // Live Ethiopian bank board via ET-Forex's documented anonymous read API.
 // The API publishes bank boards (usually daily), not guaranteed remittance quotes.
