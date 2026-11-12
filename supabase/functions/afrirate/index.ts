@@ -45,9 +45,9 @@ Deno.serve(async (request: Request) => {
   }
 
   const upstream = new URL("https://afrirate.statotec.com/api/v1/rates/latest");
+  // Fetch all published pairs for this country, then select the exact pair locally.
+  // This avoids upstream combined-filter inconsistencies while using the documented country filter.
   upstream.searchParams.set("country", country);
-  upstream.searchParams.set("base", base);
-  upstream.searchParams.set("quote", quote);
 
   try {
     const response = await fetch(upstream, {
