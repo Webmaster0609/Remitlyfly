@@ -78,12 +78,20 @@ Deno.serve(async (request: Request) => {
         quote: item.quote || null,
         source: item.source || null,
       }));
+      const dataValue = payload && typeof payload === "object" ? payload.data : undefined;
+      const safeKeys = (value: unknown) =>
+        value && typeof value === "object" && !Array.isArray(value)
+          ? Object.keys(value as Record<string, unknown>).slice(0, 20)
+          : [];
       return new Response(JSON.stringify({
         error: "No published rate for this currency pair",
         country, base, quote,
         diagnostics: {
           payloadType: Array.isArray(payload) ? "array" : typeof payload,
-          dataType: Array.isArray(payload?.data) ? "array" : typeof payload?.data,
+          payloadKeys: safeKeys(payload),
+          dataType: Array.isArray(dataValue) ? "array" : dataValue === null ? "null" : typeof dataValue,
+          dataKeys: safeKeys(dataValue),
+          dataIsNull: dataValue === null,
           rowCount: rows.length,
           samplePairs,
         },
