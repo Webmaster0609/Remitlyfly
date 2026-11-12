@@ -47,11 +47,8 @@ jobs:
           for PAIR in "KE KES" "NG NGN" "UG UGX"; do
             read -r COUNTRY QUOTE <<< "$PAIR"
             echo "Testing $COUNTRY USD->$QUOTE"
-            CODE=$(curl -sS -o /tmp/afrirate-response.json -w "%{http_code}" \\
-              -H "apikey: $ANON_KEY" \\
-              -H "Authorization: Bearer $ANON_KEY" \\
-              -H "Accept: application/json" \\
-              "https://$SUPABASE_PROJECT_ID.supabase.co/functions/v1/afrirate?country=$COUNTRY&base=USD")
+            URL="https://$SUPABASE_PROJECT_ID.supabase.co/functions/v1/afrirate?country=$COUNTRY&base=USD"
+            CODE=$(curl -sS -o /tmp/afrirate-response.json -w "%{http_code}" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" -H "Accept: application/json" "$URL")
             echo "HTTP status: $CODE"
             cat /tmp/afrirate-response.json
             test "$CODE" = "200"
