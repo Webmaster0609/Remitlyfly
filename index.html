@@ -985,7 +985,7 @@ body { margin:0; }
     <option value="Nigeria">Nigeria</option>
     <option value="Uganda">Uganda</option>
   </select>
-  <small class="muted">Select the recipient's destination country. Test mode only.</small>
+  <small class="muted">Choose the destination country. Bank and wallet names are examples; payout availability is not confirmed.</small>
 </div>
    <div id="recipientPayoutFields" class="field hidden">
   <label for="recipientPayoutMethod">Payout method</label>
@@ -1000,7 +1000,7 @@ body { margin:0; }
     <option value="">Choose provider</option>
   </select>
 
-  <small class="muted">Test mode only — no money will be sent.</small>
+  <small class="muted">Test mode only. These are example options, not confirmed RemitlyFly provider connections.</small>
    </div>
    <div class="field"><label for="recipientPhone">Phone number (optional)</label><input id="recipientPhone" type="tel" autocomplete="tel" placeholder="Phone number"></div>
    <div class="field"><label for="recipientNote">Note (optional)</label><input id="recipientNote" placeholder="Personal note"></div>
@@ -1212,9 +1212,14 @@ const ethiopiaWallets = [
   'Yaya Wallet'
 ];
 
+const nigeriaBanks = ['Access Bank','First Bank of Nigeria','Guaranty Trust Bank (GTBank)','United Bank for Africa (UBA)','Zenith Bank','Fidelity Bank','Sterling Bank','Stanbic IBTC Bank','Wema Bank','Ecobank Nigeria','Union Bank of Nigeria'];
+const nigeriaWallets = ['OPay','PalmPay','Paga','Moniepoint'];
+const ugandaBanks = ['Stanbic Bank Uganda','Centenary Bank','Absa Bank Uganda','dfcu Bank','Equity Bank Uganda','Standard Chartered Uganda','Bank of Africa Uganda','Housing Finance Bank','I&M Bank Uganda','NCBA Bank Uganda','PostBank Uganda','Finance Trust Bank'];
+const ugandaWallets = ['MTN Mobile Money','Airtel Money Uganda'];
+
 function updateRecipientPayoutFields() {
   const country = $('recipientCountry').value;
-  const supported = country === 'Kenya' || country === 'Ethiopia';
+  const supported = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda'].includes(country);
   const box = $('recipientPayoutFields');
   const method = $('recipientPayoutMethod');
   const provider = $('recipientPayoutProvider');
@@ -1245,13 +1250,18 @@ function updateRecipientPayoutProviders() {
   } else if (country === 'Ethiopia') {
     options = method === 'bank' ? ethiopiaBanks :
               method === 'wallet' ? ethiopiaWallets : [];
+  } else if (country === 'Nigeria') {
+    options = method === 'bank' ? nigeriaBanks :
+              method === 'wallet' ? nigeriaWallets : [];
+  } else if (country === 'Uganda') {
+    options = method === 'bank' ? ugandaBanks :
+              method === 'wallet' ? ugandaWallets : [];
   }
 
   provider.innerHTML = '<option value="">Choose provider</option>' +
     options.map(name => `<option value="${name}">${name}</option>`).join('');
 
-  provider.required =
-    country === 'Kenya' || country === 'Ethiopia';
+  provider.required = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda'].includes(country);
 }
 
 $('recipientCountry').addEventListener('change', updateRecipientPayoutFields);
@@ -1296,7 +1306,7 @@ $('recipientForm').addEventListener('submit', async e => {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !session?.user) { recipientStatus('Please log in again before saving a recipient.'); return; }
   const id = $('recipientEditId').value;
-  const supportsPayout = ['Kenya', 'Ethiopia'].includes($('recipientCountry').value);
+  const supportsPayout = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda'].includes($('recipientCountry').value);
   const record = {
     name:$('recipientName').value.trim(),
     relationship:$('recipientRelationship').value.trim(),
