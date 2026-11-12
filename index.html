@@ -1667,6 +1667,13 @@ $('transferForm').addEventListener('submit', e => {
   const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
   const amount = Number($('sendAmount').value), rate = Number($('demoRate').value), fee = Number($('demoFee').value), currency=currentCurrency();
   if (!recipient) { $('transferStatus').textContent = 'Choose a saved recipient first.'; $('transferStatus').className='profile-status show err'; return; }
+  if (recipient && recipient.country !== 'Ethiopia') {
+    $('transferReview').classList.add('hidden');
+    $('transferStatus').textContent = 'Test transfer previews are currently available for Ethiopia only. Your ' + recipient.country + ' recipient is saved, but its payout currency and route are not configured yet.';
+    $('transferStatus').className='profile-status show err';
+    pendingTestPreview = null;
+    return;
+  }
   if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(fee) || fee < 0) { $('transferStatus').textContent = 'Enter a valid amount, example rate, and fee.'; $('transferStatus').className='profile-status show err'; return; }
   $('transferStatus').textContent = 'Review preview prepared. No money has been sent.'; $('transferStatus').className='profile-status show ok';
   const total = amount + fee;
