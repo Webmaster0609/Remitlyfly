@@ -1522,11 +1522,12 @@ function renderReceivingBankOptions(){
   const name=String(b.bankName||b.name||code);
   return `<option value="${escapeHtml(code)}">${escapeHtml(name)}</option>`;
  }).join('');
- if(banks.some(b=>String(b.bankCode||b.code)===previous))select.value=previous;
- else {
-  const preferred=banks.find(b=>/awash/i.test(String(b.bankName||b.name||'')))||banks[0];
-  if(preferred)select.value=String(preferred.bankCode||preferred.code||'');
- }
+ const recipient=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
+ const savedBank=String(recipient?.payout_provider||'').trim().toLowerCase();
+ const matchingBank=banks.find(b=>String(b.bankName||b.name||'').trim().toLowerCase()===savedBank);
+ select.value=matchingBank?String(matchingBank.bankCode||matchingBank.code||''):'';
+ const chosen=selectedBankCurrencyRate();
+ if(chosen?.rate&&!$('demoRate').dataset.userEdited){$('demoRate').value=String(chosen.rate);$('demoRate').dataset.liveApplied='1';}
  updateCalculatorRateStatus();
 }
 function updateCalculatorRateStatus(){
