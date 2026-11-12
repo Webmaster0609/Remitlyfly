@@ -1391,6 +1391,46 @@ function money(value, currency='USD') {
 }
 function currentCurrency(){const country=$('senderCountry')?.value||'United States';return country==='United Kingdom'?'GBP':(['United States'].includes(country)?'USD':'EUR');}
 function destinationCurrencyForCountry(country){return ({Ethiopia:'ETB',Kenya:'KES',Nigeria:'NGN',Uganda:'UGX'})[String(country||'')]||'—';}
+window.remitlyFlyCountryRates = window.remitlyFlyCountryRates || {};
+const AFRIRATE_COUNTRIES = {Kenya:'KE',Nigeria:'NG',Uganda:'UG'};
+const countryRateRequests = new Set();
+async function loadCountryReferenceRate(country){
+  const code=AFRIRATE_COUNTRIES[country];
+  if(!code)return;
+  const base=currentCurrency();
+  const key=country+':'+base;
+  const cached=window.remitlyFlyCountryRates[key];
+  if(cached){
+    if($('demoRate')?.disabled && recipientState.items.find(r=>r.id===$('transferRecipient')?.value)?.country===country){
+      $('demoRate').value=String(cached.rate);
+      const small=$('demoRate').closest('.field')?.querySelector('small');
+      if(small)small.textContent='Indicative AfriRate reference · '+(cached.rateDate||'date not supplied')+'. Not a remittance payout quote.';
+    }
+    refreshTransferSummary();
+    return;
+  }
+  if(countryRateRequests.has(key))return;
+  countryRateRequests.add(key);
+  try{
+    const response=await fetch('/.netlify/functions/afrirate?country='+encodeURIComponent(code)+'&base='+encodeURIComponent(base),{headers:{'Accept':'application/json'},cache:'no-store'});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||('HTTP '+response.status));
+    if(!(Number(data.rate)>0))throw new Error('Provider returned no usable rate');
+    window.remitlyFlyCountryRates[key]=data;
+    const selected=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
+    if(selected?.country===country && currentCurrency()===base && $('demoRate')?.disabled){
+      $('demoRate').value=String(data.rate);
+      const small=$('demoRate').closest('.field')?.querySelector('small');
+      if(small)small.textContent='Indicative AfriRate reference · '+(data.rateDate||'date not supplied')+'. Not a remittance payout quote.';
+    }
+  }catch(error){
+    console.warn('AfriRate reference rate unavailable for '+key,error);
+  }finally{
+    countryRateRequests.delete(key);
+    refreshTransferSummary();
+  }
+}
+
 function refreshDestinationCurrencyLabel(){
   const recipient=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
   const country=recipient?.country||'Ethiopia';
@@ -1411,6 +1451,7 @@ function refreshDestinationCurrencyLabel(){
       rate.value='';
       delete rate.dataset.userEdited;
       delete rate.dataset.liveApplied;
+      loadCountryReferenceRate(country);
     }else{
       const wasDisabled=rate.disabled;
       rate.disabled=false;
@@ -1432,8 +1473,9 @@ function refreshDestinationCurrencyLabel(){
     }
   }
   if(rateLabel){
+    const pairRate=window.remitlyFlyCountryRates?.[country+':'+currentCurrency()];
     rateLabel.textContent=country!=='Ethiopia'
-      ? 'A verified '+destinationCurrency+' reference rate is not configured for '+country+'. The rate field is disabled and no payout estimate can be calculated.'
+      ? (pairRate ? 'Indicative central-bank reference rate from AfriRate · '+(pairRate.rateDate||'date not supplied')+'. Not a RemitlyFly payout quote.' : 'Loading published '+destinationCurrency+' reference rate for '+country+'… If this currency pair is not published, no estimate will be shown.')
       : 'Live published Ethiopian bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.';
   }
 }
@@ -1449,8 +1491,14 @@ function refreshTransferSummary() {
   const selectedRecipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
   const destinationCurrency = destinationCurrencyForCountry(selectedRecipient?.country || 'Ethiopia');
   if (selectedRecipient && selectedRecipient.country !== 'Ethiopia') {
-    $('summaryReceive').textContent = destinationCurrency + ' —';
-    $('summaryRate').textContent = 'Reference rate unavailable for ' + selectedRecipient.country;
+    const live=window.remitlyFlyCountryRates?.[selectedRecipient.country+':'+currency];
+    if(!live?.rate){
+      $('summaryReceive').textContent = destinationCurrency + ' —';
+      $('summaryRate').textContent = 'Published reference rate is loading or unavailable for '+selectedRecipient.country+' ('+currency+').';
+      return;
+    }
+    $('summaryReceive').textContent = destinationCurrency + ' ' + (amount * live.rate).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    $('summaryRate').textContent = '1 ' + currency + ' = ' + live.rate.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:4}) + ' ' + destinationCurrency + ' · AfriRate central-bank reference' + (live.stale?' · source marked stale':'') + ' · TEST ONLY';
     return;
   }
   $('summaryReceive').textContent = destinationCurrency + ' ' + (amount * rate).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
