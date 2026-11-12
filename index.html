@@ -1391,7 +1391,50 @@ function money(value, currency='USD') {
 }
 function currentCurrency(){const country=$('senderCountry')?.value||'United States';return country==='United Kingdom'?'GBP':(['United States'].includes(country)?'USD':'EUR');}
 function destinationCurrencyForCountry(country){return ({Ethiopia:'ETB',Kenya:'KES',Nigeria:'NGN',Uganda:'UGX'})[String(country||'')]||'—';}
-function refreshDestinationCurrencyLabel(){const recipient=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);const destinationCurrency=destinationCurrencyForCountry(recipient?.country||'Ethiopia');const label=$('destinationCurrencyLabel');if(label)label.textContent=destinationCurrency;const rateLabel=$('demoRate')?.closest('.field')?.querySelector('small');if(rateLabel){rateLabel.textContent=recipient&&recipient.country!=='Ethiopia'?'No live reference rate is configured for '+recipient.country+' yet. This field is a test-only placeholder and is not used to calculate a payout.':'Live published Ethiopian bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.';}}
+function refreshDestinationCurrencyLabel(){
+  const recipient=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
+  const country=recipient?.country||'Ethiopia';
+  const destinationCurrency=destinationCurrencyForCountry(country);
+  const label=$('destinationCurrencyLabel');
+  if(label)label.textContent=destinationCurrency;
+  const rate=$('demoRate');
+  const rateLabel=rate?.closest('.field')?.querySelector('small');
+  if(rate){
+    if(country!=='Ethiopia'){
+      if(!rate.disabled&&rate.value){
+        rate.dataset.ethiopiaRateCache=rate.value;
+        if(rate.dataset.userEdited)rate.dataset.ethiopiaRateUserEdited='1';
+        else delete rate.dataset.ethiopiaRateUserEdited;
+      }
+      rate.disabled=true;
+      rate.value='';
+      delete rate.dataset.userEdited;
+      delete rate.dataset.liveApplied;
+    }else{
+      const wasDisabled=rate.disabled;
+      rate.disabled=false;
+      if(wasDisabled||!rate.value){
+        const currency=currentCurrency();
+        const live=window.remitlyFlyLiveRates?.bestByCurrency?.[currency];
+        const cached=Number(rate.dataset.ethiopiaRateCache)||0;
+        rate.value=String(cached||live?.rate||({USD:150,EUR:162,GBP:190})[currency]||150);
+        if(rate.dataset.ethiopiaRateUserEdited){
+          rate.dataset.userEdited='1';
+          delete rate.dataset.liveApplied;
+        }else{
+          delete rate.dataset.userEdited;
+          if(live?.rate&&!cached)rate.dataset.liveApplied='1';
+          else delete rate.dataset.liveApplied;
+        }
+      }
+    }
+  }
+  if(rateLabel){
+    rateLabel.textContent=country!=='Ethiopia'
+      ? 'A verified '+destinationCurrency+' reference rate is not configured for '+country+'. The rate field is disabled and no payout estimate can be calculated.'
+      : 'Live published Ethiopian bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.';
+  }
+}
 function refreshCurrencyLabels(){const currency=currentCurrency();$('sendCurrencyLabel').textContent=currency;$('rateCurrencyLabel').textContent=currency;$('feeCurrencyLabel').textContent=currency;const walletCurrency=$('walletSendCurrencyLabel');if(walletCurrency)walletCurrency.textContent=currency;if(!$('demoRate').dataset.userEdited){const live=window.remitlyFlyLiveRates?.bestByCurrency?.[currency];if(live?.rate){$('demoRate').value=String(live.rate);$('demoRate').dataset.liveApplied='1';}else{$('demoRate').value=String(({USD:150,EUR:162,GBP:190})[currency]||150);delete $('demoRate').dataset.liveApplied;}}refreshDestinationCurrencyLabel();refreshTransferSummary();updateCalculatorRateStatus();if(typeof updateWalletSendPreview==='function')updateWalletSendPreview();}
 function refreshTransferSummary() {
   const currency = currentCurrency();
