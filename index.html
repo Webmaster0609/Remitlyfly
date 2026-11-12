@@ -1195,37 +1195,77 @@ const kenyaWallets = [
   'SasaPay'
 ];
 
-function updateKenyaPayoutFields() {
-  const isKenya = $('recipientCountry').value === 'Kenya';
-  const box = $('kenyaPayoutFields');
+const ethiopiaBanks = [
+  'Commercial Bank of Ethiopia',
+  'Awash Bank',
+  'Dashen Bank',
+  'Bank of Abyssinia',
+  'Wegagen Bank',
+  'Hibret Bank',
+  'Nib International Bank',
+  'Cooperative Bank of Oromia',
+  'Oromia Bank',
+  'Zemen Bank',
+  'Berhan Bank',
+  'Bunna Bank',
+  'Enat Bank',
+  'Amhara Bank',
+  'Tsedey Bank',
+  'Siinqee Bank'
+];
+
+const ethiopiaWallets = [
+  'Telebirr',
+  'M-PESA Ethiopia',
+  'Kacha',
+  'Yaya Wallet'
+];
+
+function updateRecipientPayoutFields() {
+  const country = $('recipientCountry').value;
+  const supported = country === 'Kenya' || country === 'Ethiopia';
+  const box = $('recipientPayoutFields');
   const method = $('recipientPayoutMethod');
   const provider = $('recipientPayoutProvider');
 
-  box.classList.toggle('hidden', !isKenya);
-  method.required = isKenya;
+  box.classList.toggle('hidden', !supported);
+  method.required = supported;
 
-  if (!isKenya) {
+  if (!supported) {
     method.value = '';
     provider.innerHTML = '<option value="">Choose provider</option>';
+    provider.required = false;
     return;
   }
 
-  updateKenyaProviders();
+  updateRecipientPayoutProviders();
 }
 
-function updateKenyaProviders() {
+function updateRecipientPayoutProviders() {
+  const country = $('recipientCountry').value;
   const method = $('recipientPayoutMethod').value;
   const provider = $('recipientPayoutProvider');
-  const options = method === 'bank' ? kenyaBanks :
-                  method === 'wallet' ? kenyaWallets : [];
+
+  let options = [];
+
+  if (country === 'Kenya') {
+    options = method === 'bank' ? kenyaBanks :
+              method === 'wallet' ? kenyaWallets : [];
+  } else if (country === 'Ethiopia') {
+    options = method === 'bank' ? ethiopiaBanks :
+              method === 'wallet' ? ethiopiaWallets : [];
+  }
 
   provider.innerHTML = '<option value="">Choose provider</option>' +
     options.map(name => `<option value="${name}">${name}</option>`).join('');
-  provider.required = $('recipientCountry').value === 'Kenya';
+
+  provider.required =
+    country === 'Kenya' || country === 'Ethiopia';
 }
 
-$('recipientCountry').addEventListener('change', updateKenyaPayoutFields);
-$('recipientPayoutMethod').addEventListener('change', updateKenyaProviders);
+$('recipientCountry').addEventListener('change', updateRecipientPayoutFields);
+$('recipientPayoutMethod').addEventListener('change', updateRecipientPayoutProviders);
+updateRecipientPayoutFields();
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 function recipientStatus(text, type='err') {
   const el = $('recipientStatus'); if (!el) return;
