@@ -1344,9 +1344,9 @@ $('recipientList').addEventListener('click', async e => {
     $('recipientCountry').value=item.country||'';
     $('recipientPhone').value=item.phone||'';
     $('recipientNote').value=item.note||'';
-    updateKenyaPayoutFields();
+    updateRecipientPayoutFields();
     $('recipientPayoutMethod').value=item.payout_method||'';
-    updateKenyaProviders();
+    updateRecipientPayoutProviders();
     $('recipientPayoutProvider').value=item.payout_provider||'';
     $('recipientSubmit').textContent='Save changes';
     $('cancelRecipientEdit').classList.remove('hidden');
