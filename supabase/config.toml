@@ -1,0 +1,2 @@
+[functions.afrirate]
+verify_jwt = false
