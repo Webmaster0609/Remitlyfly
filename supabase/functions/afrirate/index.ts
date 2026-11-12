@@ -46,7 +46,6 @@ Deno.serve(async (request: Request) => {
 
   const upstream = new URL("https://afrirate.statotec.com/api/v1/rates/latest");
   // Fetch all published pairs for this country, then select the exact pair locally.
-  // This avoids upstream combined-filter inconsistencies while using the documented country filter.
   upstream.searchParams.set("country", country);
 
   try {
@@ -60,10 +59,10 @@ Deno.serve(async (request: Request) => {
       return new Response(JSON.stringify({
         error: "AfriRate could not return this currency pair",
         providerStatus: response.status,
+        providerError: payload?.error?.message || payload?.error || null,
       }), { status, headers: corsHeaders });
     }
 
-    // AfriRate OpenAPI declares a top-level array; older examples show a { data: [...] } envelope.
     const rows = Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : []);
     const row = rows.find((item: Record<string, unknown>) =>
       String(item.base || "").toUpperCase() === base &&
@@ -71,9 +70,24 @@ Deno.serve(async (request: Request) => {
       Number(item.rate) > 0
     );
     if (!row) {
-      return new Response(JSON.stringify({ error: "No published rate for this currency pair", country, base, quote }), {
-        status: 404, headers: corsHeaders,
-      });
+      // Safe diagnostics: expose response shape and currency-pair identifiers only,
+      // never the API key or full provider payload.
+      const samplePairs = rows.slice(0, 12).map((item: Record<string, unknown>) => ({
+        country: item.country || null,
+        base: item.base || null,
+        quote: item.quote || null,
+        source: item.source || null,
+      }));
+      return new Response(JSON.stringify({
+        error: "No published rate for this currency pair",
+        country, base, quote,
+        diagnostics: {
+          payloadType: Array.isArray(payload) ? "array" : typeof payload,
+          dataType: Array.isArray(payload?.data) ? "array" : typeof payload?.data,
+          rowCount: rows.length,
+          samplePairs,
+        },
+      }), { status: 404, headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({
