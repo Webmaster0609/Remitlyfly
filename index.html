@@ -1601,6 +1601,34 @@ function populateTransferRecipients() {
   if (items.some(r => r.id === previous)) select.value = previous;
   if (!items.length) select.innerHTML = '<option value="">No saved recipients — add one below first</option>';
 }
+ function showSavedRecipientPayoutInfo() {
+  const recipient = recipientState.items.find(
+    r => r.id === $('transferRecipient').value
+  );
+
+  const box = $('savedRecipientPayoutInfo');
+
+  if (!recipient) {
+    box.style.display = 'none';
+    return;
+  }
+
+  $('savedRecipientPayoutCountry').textContent =
+    'Destination: ' + (recipient.country || '—');
+
+  $('savedRecipientPayoutMethod').textContent =
+    'Payout method: ' + (recipient.payout_method || 'Not selected');
+
+  $('savedRecipientPayoutProvider').textContent =
+    'Bank or wallet: ' + (recipient.payout_provider || 'Not selected');
+
+  box.style.display = 'block';
+}
+
+$('transferRecipient').addEventListener(
+  'change',
+  showSavedRecipientPayoutInfo
+);
 $('demoRate').addEventListener('input',()=>{$('demoRate').dataset.userEdited='1';delete $('demoRate').dataset.liveApplied;refreshTransferSummary();}); ['sendAmount','demoFee'].forEach(id => $(id).addEventListener('input', refreshTransferSummary));
 $('senderCountry').addEventListener('change',refreshCurrencyLabels);
 function syncTransferPayoutMethod(){
