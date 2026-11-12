@@ -996,8 +996,8 @@ body { margin:0; }
   </select>
   <small class="muted">Select the recipient's destination country. Test mode only.</small>
 </div>
-   <div id="kenyaPayoutFields" class="field hidden">
-  <label for="recipientPayoutMethod">Kenya payout method</label>
+   <div id="recipientPayoutFields" class="field hidden">
+  <label for="recipientPayoutMethod">Payout method</label>
   <select id="recipientPayoutMethod">
     <option value="">Choose payout method</option>
     <option value="bank">Bank account</option>
@@ -1008,9 +1008,9 @@ body { margin:0; }
   <select id="recipientPayoutProvider">
     <option value="">Choose provider</option>
   </select>
-  <small class="muted">Kenya test mode only — no money will be sent.</small>
-   </div>
 
+  <small class="muted">Test mode only — no money will be sent.</small>
+   </div>
    <div class="field"><label for="recipientPhone">Phone number (optional)</label><input id="recipientPhone" type="tel" autocomplete="tel" placeholder="Phone number"></div>
    <div class="field"><label for="recipientNote">Note (optional)</label><input id="recipientNote" placeholder="Personal note"></div>
    <div class="rowline" style="justify-content:flex-start"><button class="primary" style="width:auto;flex:1" id="recipientSubmit" type="submit">Add recipient</button><button class="secondary hidden" id="cancelRecipientEdit" type="button">Cancel edit</button></div>
