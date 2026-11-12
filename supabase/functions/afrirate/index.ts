@@ -63,7 +63,8 @@ Deno.serve(async (request: Request) => {
       }), { status, headers: corsHeaders });
     }
 
-    const rows = Array.isArray(payload.data) ? payload.data : [];
+    // AfriRate OpenAPI declares a top-level array; older examples show a { data: [...] } envelope.
+    const rows = Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : []);
     const row = rows.find((item: Record<string, unknown>) =>
       String(item.base || "").toUpperCase() === base &&
       String(item.quote || "").toUpperCase() === quote &&
