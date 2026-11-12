@@ -63,7 +63,15 @@ Deno.serve(async (request: Request) => {
       }), { status, headers: corsHeaders });
     }
 
-    const rows = Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : []);
+    // AfriRate's latest endpoint documentation shows data as an array,
+    // while the live response may also use the history-style data.rates envelope.
+    const rows = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.data?.rates)
+      ? payload.data.rates
+      : [];
     const row = rows.find((item: Record<string, unknown>) =>
       String(item.base || "").toUpperCase() === base &&
       String(item.quote || "").toUpperCase() === quote &&
