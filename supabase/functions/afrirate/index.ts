@@ -1,7 +1,7 @@
 // RemitlyFly public indicative-rate proxy.
 // The AfriRate API key is stored only in Supabase Edge Function secrets.
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://remitlyfly.org",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
   "Content-Type": "application/json; charset=utf-8",
