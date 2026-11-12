@@ -1403,6 +1403,7 @@ function refreshDestinationCurrencyLabel(){
     if(country!=='Ethiopia'){
       if(!rate.disabled&&rate.value){
         rate.dataset.ethiopiaRateCache=rate.value;
+        rate.dataset.ethiopiaRateCurrency=currentCurrency();
         if(rate.dataset.userEdited)rate.dataset.ethiopiaRateUserEdited='1';
         else delete rate.dataset.ethiopiaRateUserEdited;
       }
@@ -1416,9 +1417,10 @@ function refreshDestinationCurrencyLabel(){
       if(wasDisabled||!rate.value){
         const currency=currentCurrency();
         const live=window.remitlyFlyLiveRates?.bestByCurrency?.[currency];
-        const cached=Number(rate.dataset.ethiopiaRateCache)||0;
+        const cacheMatches=rate.dataset.ethiopiaRateCurrency===currency;
+        const cached=cacheMatches?(Number(rate.dataset.ethiopiaRateCache)||0):0;
         rate.value=String(cached||live?.rate||({USD:150,EUR:162,GBP:190})[currency]||150);
-        if(rate.dataset.ethiopiaRateUserEdited){
+        if(cacheMatches&&rate.dataset.ethiopiaRateUserEdited){
           rate.dataset.userEdited='1';
           delete rate.dataset.liveApplied;
         }else{
