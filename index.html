@@ -1255,7 +1255,7 @@ async function loadRecipients() {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) { recipientStatus(sessionError.message); return; }
   if (!session?.user) { recipientState.items=[]; renderRecipients(); return; }
-  const { data, error } = await supabase.from('recipients').select('id,user_id,name,relationship,country,phone,note,favorite,created_at,updated_at').order('created_at',{ascending:false});
+  const { data, error } = await supabase.from('recipients').select('id,user_id,name,relationship,country,phone,note,favorite,payout_method,payout_provider,created_at,updated_at')
   if (error) { recipientStatus('Could not load recipients: '+error.message); return; }
   recipientState.items = data || []; renderRecipients(); updateDashboardStats();
 }
