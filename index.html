@@ -1397,168 +1397,22 @@ function refreshTransferSummary() {
     r => r.id === $('transferRecipient').value
   );
 
+  const destinationCurrency = destinationCurrencyForCountry(selectedRecipient?.country || 'Ethiopia');
   if (selectedRecipient && selectedRecipient.country !== 'Ethiopia') {
-    $('summaryReceive').textContent = 'Unavailable';
-    $('summaryRate').textContent =
-      'Exchange rate not configured for ' + selectedRecipient.country;
+    $('summaryReceive').textContent = destinationCurrency + ' —';
+    $('summaryRate').textContent = 'Reference rate unavailable for ' + selectedRecipient.country;
     return;
   }
 
-  $('summaryReceive').textContent = 'ETB ' +
+  $('summaryReceive').textContent = destinationCurrency + ' ' +
     (amount * rate).toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
-
- }
-
-// Live Ethiopian bank board via ET-Forex's documented anonymous read API.
-// The API publishes bank boards (usually daily), not guaranteed remittance quotes.
-window.remitlyFlyLiveRates = { banks: [], bestByCurrency: {}, loadedAt: null, error: null };
-const LIVE_RATE_API = 'https://api.et-forex.com/api/v1';
-const LIVE_CURRENCIES = ['USD','EUR','GBP'];
-function fmtRate(v){const n=Number(v);return Number.isFinite(n)&&n>0?n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}):'—';}
-function safeRateDate(v){if(!v)return 'date not supplied';const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});}
-function findCbeReferenceRate(){
- const live=window.remitlyFlyLiveRates||{};const currency=currentCurrency();const banks=live.banks||[];
- const cbe=banks.find(b=>/commercial bank of ethiopia|^cbe$/i.test(String(b.bankName||b.name||b.bankCode||b.code||'')));
- const findRate=(bank)=>{const row=(bank?.rates||[]).find(r=>String(r.currency||'').toUpperCase()===currency);const rate=Number(row?.transactionalBuying||row?.transferBuying||row?.transactional_buying||row?.transfer_buying||row?.cashBuying||row?.cash_buying);return rate>0?{rate,currency,bank,updatedAt:bank?.updatedAt||bank?.lastRatesUpdatedAt||''}:null;};
- // Prefer CBE when present. Otherwise clearly identify the best available published bank rate instead of mislabelling it as CBE.
- const cbeResult=findRate(cbe);if(cbeResult)return {...cbeResult,sourceName:cbe.bankName||cbe.name||'Commercial Bank of Ethiopia',sourceType:'CBE published bank rate'};
- const best=live.bestByCurrency?.[currency];if(best?.rate){const bank=banks.find(b=>String(b.bankCode||b.code||'')===String(best.bankCode||''));return {rate:Number(best.rate),currency,bank,updatedAt:best.effectiveDate||bank?.updatedAt||bank?.lastRatesUpdatedAt||live.loadedAt||'',sourceName:best.bankName||bank?.bankName||bank?.name||'Published bank rate',sourceType:'Best available published bank reference'};}
- return null;
-}
-function showWalletRatePopup(){
- const modal=$('walletRateModal');if(!modal)return;const wallet=$('receivingWallet')?.value;
- const walletEl=$('walletRateModalWallet');if(walletEl)walletEl.textContent=wallet?`${wallet} selected · reference rate only`:'No wallet selected';
- updateWalletRatePopup();modal.style.display='flex';
-}
-function hideWalletRatePopup(){const modal=$('walletRateModal');if(modal)modal.style.display='none';}
-function updateWalletRatePopup(){
- const wallet=$('receivingWallet')?.value;const result=findCbeReferenceRate();
- const value=$('walletRateModalValue'),date=$('walletRateModalDate'),source=$('walletRateModalSource'),status=$('walletRateModalStatus'),apply=$('applyCbeWalletRatePopup');
- const inlineRate=$('selectedWalletRate'),inlineDate=$('selectedWalletRateDate'),inlineSource=$('selectedWalletRateSource'),inlineStatus=$('walletRateStatus');
- if(result){const rateText=`${fmtRate(result.rate)} ETB per ${result.currency}`;const dateText=safeRateDate(result.updatedAt);
-  if(value)value.textContent=rateText;if(date)date.textContent=`Updated: ${dateText}`;if(source)source.textContent=`Source: ${result.sourceName} · ${result.sourceType}`;
-  if(status)status.textContent=wallet?`${wallet} selected. This is a published bank reference rate, not a wallet-specific quote.`:'Reference rate loaded; select a receiving wallet before applying it.';
-  if(inlineRate)inlineRate.textContent=rateText;if(inlineDate)inlineDate.textContent=dateText;if(inlineSource)inlineSource.textContent=result.sourceName;
-  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. Using ${result.sourceName} as an indicative ${result.currency}/ETB reference only.`:'Select a receiving wallet to enable applying this rate.';
- }else{
-  if(value)value.textContent='Rate unavailable';if(date)date.textContent='No update time available';if(source)source.textContent='Source unavailable';
-  if(status)status.textContent='No published rate is currently available for this sending currency. Try Refresh rate; no rate will be invented.';
-  if(inlineRate)inlineRate.textContent='Not available';if(inlineDate)inlineDate.textContent='Not available';if(inlineSource)inlineSource.textContent='Awaiting data';
-  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. Published ${currentCurrency()}/ETB reference rate unavailable; refresh to try again.`:'Choose a wallet, then refresh published bank reference rates.';
- }
- const enabled=!!(wallet&&result?.rate>0);if(apply)apply.disabled=!enabled;const inlineApply=$('applyCbeWalletRate');if(inlineApply)inlineApply.disabled=!enabled;
-}
-function updateWalletSendPreview(){
- const amount=Number($('walletSendAmount')?.value||0), currency=currentCurrency(), wallet=$('receivingWallet')?.value;
- const result=findCbeReferenceRate(); const output=$('walletSendReceive'), status=$('walletSendEstimateStatus');
- if(!output||!status)return;
- if(!amount||amount<=0){output.textContent='ETB —';status.textContent='Enter an amount to see an indicative payout estimate.';return;}
- if(!wallet){output.textContent='ETB —';status.textContent='Select a receiving wallet to continue. The estimate is for demonstration only.';return;}
- if(result?.rate>0){output.textContent='ETB '+(amount*result.rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});status.textContent=`Estimate uses ${result.sourceName}: ${fmtRate(result.rate)} ETB per ${currency}. Reference rate only; wallet payout may differ.`;}
- else {output.textContent='ETB —';status.textContent=`No published ${currency}/ETB reference rate is available yet. Tap Refresh rate; no rate will be invented.`;}
-}
-function useWalletSendAmount(){
- const input=$('walletSendAmount'), amount=Number(input?.value||0), wallet=$('receivingWallet')?.value;
- if(!amount||amount<=0){const status=$('walletSendEstimateStatus');if(status)status.textContent='Please enter an amount greater than zero.';input?.focus();return;}
- if(!wallet){const status=$('walletSendEstimateStatus');if(status)status.textContent='Please select a receiving wallet first.';$('receivingWallet')?.focus();return;}
- $('sendAmount').value=amount.toFixed(2);const result=findCbeReferenceRate();if(result?.rate>0){$('demoRate').value=String(result.rate);$('demoRate').dataset.userEdited='1';$('demoRate').dataset.liveApplied='1';}
- refreshTransferSummary();updateCalculatorRateStatus();
- const status=$('walletSendEstimateStatus');if(status)status.textContent='Amount copied to the test transfer form. Review the recipient, fee, and estimate before saving a test preview. No payment was made.';
- if(typeof navigateTo==='function')navigateTo('transferSection');else $('transferSection')?.scrollIntoView({behavior:'smooth',block:'start'});
-}
-function updateWalletRateStatus(){updateWalletRatePopup();updateWalletSendPreview();}
-$('walletSendAmount')?.addEventListener('input',updateWalletSendPreview);
-$('useWalletSendAmount')?.addEventListener('click',useWalletSendAmount);
-$('receivingWallet')?.addEventListener('change',updateWalletRateStatus);
-$('walletRateDetails')?.addEventListener('click',showWalletRatePopup);
-$('closeWalletRateModal')?.addEventListener('click',hideWalletRatePopup);
-$('refreshWalletRate')?.addEventListener('click',async()=>{const status=$('walletRateStatus');if(status)status.textContent='Refreshing published bank reference rates…';await loadLiveBankRates();updateWalletRateStatus();});
-$('refreshWalletRatePopup')?.addEventListener('click',async()=>{const status=$('walletRateModalStatus');if(status)status.textContent='Refreshing published bank reference rates…';await loadLiveBankRates();updateWalletRatePopup();});
-function applyWalletReferenceRate(){const wallet=$('receivingWallet')?.value;const result=findCbeReferenceRate();if(!wallet||!result?.rate)return;
- $('demoRate').value=String(result.rate);$('demoRate').dataset.userEdited='1';$('demoRate').dataset.liveApplied='1';refreshTransferSummary();updateCalculatorRateStatus();
- const status=$('walletRateStatus');if(status)status.textContent=`Applied ${result.sourceName} reference rate (${fmtRate(result.rate)} ETB per ${result.currency}) to this test estimate. No payment was made.`;
- updateWalletRatePopup();hideWalletRatePopup();
-}
-$('applyCbeWalletRatePopup')?.addEventListener('click',applyWalletReferenceRate);
-$('applyCbeWalletRate')?.addEventListener('click',applyWalletReferenceRate);
-
-function selectedReceivingBank(){
- const select=$('receivingBank'); const code=select?.value;
- return (window.remitlyFlyLiveRates?.banks||[]).find(b=>String(b.bankCode||b.code)===String(code))||null;
-}
-function selectedBankCurrencyRate(){
- const bank=selectedReceivingBank(); if(!bank)return null;
- const currency=currentCurrency();
- const r=(bank.rates||[]).find(x=>String(x.currency||'').toUpperCase()===currency);
- if(!r)return null;
- const rate=Number(r.transactionalBuying||r.transferBuying||r.cashBuying);
- if(!(rate>0))return null;
- return {bank,rate,row:r,currency,effectiveDate:bank.updatedAt||bank.lastRatesUpdatedAt||''};
-}
-function renderReceivingBankOptions(){
- const select=$('receivingBank'); if(!select)return;
- const previous=select.value;
- const banks=window.remitlyFlyLiveRates?.banks||[];
- if(!banks.length){select.innerHTML='<option value="">No banks loaded — refresh live rates</option>';return;}
- select.innerHTML='<option value="">Choose a bank</option>'+banks.map(b=>{
-  const code=String(b.bankCode||b.code||'');
-  const name=String(b.bankName||b.name||code);
-  return `<option value="${escapeHtml(code)}">${escapeHtml(name)}</option>`;
- }).join('');
- const recipient=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
- const savedBank=String(recipient?.payout_provider||'').trim().toLowerCase();
- const matchingBank=banks.find(b=>String(b.bankName||b.name||'').trim().toLowerCase()===savedBank);
- select.value=matchingBank?String(matchingBank.bankCode||matchingBank.code||''):'';
- const chosen=selectedBankCurrencyRate();
- if(chosen?.rate&&!$('demoRate').dataset.userEdited){$('demoRate').value=String(chosen.rate);$('demoRate').dataset.liveApplied='1';}
- updateCalculatorRateStatus();
-}
-function updateCalculatorRateStatus(){
- const status=$('calculatorRateStatus'); if(!status)return;
- const currency=currentCurrency(); const chosen=selectedBankCurrencyRate();
- const btn=$('useLiveRate'); if(btn)btn.disabled=!(chosen&&chosen.rate>0);
- const rateEl=$('selectedBankRate'), dateEl=$('selectedBankRateDate');
- if(chosen){
-  if(rateEl)rateEl.textContent=`${fmtRate(chosen.rate)} ETB per ${currency}`;
-  if(dateEl)dateEl.textContent=safeRateDate(chosen.effectiveDate);
-  status.textContent=`Selected: ${chosen.bank.bankName||chosen.bank.name||'Bank'} · published ${currency} transfer-buying rate.`;
- } else {
-  if(rateEl)rateEl.textContent='Not available';
-  if(dateEl)dateEl.textContent='Not available';
-  const bank=selectedReceivingBank();
-  status.textContent=bank?`No published ${currency} buying rate is available for ${bank.bankName||bank.name||'this bank'}.`:`Choose a bank after the live feed loads.`;
- }
-}
-
-function renderLiveRateRows(){
- const body=$('liveRateRows'); if(!body)return;
- const banks=window.remitlyFlyLiveRates.banks||[];
- if(!banks.length){body.innerHTML='<tr><td colspan="6" style="padding:12px">No bank rates loaded. Use the source links above or retry.</td></tr>';return;}
- const rows=[];
- for(const bank of banks){for(const cur of LIVE_CURRENCIES){const r=(bank.rates||[]).find(x=>String(x.currency||'').toUpperCase()===cur);if(!r)continue;rows.push(`<tr><td style="padding:8px;border-bottom:1px solid var(--line)">${escapeHtml(bank.bankName||bank.name||bank.bankCode||bank.code||'Bank')}<br><small class="muted">Updated ${escapeHtml(safeRateDate(bank.updatedAt||bank.lastRatesUpdatedAt))}</small></td><td style="padding:8px;border-bottom:1px solid var(--line)">${cur}</td><td style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">${fmtRate(r.cashBuying)}</td><td style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">${fmtRate(r.cashSelling)}</td><td style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">${fmtRate(r.transactionalBuying)}</td><td style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">${fmtRate(r.transactionalSelling)}</td></tr>`);}}
- body.innerHTML=rows.length?rows.join(''):'<tr><td colspan="6" style="padding:12px">The API returned bank records but no USD/EUR/GBP rows.</td></tr>';
-}
-async function fetchJsonWithTimeout(url, timeoutMs=12000){
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs);
- try{const response=await fetch(url,{method:'GET',headers:{'Accept':'application/json'},signal:controller.signal,cache:'no-store'});if(!response.ok)throw new Error(`HTTP ${response.status}`);return await response.json();}
- finally{clearTimeout(timer);}
-}
-async function loadLiveBankRates(){
- const status=$('liveRateStatus');if(status)status.textContent='Connecting to ET-Forex…';
- const body=$('liveRateRows');if(body)body.innerHTML='<tr><td colspan="6" style="padding:12px">Loading live bank-rate boards…</td></tr>';
- try{
-  // One request discovers the active banks, then fetch each bank's latest published board in small batches.
-  const banksPayload=await fetchJsonWithTimeout(`${LIVE_RATE_API}/banks?limit=100&offset=0`);
-  const banksData=banksPayload?.data?.items||banksPayload?.data?.banks||banksPayload?.items||[];
-  if(!Array.isArray(banksData)||!banksData.length)throw new Error('API returned no bank directory');
-  const fetched=[];let failed=0;
-  for(let i=0;i<banksData.length;i+=5){
-   const batch=banksData.slice(i,i+5);
-   const results=await Promise.all(batch.map(async b=>{const code=b.code||b.bankCode||b.shortName;if(!code)return null;try{const payload=await fetchJsonWithTimeout(`${LIVE_RATE_API}/banks/${encodeURIComponent(code)}/rates`);const d=payload?.data||payload;return {bankCode:d.bankCode||code,bankName:d.bankName||d.bank||b.name||b.shortName||code,updatedAt:d.updatedAt||b.lastRatesUpdatedAt,rates:Array.isArray(d.rates)?d.rates:[]};}catch(e){failed++;return null;}}));
-   fetched.push(...results.filter(Boolean));
+  $('summaryRate').textContent = '1 ' + currency + ' = ' + rate.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4
+  }) + ' ' + destinationCurrency;
   }
   if(!fetched.length)throw new Error('Could not read any bank rate boards');
   const best={};for(const cur of LIVE_CURRENCIES){let winner=null;for(const b of fetched){const r=(b.rates||[]).find(x=>String(x.currency||'').toUpperCase()===cur);const rate=Number(r?.transactionalBuying||r?.cashBuying);if(rate>0&&(!winner||rate>winner.rate)){winner={rate,bankName:b.bankName,bankCode:b.bankCode,effectiveDate:(b.updatedAt||'').slice(0,10),currency:cur};}}if(winner)best[cur]=winner;}
