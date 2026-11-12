@@ -1249,23 +1249,21 @@ function renderRecipients() {
     ${r.phone ? `<p style="margin:8px 0">${escapeHtml(r.phone)}</p>`:''}${r.note ? `<p class="muted" style="margin:8px 0">${escapeHtml(r.note)}</p>`:''}
     <div class="rowline" style="margin-top:10px;justify-content:flex-start"><button type="button" class="secondary" data-action="edit" data-id="${escapeHtml(r.id)}">Edit</button><button type="button" class="secondary" data-action="delete" data-id="${escapeHtml(r.id)}">Delete</button></div>
   </article>`).join('');
-}
-async function loadRecipients() {
-  if (!supabase) return;
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) { recipientStatus(sessionError.message); return; }
-  if (!session?.user) { recipientState.items=[]; renderRecipients(); return; }
-  const { data, error } = await supabase.from('recipients').select('id,user_id,name,relationship,country,phone,note,favorite,payout_method,payout_provider,created_at,updated_at')
-  if (error) { recipientStatus('Could not load recipients: '+error.message); return; }
-  recipientState.items = data || []; renderRecipients(); updateDashboardStats();
-}
-$('recipientForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  if (!supabase) { recipientStatus('Database connection is unavailable. Reload the website and try again.'); return; }
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError || !session?.user) { recipientStatus('Please log in again before saving a recipient.'); return; }
-  const id = $('recipientEditId').value;
-  const record = { name:$('recipientName').value.trim(), relationship:$('recipientRelationship').value.trim(), country:$('recipientCountry').value.trim(), phone:$('recipientPhone').value.trim(), note:$('recipientNote').value.trim() };
+}const isKenya = $('recipientCountry').value === 'Kenya';
+const record = {
+  name:$('recipientName').value.trim(),
+  relationship:$('recipientRelationship').value.trim(),
+  country:$('recipientCountry').value.trim(),
+  phone:$('recipientPhone').value.trim(),
+  note:$('recipientNote').value.trim(),
+  payout_method:isKenya ? $('recipientPayoutMethod').value : null,
+  payout_provider:isKenya ? $('recipientPayoutProvider').value : null
+};
+
+if (isKenya && (!record.payout_method || !record.payout_provider)) {
+  recipientStatus('Please choose a Kenyan bank or mobile wallet and provider.');
+  return;
+ }
   if (!record.name || !record.country) { recipientStatus('Enter the recipient name and country.'); return; }
   const button = $('recipientSubmit'); button.disabled = true;
   try {
