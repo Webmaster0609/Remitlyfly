@@ -46,8 +46,6 @@ Deno.serve(async (request: Request) => {
 
   const upstream = new URL("https://afrirate.statotec.com/api/v1/rates/latest");
   upstream.searchParams.set("country", country);
-  upstream.searchParams.set("base", base);
-  upstream.searchParams.set("quote", quote);
 
   try {
     const response = await fetch(upstream, {
