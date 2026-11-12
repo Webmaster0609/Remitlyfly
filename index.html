@@ -930,7 +930,7 @@ body { margin:0; }
     <button class="secondary" id="openWalletDashboard" type="button">Open wallet rate dashboard</button>
    </section>
    <div class="field"><label for="sendAmount">You send (<span id="sendCurrencyLabel">USD</span>)</label><input id="sendAmount" type="number" min="1" max="10000" step="0.01" inputmode="decimal" placeholder="100.00" required></div>
-   <section id="transferBankPayoutSection" class="transfer-summary" aria-labelledby="liveBankRatesHeading" style="margin:14px 0;padding:14px">
+   <section id="transferBankPayoutSection" class="transfer-summary" aria-labelledby="liveBankRatesHeading" style="display:none;margin:14px 0;padding:14px">
     <h4 id="liveBankRatesHeading" style="margin:0 0 8px">Choose receiving bank</h4>
     <p class="muted">Choose the Ethiopian bank for this transfer preview. When live data is available, the selected bank’s published transfer-buying rate will be shown and used as the reference rate in the estimate.</p>
     <div class="field"><label for="receivingBank">Receiving bank in Ethiopia</label><select id="receivingBank" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="">Loading banks…</option></select></div>
@@ -1580,7 +1580,8 @@ async function loadLiveBankRates(){
   renderReceivingBankOptions();
   updateWalletRateStatus();
   const date=new Date().toLocaleString();if(status)status.textContent=`Connected: loaded ${fetched.length} bank board(s) at ${date}. ${failed?`${failed} bank request(s) failed; those boards are omitted.`:''} Published rates can be stale and are not remittance quotes.`;
-  if(!$('demoRate').dataset.userEdited){const currency=currentCurrency();if(best[currency]?.rate){$('demoRate').value=String(best[currency].rate);$('demoRate').dataset.liveApplied='1';}}
+  const chosen=selectedBankCurrencyRate();
+  if(chosen?.rate&&!$('demoRate').dataset.userEdited){$('demoRate').value=String(chosen.rate);$('demoRate').dataset.liveApplied='1';}
  }catch(error){
   window.remitlyFlyLiveRates.error=String(error?.message||error);
   if(status)status.textContent=`Live API unavailable: ${error?.name==='AbortError'?'request timed out':String(error?.message||error)}. If this file is opened from content:// on Android, browser CORS may block API access; host the app or add a server-side proxy to resolve that.`;
@@ -1631,7 +1632,7 @@ function populateTransferRecipients() {
       const wallet = $('transferWallet');
       const option = [...wallet.options].find(
         o => o.value === recipient.payout_provider ||
-             o.textContent.trim() === recipient.payout_provider
+             o.textContent.trim().toLowerCase() === String(recipient.payout_provider||'').trim().toLowerCase()
       );
       if (option) wallet.value = option.value;
     }
@@ -1655,7 +1656,7 @@ $('senderCountry').addEventListener('change',refreshCurrencyLabels);
 function syncTransferPayoutMethod(){
  const method=$('payoutMethod')?.value||'bank';
  const bankSection=$('transferBankPayoutSection'),walletSection=$('transferWalletPayoutSection');
- if(bankSection)bankSection.style.display=method==='bank'?'block':'none';
+ if(bankSection)bankSection.style.display='none';
  if(walletSection)walletSection.style.display=method==='wallet'?'block':'none';
  const wallet=$('transferWallet')?.value;
  const status=$('transferWalletStatus');
@@ -1685,7 +1686,7 @@ $('transferForm').addEventListener('submit', e => {
   $('transferStatus').textContent = 'Review preview prepared. No money has been sent.'; $('transferStatus').className='profile-status show ok';
   const total = amount + fee;
   const receive = amount * rate;
-  const payoutMethod=$('payoutMethod')?.value||'bank';const payoutLabel=payoutMethod==='wallet'?`Mobile wallet — ${$('transferWallet')?.value||'not selected'}`:`Bank account${$('receivingBank')?.selectedOptions?.[0]?.textContent?` — ${$('receivingBank').selectedOptions[0].textContent}`:''}`;
+  const payoutMethod=$('payoutMethod')?.value||'bank';const payoutLabel=payoutMethod==='wallet'?`Mobile wallet — ${$('transferWallet')?.value||'not selected'}`:`Bank account — ${recipient.payout_provider||'saved bank not specified'}`;
   if(payoutMethod==='wallet'&&!$('transferWallet')?.value){$('transferStatus').textContent='Choose a receiving mobile wallet.';$('transferStatus').className='profile-status show err';return;}
   $('reviewDetails').innerHTML = `<div><span>Recipient</span><strong>${escapeHtml(recipient.name)}</strong></div><div><span>Destination</span><strong>${escapeHtml(recipient.country)}${recipient.phone ? ' · '+escapeHtml(recipient.phone):''}</strong></div><div><span>Payout method</span><strong>${escapeHtml(payoutLabel)}</strong></div><div><span>Sending from</span><strong>${escapeHtml($('senderCountry').value)}</strong></div><div><span>Send amount</span><strong>${money(amount,currency)}</strong></div><div><span>Illustrative fee</span><strong>${money(fee,currency)}</strong></div><div><span>Total (example)</span><strong>${money(total,currency)}</strong></div><div><span>Example rate</span><strong>1 ${currency} = ${rate.toFixed(2)} ETB</strong></div><div><span>Estimated payout (example)</span><strong>ETB ${receive.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>`;
   $('confirmTestOnly').checked=false;
@@ -1709,7 +1710,7 @@ if (recipient.country !== 'Ethiopia') {
   const amount = Number($('sendAmount').value), rate = Number($('demoRate').value), fee = Number($('demoFee').value), currency=currentCurrency();
   if (!(amount > 0 && rate > 0 && fee >= 0)) return;
   pendingTestPreview = { recipient_id: recipient.id, recipient_name: recipient.name, recipient_country: recipient.country,
-    send_amount_usd: currency==='USD'?amount:(currency==='EUR'?amount/1.08:amount/1.27), fee_usd: currency==='USD'?fee:(currency==='EUR'?fee/1.08:fee/1.27), total_usd: currency==='USD'?amount+fee:(currency==='EUR'?(amount+fee)/1.08:(amount+fee)/1.27), send_currency:currency, send_amount_original:amount, sender_country:$('senderCountry').value, exchange_rate: rate, payout_amount_etb: amount * rate, payout_method:$('payoutMethod')?.value||'bank', payout_wallet:($('payoutMethod')?.value==='wallet'?$('transferWallet')?.value:null), payout_bank:($('payoutMethod')?.value==='bank'?$('receivingBank')?.selectedOptions?.[0]?.textContent||null:null), status: 'test_preview' };
+    send_amount_usd: currency==='USD'?amount:(currency==='EUR'?amount/1.08:amount/1.27), fee_usd: currency==='USD'?fee:(currency==='EUR'?fee/1.08:fee/1.27), total_usd: currency==='USD'?amount+fee:(currency==='EUR'?(amount+fee)/1.08:(amount+fee)/1.27), send_currency:currency, send_amount_original:amount, sender_country:$('senderCountry').value, exchange_rate: rate, payout_amount_etb: amount * rate, payout_method:$('payoutMethod')?.value||'bank', payout_wallet:($('payoutMethod')?.value==='wallet'?$('transferWallet')?.value:null), payout_bank:($('payoutMethod')?.value==='bank'?recipient.payout_provider||null:null), status: 'test_preview' };
 });
 function trackingTimeline(status='saved') {
   const steps = [
