@@ -1157,7 +1157,7 @@ $('profileForm').addEventListener('submit',async e=>{
   finally{button.disabled=false}
 });
 $('logout').addEventListener('click',async()=>{if(supabase)await supabase.auth.signOut();showAuth();setMode('login');$('password').value='';});
-if(configured && supabase){const {data:{session}}=await supabase.auth.getSession();if(session?.user)showDashboard(session.user);supabase.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session?.user)showDashboard(session.user);else showAuth()},0)})} else if (supabaseLoadError) { message('The login form is ready, but the authentication library did not load. Check your internet connection and reload.'); }
+if(configured && supabase){supabase.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(session?.user){showDashboard(session.user);}else if(event==='SIGNED_OUT'){showAuth();setMode('login');}},0)});const {data:{session},error:sessionError}=await supabase.auth.getSession();if(session?.user)showDashboard(session.user);else if(sessionError)message('Could not restore your sign-in session. Please try logging in again.');} else if (supabaseLoadError) { message('The login form is ready, but the authentication library did not load. Check your internet connection and reload.'); }
 
 // Recipient manager: all records are stored in public.recipients under the signed-in user's ID.
 const recipientState = { items: [], view: 'all', busy: false };
