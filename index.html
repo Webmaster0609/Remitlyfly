@@ -922,7 +922,7 @@ body { margin:0; }
   <p id="savedRecipientPayoutProvider">Bank or wallet: —</p>
   <small class="muted">TEST ONLY — no money will be sent.</small>
    </div>
-   <div class="field" id="payoutMethodField"><label for="payoutMethod">How should the recipient receive the payout?</label><select id="payoutMethod" required style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="bank">Ethiopian bank account</option><option value="wallet">Mobile wallet</option></select><small class="muted">Choose a payout method for this test preview. No payment will be sent.</small></div>
+   <div class="field" id="payoutMethodField" style="display:none"><label for="payoutMethod">How should the recipient receive the payout?</label><select id="payoutMethod" required style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="bank">Ethiopian bank account</option><option value="wallet">Mobile wallet</option></select><small class="muted">Choose a payout method for this test preview. No payment will be sent.</small></div>
    <section id="transferWalletPayoutSection" class="transfer-summary" style="display:none;margin:12px 0;padding:14px" aria-labelledby="transferWalletHeading">
     <h4 id="transferWalletHeading" style="margin:0 0 8px">Mobile wallet payout</h4>
     <div class="field"><label for="transferWallet">Receiving wallet in Ethiopia</label><select id="transferWallet" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="">Choose a wallet</option><option value="Telebirr">Telebirr</option><option value="M-PESA Ethiopia">M-PESA Ethiopia</option><option value="Kacha">Kacha</option><option value="Yaya Wallet">Yaya Wallet</option></select></div>
@@ -1627,11 +1627,10 @@ function populateTransferRecipients() {
   box.style.display = 'block';
 
   const payoutMethodField = $('payoutMethodField');
-  if (payoutMethodField) payoutMethodField.style.display =
-    recipient.country === 'Ethiopia' && recipient.payout_method ? 'none' : 'block';
+  if (payoutMethodField) payoutMethodField.style.display = 'none';
 
-  if (recipient.country === 'Ethiopia' && recipient.payout_method) {
-    $('payoutMethod').value = recipient.payout_method;
+  if (recipient.country === 'Ethiopia') {
+    $('payoutMethod').value = recipient.payout_method || 'bank';
 
     if (recipient.payout_method === 'wallet') {
       const wallet = $('transferWallet');
