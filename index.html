@@ -1623,8 +1623,29 @@ function populateTransferRecipients() {
     'Bank or wallet: ' + (recipient.payout_provider || 'Not selected');
 
   box.style.display = 'block';
-}
 
+  if (recipient.country === 'Ethiopia' && recipient.payout_method) {
+    $('payoutMethod').value = recipient.payout_method;
+
+    if (recipient.payout_method === 'wallet') {
+      const wallet = $('transferWallet');
+      const option = [...wallet.options].find(
+        o => o.value === recipient.payout_provider ||
+             o.textContent.trim() === recipient.payout_provider
+      );
+      if (option) wallet.value = option.value;
+    }
+
+    if (recipient.payout_method === 'bank') {
+      const bank = $('receivingBank');
+      const option = [...bank.options].find(
+        o => o.textContent.trim() === recipient.payout_provider
+      );
+      if (option) bank.value = option.value;
+    }
+
+    syncTransferPayoutMethod();
+  }
 $('transferRecipient').addEventListener(
   'change',
   showSavedRecipientPayoutInfo
