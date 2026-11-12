@@ -910,7 +910,7 @@ body { margin:0; }
  </div>
  <section class="profile-card" data-page="send" id="transferSection" aria-labelledby="transferHeading">
   <h3 id="transferHeading">Test money transfer</h3>
-  <p class="muted">Send from the United States, United Kingdom, or selected European countries to Ethiopia. Prototype only — no money moves.</p>
+  <p class="muted">Create test-only transfer previews from the United States, United Kingdom, or selected European countries to supported destinations. No money moves.</p>
   <div class="warning"><strong>Illustrative values only.</strong> The exchange rate and fee below are examples for testing, not live quotes or an offer to transfer money.</div>
   <form id="transferForm">
    <div class="field"><label for="senderCountry">Sending from</label><select id="senderCountry" required style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="United States" data-currency="USD">United States (USD)</option><option value="United Kingdom" data-currency="GBP">United Kingdom (GBP)</option><option value="Austria" data-currency="EUR">Austria (EUR)</option><option value="Belgium" data-currency="EUR">Belgium (EUR)</option><option value="Croatia" data-currency="EUR">Croatia (EUR)</option><option value="Cyprus" data-currency="EUR">Cyprus (EUR)</option><option value="Estonia" data-currency="EUR">Estonia (EUR)</option><option value="Finland" data-currency="EUR">Finland (EUR)</option><option value="France" data-currency="EUR">France (EUR)</option><option value="Germany" data-currency="EUR">Germany (EUR)</option><option value="Greece" data-currency="EUR">Greece (EUR)</option><option value="Ireland" data-currency="EUR">Ireland (EUR)</option><option value="Italy" data-currency="EUR">Italy (EUR)</option><option value="Latvia" data-currency="EUR">Latvia (EUR)</option><option value="Lithuania" data-currency="EUR">Lithuania (EUR)</option><option value="Luxembourg" data-currency="EUR">Luxembourg (EUR)</option><option value="Malta" data-currency="EUR">Malta (EUR)</option><option value="Netherlands" data-currency="EUR">Netherlands (EUR)</option><option value="Portugal" data-currency="EUR">Portugal (EUR)</option><option value="Slovakia" data-currency="EUR">Slovakia (EUR)</option><option value="Slovenia" data-currency="EUR">Slovenia (EUR)</option><option value="Spain" data-currency="EUR">Spain (EUR)</option></select><small class="muted">Country and currency are for prototype selection only; availability is not verified.</small></div>
@@ -1705,8 +1705,8 @@ function populateTransferRecipients() {
 
   box.style.display = 'block';
 
+  $('payoutMethod').value = recipient.payout_method || 'bank';
   if (recipient.country === 'Ethiopia') {
-    $('payoutMethod').value = recipient.payout_method || 'bank';
 
     if (recipient.payout_method === 'wallet') {
       const wallet = $('transferWallet');
@@ -1740,6 +1740,12 @@ function syncTransferPayoutMethod(){
  if(walletSection)walletSection.style.display=method==='wallet'?'block':'none';
  const wallet=$('transferWallet')?.value;
  const status=$('transferWalletStatus');
+ const selectedRecipient=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
+ if(selectedRecipient && selectedRecipient.country!=='Ethiopia'){
+  refreshTransferSummary();
+  if(status)status.textContent=(selectedRecipient.payout_method==='wallet'?'Mobile wallet: ':'Bank account: ')+(selectedRecipient.payout_provider||'saved payout destination')+'. Test preview only; no payout provider is connected.';
+  return;
+ }
  if(method==='wallet'){
   if(wallet){
    const dashboardSelect=$('receivingWallet');if(dashboardSelect)dashboardSelect.value=wallet;
@@ -1762,20 +1768,15 @@ $('transferForm').addEventListener('submit', e => {
   const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
   const amount = Number($('sendAmount').value), rate = Number($('demoRate').value), fee = Number($('demoFee').value), currency=currentCurrency();
   if (!recipient) { $('transferStatus').textContent = 'Choose a saved recipient first.'; $('transferStatus').className='profile-status show err'; return; }
-  if (recipient && recipient.country !== 'Ethiopia') {
-    $('transferReview').classList.add('hidden');
-    $('transferStatus').textContent = 'Test transfer previews are currently available for Ethiopia only. Your ' + recipient.country + ' recipient is saved, but its payout currency and route are not configured yet.';
-    $('transferStatus').className='profile-status show err';
-    pendingTestPreview = null;
-    return;
-  }
   if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(fee) || fee < 0) { $('transferStatus').textContent = 'Enter a valid amount, example rate, and fee.'; $('transferStatus').className='profile-status show err'; return; }
   $('transferStatus').textContent = 'Review preview prepared. No money has been sent.'; $('transferStatus').className='profile-status show ok';
   const total = amount + fee;
   const receive = amount * rate;
-  const payoutMethod=$('payoutMethod')?.value||'bank';const payoutLabel=payoutMethod==='wallet'?`Mobile wallet — ${$('transferWallet')?.value||'not selected'}`:`Bank account — ${recipient.payout_provider||'saved bank not specified'}`;
-  if(payoutMethod==='wallet'&&!$('transferWallet')?.value){$('transferStatus').textContent='Choose a receiving mobile wallet.';$('transferStatus').className='profile-status show err';return;}
-  $('reviewDetails').innerHTML = `<div><span>Recipient</span><strong>${escapeHtml(recipient.name)}</strong></div><div><span>Destination</span><strong>${escapeHtml(recipient.country)}${recipient.phone ? ' · '+escapeHtml(recipient.phone):''}</strong></div><div><span>Payout method</span><strong>${escapeHtml(payoutLabel)}</strong></div><div><span>Sending from</span><strong>${escapeHtml($('senderCountry').value)}</strong></div><div><span>Send amount</span><strong>${money(amount,currency)}</strong></div><div><span>Illustrative fee</span><strong>${money(fee,currency)}</strong></div><div><span>Total (example)</span><strong>${money(total,currency)}</strong></div><div><span>Example rate</span><strong>1 ${currency} = ${rate.toFixed(2)} ETB</strong></div><div><span>Estimated payout (example)</span><strong>ETB ${receive.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>`;
+  const payoutMethod=recipient.payout_method||$('payoutMethod')?.value||'bank';const payoutLabel=(payoutMethod==='wallet'?'Mobile wallet — ':'Bank account — ')+(recipient.payout_provider||'saved payout destination');
+  if(!recipient.payout_provider){$('transferStatus').textContent='This recipient is missing saved bank or wallet details. Edit the recipient and add the payout destination first.';$('transferStatus').className='profile-status show err';return;}
+  if(recipient.country==='Ethiopia'&&payoutMethod==='wallet'&&!$('transferWallet')?.value){$('transferStatus').textContent='Choose a receiving mobile wallet.';$('transferStatus').className='profile-status show err';return;}
+  const destinationCurrency=destinationCurrencyForCountry(recipient.country);
+  $('reviewDetails').innerHTML = `<div><span>Recipient</span><strong>${escapeHtml(recipient.name)}</strong></div><div><span>Destination</span><strong>${escapeHtml(recipient.country)}${recipient.phone ? ' · '+escapeHtml(recipient.phone):''}</strong></div><div><span>Payout method</span><strong>${escapeHtml(payoutLabel)}</strong></div><div><span>Sending from</span><strong>${escapeHtml($('senderCountry').value)}</strong></div><div><span>Send amount</span><strong>${money(amount,currency)}</strong></div><div><span>Illustrative fee</span><strong>${money(fee,currency)}</strong></div><div><span>Total (example)</span><strong>${money(total,currency)}</strong></div><div><span>Indicative reference rate</span><strong>1 ${currency} = ${rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrency}</strong></div><div><span>Estimated payout (example)</span><strong>${destinationCurrency} ${receive.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>`;
   $('confirmTestOnly').checked=false;
   $('finishReview').disabled=true;
   $('confirmationStatus').textContent='';
@@ -1787,17 +1788,12 @@ $('transferForm').addEventListener('submit', () => {
  const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
 if (!recipient) return;
 
-if (recipient.country !== 'Ethiopia') {
-  $('transferStatus').textContent = 'Test transfers to ' + recipient.country + ' are not available yet. Recipient saving is supported, but payout setup is coming soon.';
-  $('transferStatus').className = 'profile-status show err';
-  pendingTestPreview = null;
-  return;
-}
-  if (($('payoutMethod')?.value||'bank')==='wallet'&&!$('transferWallet')?.value) { $('transferStatus').textContent='Choose a receiving mobile wallet before saving this test preview.'; $('transferStatus').className='profile-status show err'; pendingTestPreview=null; return; }
+if (!recipient.payout_method || !recipient.payout_provider) { $('transferStatus').textContent='This recipient is missing saved bank or wallet details. Edit the recipient and add the payout destination first.'; $('transferStatus').className='profile-status show err'; pendingTestPreview=null; return; }
+  if (recipient.country==='Ethiopia' && recipient.payout_method==='wallet' && !$('transferWallet')?.value) { $('transferStatus').textContent='Choose a receiving mobile wallet before saving this test preview.'; $('transferStatus').className='profile-status show err'; pendingTestPreview=null; return; }
   const amount = Number($('sendAmount').value), rate = Number($('demoRate').value), fee = Number($('demoFee').value), currency=currentCurrency();
   if (!(amount > 0 && rate > 0 && fee >= 0)) return;
   pendingTestPreview = { recipient_id: recipient.id, recipient_name: recipient.name, recipient_country: recipient.country,
-    send_amount_usd: currency==='USD'?amount:(currency==='EUR'?amount/1.08:amount/1.27), fee_usd: currency==='USD'?fee:(currency==='EUR'?fee/1.08:fee/1.27), total_usd: currency==='USD'?amount+fee:(currency==='EUR'?(amount+fee)/1.08:(amount+fee)/1.27), send_currency:currency, send_amount_original:amount, sender_country:$('senderCountry').value, exchange_rate: rate, payout_amount_etb: amount * rate, payout_method:$('payoutMethod')?.value||'bank', payout_wallet:($('payoutMethod')?.value==='wallet'?$('transferWallet')?.value:null), payout_bank:($('payoutMethod')?.value==='bank'?recipient.payout_provider||null:null), status: 'test_preview' };
+    send_amount_usd: currency==='USD'?amount:(currency==='EUR'?amount/1.08:amount/1.27), fee_usd: currency==='USD'?fee:(currency==='EUR'?fee/1.08:fee/1.27), total_usd: currency==='USD'?amount+fee:(currency==='EUR'?(amount+fee)/1.08:(amount+fee)/1.27), send_currency:currency, send_amount_original:amount, sender_country:$('senderCountry').value, exchange_rate: rate, payout_amount_etb: amount * rate, payout_method:recipient.payout_method, payout_wallet:recipient.payout_method==='wallet'?recipient.payout_provider:null, payout_bank:recipient.payout_method==='bank'?recipient.payout_provider:null, status: 'test_preview' };
 });
 function trackingTimeline(status='saved') {
   const steps = [
@@ -1840,7 +1836,7 @@ async function loadTransferHistory() {
   updateDashboardStats(data);
   renderRecentTransfers(data.slice(0,4));
   $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note">TEST ONLY · This is a saved preview, not a real transfer. Change the illustrative status below.</div><label class="field">Update test status<select data-track-id="${escapeHtml(r.id)}"><option value="saved" ${(r.tracking_status||'saved')==='saved'?'selected':''}>Saved</option><option value="under_review" ${r.tracking_status==='under_review'?'selected':''}>Under review</option><option value="simulated_complete" ${r.tracking_status==='simulated_complete'?'selected':''}>Simulated complete</option><option value="cancelled" ${r.tracking_status==='cancelled'?'selected':''}>Cancelled test</option></select></label></article>`).join('');
-  list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Illustrative fee (USD equivalent)</span><strong>${money(r.fee_usd,'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} ETB</strong></div><div><span>Estimated payout</span><strong>ETB ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
+  list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Illustrative fee (USD equivalent)</span><strong>${money(r.fee_usd,'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrencyForCountry(r.recipient_country)}</strong></div><div><span>Estimated payout (test example)</span><strong>${destinationCurrencyForCountry(r.recipient_country)} ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
   } catch (err) {
     const detail = escapeHtml(err?.message || 'Unknown error');
     list.innerHTML='<p class="muted">Could not load test history: '+detail+'</p>';
