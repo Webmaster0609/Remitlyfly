@@ -996,6 +996,20 @@ body { margin:0; }
   </select>
   <small class="muted">Select the recipient's destination country. Test mode only.</small>
 </div>
+   <div id="kenyaPayoutFields" class="field hidden">
+  <label for="recipientPayoutMethod">Kenya payout method</label>
+  <select id="recipientPayoutMethod">
+    <option value="">Choose payout method</option>
+    <option value="bank">Bank account</option>
+    <option value="wallet">Mobile wallet</option>
+  </select>
+
+  <label for="recipientPayoutProvider">Choose bank or wallet</label>
+  <select id="recipientPayoutProvider">
+    <option value="">Choose provider</option>
+  </select>
+  <small class="muted">Kenya test mode only — no money will be sent.</small>
+   </div>
 
    <div class="field"><label for="recipientPhone">Phone number (optional)</label><input id="recipientPhone" type="tel" autocomplete="tel" placeholder="Phone number"></div>
    <div class="field"><label for="recipientNote">Note (optional)</label><input id="recipientNote" placeholder="Personal note"></div>
@@ -1156,6 +1170,62 @@ if(configured && supabase){const {data:{session}}=await supabase.auth.getSession
 
 // Recipient manager: all records are stored in public.recipients under the signed-in user's ID.
 const recipientState = { items: [], view: 'all', busy: false };
+ const kenyaBanks = [
+  'KCB Bank',
+  'Equity Bank',
+  'Co-operative Bank',
+  'Absa Bank',
+  'NCBA Bank',
+  'Stanbic Bank',
+  'DTB',
+  'Family Bank',
+  'I&M Bank',
+  'Standard Chartered',
+  'National Bank of Kenya',
+  'Ecobank',
+  'Bank of Africa',
+  'Sidian Bank'
+];
+
+const kenyaWallets = [
+  'M-PESA',
+  'Airtel Money',
+  'T-Kash',
+  'Equitel',
+  'SasaPay'
+];
+
+function updateKenyaPayoutFields() {
+  const isKenya = $('recipientCountry').value === 'Kenya';
+  const box = $('kenyaPayoutFields');
+  const method = $('recipientPayoutMethod');
+  const provider = $('recipientPayoutProvider');
+
+  box.classList.toggle('hidden', !isKenya);
+  method.required = isKenya;
+
+  if (!isKenya) {
+    method.value = '';
+    provider.innerHTML = '<option value="">Choose provider</option>';
+    return;
+  }
+
+  updateKenyaProviders();
+}
+
+function updateKenyaProviders() {
+  const method = $('recipientPayoutMethod').value;
+  const provider = $('recipientPayoutProvider');
+  const options = method === 'bank' ? kenyaBanks :
+                  method === 'wallet' ? kenyaWallets : [];
+
+  provider.innerHTML = '<option value="">Choose provider</option>' +
+    options.map(name => `<option value="${name}">${name}</option>`).join('');
+  provider.required = $('recipientCountry').value === 'Kenya';
+}
+
+$('recipientCountry').addEventListener('change', updateKenyaPayoutFields);
+$('recipientPayoutMethod').addEventListener('change', updateKenyaProviders);
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 function recipientStatus(text, type='err') {
   const el = $('recipientStatus'); if (!el) return;
