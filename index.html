@@ -1305,20 +1305,20 @@ $('recipientForm').addEventListener('submit', async e => {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !session?.user) { recipientStatus('Please log in again before saving a recipient.'); return; }
   const id = $('recipientEditId').value;
-  const isKenya = $('recipientCountry').value === 'Kenya';
+  const supportsPayout = ['Kenya', 'Ethiopia'].includes($('recipientCountry').value);
   const record = {
     name:$('recipientName').value.trim(),
     relationship:$('recipientRelationship').value.trim(),
     country:$('recipientCountry').value.trim(),
     phone:$('recipientPhone').value.trim(),
     note:$('recipientNote').value.trim(),
-    payout_method:isKenya ? $('recipientPayoutMethod').value : null,
-    payout_provider:isKenya ? $('recipientPayoutProvider').value : null
+    payout_method:supportsPayout ? $('recipientPayoutMethod').value : null,
+payout_provider:supportsPayout ? $('recipientPayoutProvider').value : null
   };
-  if (isKenya && (!record.payout_method || !record.payout_provider)) {
-    recipientStatus('Please choose a Kenyan bank or mobile wallet and provider.');
-    return;
-  }
+  if (supportsPayout && (!record.payout_method || !record.payout_provider)) {
+  recipientStatus('Please choose a bank or mobile wallet and provider.');
+  return;
+}
   if (!record.name || !record.country) { recipientStatus('Enter the recipient name and country.'); return; }
   const button = $('recipientSubmit'); button.disabled = true;
   try {
