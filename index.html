@@ -1412,7 +1412,7 @@ async function loadCountryReferenceRate(country){
   if(countryRateRequests.has(key))return;
   countryRateRequests.add(key);
   try{
-    const response=await fetch('/.netlify/functions/afrirate?country='+encodeURIComponent(code)+'&base='+encodeURIComponent(base),{headers:{'Accept':'application/json'},cache:'no-store'});
+    const response=await fetch(SUPABASE_URL+'/functions/v1/afrirate?country='+encodeURIComponent(code)+'&base='+encodeURIComponent(base),{headers:{'Accept':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},cache:'no-store'});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.error||('HTTP '+response.status));
     if(!(Number(data.rate)>0))throw new Error('Provider returned no usable rate');
