@@ -1249,37 +1249,69 @@ function renderRecipients() {
     ${r.phone ? `<p style="margin:8px 0">${escapeHtml(r.phone)}</p>`:''}${r.note ? `<p class="muted" style="margin:8px 0">${escapeHtml(r.note)}</p>`:''}
     <div class="rowline" style="margin-top:10px;justify-content:flex-start"><button type="button" class="secondary" data-action="edit" data-id="${escapeHtml(r.id)}">Edit</button><button type="button" class="secondary" data-action="delete" data-id="${escapeHtml(r.id)}">Delete</button></div>
   </article>`).join('');
-}const isKenya = $('recipientCountry').value === 'Kenya';
-const record = {
-  name:$('recipientName').value.trim(),
-  relationship:$('recipientRelationship').value.trim(),
-  country:$('recipientCountry').value.trim(),
-  phone:$('recipientPhone').value.trim(),
-  note:$('recipientNote').value.trim(),
-  payout_method:isKenya ? $('recipientPayoutMethod').value : null,
-  payout_provider:isKenya ? $('recipientPayoutProvider').value : null
-};
-
-if (isKenya && (!record.payout_method || !record.payout_provider)) {
-  recipientStatus('Please choose a Kenyan bank or mobile wallet and provider.');
-  return;
- }
+}
+async function loadRecipients() {
+  if (!supabase) return;
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) { recipientStatus(sessionError.message); return; }
+  if (!session?.user) { recipientState.items=[]; renderRecipients(); return; }
+  const { data, error } = await supabase.from('recipients').select('id,user_id,name,relationship,country,phone,note,favorite,payout_method,payout_provider,created_at,updated_at').order('created_at',{ascending:false});
+  if (error) { recipientStatus('Could not load recipients: '+error.message); return; }
+  recipientState.items = data || []; renderRecipients(); updateDashboardStats();
+}
+$('recipientForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!supabase) { recipientStatus('Database connection is unavailable. Reload the website and try again.'); return; }
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session?.user) { recipientStatus('Please log in again before saving a recipient.'); return; }
+  const id = $('recipientEditId').value;
+  const isKenya = $('recipientCountry').value === 'Kenya';
+  const record = {
+    name:$('recipientName').value.trim(),
+    relationship:$('recipientRelationship').value.trim(),
+    country:$('recipientCountry').value.trim(),
+    phone:$('recipientPhone').value.trim(),
+    note:$('recipientNote').value.trim(),
+    payout_method:isKenya ? $('recipientPayoutMethod').value : null,
+    payout_provider:isKenya ? $('recipientPayoutProvider').value : null
+  };
+  if (isKenya && (!record.payout_method || !record.payout_provider)) {
+    recipientStatus('Please choose a Kenyan bank or mobile wallet and provider.');
+    return;
+  }
   if (!record.name || !record.country) { recipientStatus('Enter the recipient name and country.'); return; }
   const button = $('recipientSubmit'); button.disabled = true;
   try {
     let result;
-    if (id) result = await supabase.from('recipients').update(record).eq('id',id).select().single();$('recipientEditId').value=item.id;
-$('recipientName').value=item.name||'';
-$('recipientRelationship').value=item.relationship||'';
-$('recipientCountry').value=item.country||'';
-$('recipientPhone').value=item.phone||'';
-$('recipientNote').value=item.note||'';
-
-updateKenyaPayoutFields();
-$('recipientPayoutMethod').value=item.payout_method||'';
-updateKenyaProviders();
-$('recipientPayoutProvider').value=item.payout_provider||'';
-    $('recipientSubmit').textContent='Save changes'; $('cancelRecipientEdit').classList.remove('hidden'); $('recipientsSection').scrollIntoView({behavior:'smooth',block:'start'}); return;
+    if (id) result = await supabase.from('recipients').update(record).eq('id',id).select().single();
+    else result = await supabase.from('recipients').insert({...record,user_id:session.user.id}).select().single();
+    if (result.error) { recipientStatus('Could not save recipient: '+result.error.message); return; }
+    recipientStatus(id ? 'Recipient updated successfully.' : 'Recipient saved successfully.','ok');
+    resetRecipientForm(); await loadRecipients();
+  } catch (err) { recipientStatus('Could not save recipient. Please try again.'); }
+  finally { button.disabled = false; }
+});
+$('cancelRecipientEdit').addEventListener('click', () => { resetRecipientForm(); recipientStatus('Edit cancelled.','ok'); });
+$('recipientSearch').addEventListener('input', renderRecipients);
+$('recipientViews').addEventListener('click', e => { const b=e.target.closest('[data-recipient-view]'); if (b) { recipientState.view=b.dataset.recipientView; renderRecipients(); } });
+$('recipientList').addEventListener('click', async e => {
+  const b=e.target.closest('[data-action]'); if (!b) return;
+  const item=recipientState.items.find(r=>r.id===b.dataset.id); if (!item) return;
+  if (b.dataset.action==='edit') {
+    $('recipientEditId').value=item.id;
+    $('recipientName').value=item.name||'';
+    $('recipientRelationship').value=item.relationship||'';
+    $('recipientCountry').value=item.country||'';
+    $('recipientPhone').value=item.phone||'';
+    $('recipientNote').value=item.note||'';
+    updateKenyaPayoutFields();
+    $('recipientPayoutMethod').value=item.payout_method||'';
+    updateKenyaProviders();
+    $('recipientPayoutProvider').value=item.payout_provider||'';
+    $('recipientSubmit').textContent='Save changes';
+    $('cancelRecipientEdit').classList.remove('hidden');
+    $('recipientsSection').scrollIntoView({behavior:'smooth',block:'start'});
+    return;
   }
   if (b.dataset.action==='delete') {
     if (!confirm(`Delete ${item.name} from your saved recipients?`)) return;
@@ -1293,7 +1325,7 @@ $('recipientPayoutProvider').value=item.payout_provider||'';
   }
 });
 
-// Load database recipients for an existing session and after future sign-ins.
+// // Load database recipients for an existing session and after future sign-ins.
 if (supabase) {
   supabase.auth.getSession().then(({ data, error }) => {
     if (error) recipientStatus('Could not check sign-in session: ' + error.message, 'err');
