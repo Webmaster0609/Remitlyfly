@@ -1,6 +1,13 @@
 name: Deploy RemitlyFly Supabase Edge Function
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "supabase/functions/afrirate/**"
+      - "supabase/config.toml"
+      - ".github/workflows/deploy-supabase-afrirate.yml"
   workflow_dispatch:
 
 permissions:
