@@ -1305,6 +1305,7 @@ function renderRecipients() {
   if (!items.length) { list.innerHTML = '<p class="muted">No saved recipients found. Add a recipient using the form above.</p>'; return; }
   list.innerHTML = items.map(r => `<article class="profile-card" style="margin-top:12px;padding:14px">
     <div class="rowline" style="justify-content:space-between;align-items:flex-start;gap:12px"><div><strong>${escapeHtml(r.name)}</strong><div class="muted">${escapeHtml(r.country)}${r.relationship ? ' · '+escapeHtml(r.relationship):''}</div></div><button type="button" class="secondary" data-action="favorite" data-id="${escapeHtml(r.id)}" aria-label="Toggle favorite">${r.favorite?'★ Favorite':'☆ Favorite'}</button></div>
+    <p class="muted" style="margin:8px 0">${r.payout_method ? 'Payout method: '+escapeHtml(r.payout_method === 'wallet' ? 'Mobile wallet' : 'Bank account') : 'Payout method: Not selected'} · ${r.payout_provider ? 'Provider: '+escapeHtml(r.payout_provider) : 'Bank or wallet: Not selected'}</p>
     ${r.phone ? `<p style="margin:8px 0">${escapeHtml(r.phone)}</p>`:''}${r.note ? `<p class="muted" style="margin:8px 0">${escapeHtml(r.note)}</p>`:''}
     <div class="rowline" style="margin-top:10px;justify-content:flex-start"><button type="button" class="secondary" data-action="edit" data-id="${escapeHtml(r.id)}">Edit</button><button type="button" class="secondary" data-action="delete" data-id="${escapeHtml(r.id)}">Delete</button></div>
   </article>`).join('');
@@ -1324,7 +1325,7 @@ $('recipientForm').addEventListener('submit', async e => {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !session?.user) { recipientStatus('Please log in again before saving a recipient.'); return; }
   const id = $('recipientEditId').value;
-  const supportsPayout = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda'].includes($('recipientCountry').value);
+  const supportsPayout = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda', 'Tanzania', 'South Africa'].includes($('recipientCountry').value);
   const record = {
     name:$('recipientName').value.trim(),
     relationship:$('recipientRelationship').value.trim(),
