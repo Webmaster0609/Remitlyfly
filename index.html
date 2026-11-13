@@ -1854,7 +1854,8 @@ async function loadTransferHistory() {
   if(!data?.length) { list.innerHTML='<p class="muted">No test previews saved yet. Review a test transfer and tap Save test record.</p>'; $('trackingList').innerHTML='<p class="muted">No test records to track yet.</p>'; updateDashboardStats(data||[]); renderRecentTransfers([]); return; }
   updateDashboardStats(data);
   renderRecentTransfers(data.slice(0,4));
-  $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note">TEST ONLY · This is a saved preview, not a real transfer. Change the illustrative status below.</div><label class="field">Update test status<select data-track-id="${escapeHtml(r.id)}"><option value="saved" ${(r.tracking_status||'saved')==='saved'?'selected':''}>Saved</option><option value="under_review" ${r.tracking_status==='under_review'?'selected':''}>Under review</option><option value="simulated_complete" ${r.tracking_status==='simulated_complete'?'selected':''}>Simulated complete</option><option value="cancelled" ${r.tracking_status==='cancelled'?'selected':''}>Cancelled test</option></select></label></article>`).join('');
+  const isAdmin = session.user.app_metadata?.role === 'admin';
+  $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note">TEST ONLY · This is a saved preview, not a real transfer. ${isAdmin?'Admin status controls are available in Admin overview.':'Only an administrator can change this test status.'}</div></article>`).join('');
   list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Illustrative fee (USD equivalent)</span><strong>${money(r.fee_usd,'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrencyForCountry(r.recipient_country)}</strong></div><div><span>Estimated payout (test example)</span><strong>${destinationCurrencyForCountry(r.recipient_country)} ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
   } catch (err) {
     const detail = escapeHtml(err?.message || 'Unknown error');
@@ -1879,15 +1880,20 @@ async function updateDashboardStats(rows) {
   $('dashTotalAmount').textContent=money(total,'USD');
 }
 $('trackingList').addEventListener('change',async e=>{
-  const select=e.target.closest('[data-track-id]'); if(!select)return;
-  if(!supabase){return}
+  const select=e.target.closest('[data-track-id]');if(!select)return;
+  if(!supabase)return;
+  const {data:{session}}=await supabase.auth.getSession();
+  if(session?.user?.app_metadata?.role!=='admin'){
+    $('trackingStatus').textContent='Only an administrator can change test payment status.';
+    $('trackingStatus').className='profile-status show err';
+    await loadTransferHistory();return;
+  }
   const allowed=['saved','under_review','simulated_complete','cancelled'];
   if(!allowed.includes(select.value))return;
   select.disabled=true;
   const {error}=await supabase.from('transfer_history').update({tracking_status:select.value}).eq('id',select.dataset.trackId);
-  select.disabled=false;
-  if(error){$('trackingStatus').textContent='Could not update test status: '+error.message+' Run the updated tracking SQL first.';$('trackingStatus').className='profile-status show err';}
-  else {$('trackingStatus').textContent='Test status updated. This is not a real transfer status.';$('trackingStatus').className='profile-status show ok';await loadTransferHistory();}
+  if(error){$('trackingStatus').textContent='Could not update test status: '+error.message;$('trackingStatus').className='profile-status show err';select.disabled=false;}
+  else{$('trackingStatus').textContent='Test status updated by admin. No real payment was made.';$('trackingStatus').className='profile-status show ok';await loadTransferHistory();await loadAdminOverview();}
 });
 function adminMessage(text,type='err'){const el=$('adminStatus');el.textContent=text;el.className='profile-status show '+type;}
 async function loadAdminOverview(){
@@ -1901,9 +1907,21 @@ async function loadAdminOverview(){
   $('adminRecordCount').textContent=String(rows.length);
   $('adminUserCount').textContent=String(new Set(rows.map(r=>r.user_id)).size);
   $('adminTotalAmount').textContent=money(rows.reduce((s,r)=>s+Number(r.send_amount_usd||0),0),'USD');
-  $('adminList').innerHTML=rows.length?rows.map(r=>`<article class="admin-row"><div class="rowline"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span></div><div class="muted">Account ID: ${escapeHtml(r.user_id)}</div><div class="muted">${money(r.send_amount_usd,'USD')} test amount · ${escapeHtml(safeDate(r.created_at))}</div></article>`).join(''):'<p class="muted">No test records found.</p>';
+  $('adminList').innerHTML=rows.length?rows.map(r=>`<article class="admin-row"><div class="rowline"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span></div><div class="muted">Account ID: ${escapeHtml(r.user_id)}</div><div class="muted">${money(r.send_amount_usd,'USD')} test amount · ${escapeHtml(safeDate(r.created_at))}</div><label class="field">Admin: change test payment status<select data-admin-track-id="${escapeHtml(r.id)}"><option value="saved" ${(r.tracking_status||'saved')==='saved'?'selected':''}>Saved</option><option value="under_review" ${r.tracking_status==='under_review'?'selected':''}>Under review</option><option value="simulated_complete" ${r.tracking_status==='simulated_complete'?'selected':''}>Simulated complete</option><option value="cancelled" ${r.tracking_status==='cancelled'?'selected':''}>Cancelled test</option></select></label></article>`).join(''):'<p class="muted">No test records found.</p>';
   adminMessage('Loaded test-only records. No real payment data is connected.','ok');
 }
+$('adminList').addEventListener('change',async e=>{
+  const select=e.target.closest('[data-admin-track-id]');if(!select)return;
+  if(!supabase)return;
+  const {data:{session}}=await supabase.auth.getSession();
+  if(session?.user?.app_metadata?.role!=='admin'){adminMessage('Administrator access is required.');await loadAdminOverview();return;}
+  const allowed=['saved','under_review','simulated_complete','cancelled'];
+  if(!allowed.includes(select.value))return;
+  select.disabled=true;
+  const {error}=await supabase.from('transfer_history').update({tracking_status:select.value}).eq('id',select.dataset.adminTrackId);
+  if(error){adminMessage('Could not update test status: '+error.message);select.disabled=false;}
+  else{adminMessage('Test payment status updated. No real money was moved.','ok');await loadAdminOverview();}
+});
 $('goAdmin').addEventListener('click',()=>{loadAdminOverview();$('adminSection').scrollIntoView({behavior:'smooth',block:'start'});});
 $('refreshAdmin').addEventListener('click',loadAdminOverview);
 $('goHistory').addEventListener('click',()=>{ $('historySection').scrollIntoView({behavior:'smooth',block:'start'}); loadTransferHistory(); $('trackingSection').classList.remove('hidden');});
