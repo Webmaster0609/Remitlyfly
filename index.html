@@ -1964,17 +1964,22 @@ $('finishReview').addEventListener('click', async () => {
   if(sessionError || !session?.user) { historyMessage('Please sign in again. No test record was saved.'); return; }
   if(!pendingTestPreview) { historyMessage('Please review a test transfer first.'); return; }
   const button=$('finishReview'); button.disabled=true; button.textContent='Saving test record…';
-  let {error}=await supabase.from('transfer_history').insert({...pendingTestPreview,user_id:session.user.id});
+  let {data:savedRecord,error}=await supabase.from('transfer_history').insert({...pendingTestPreview,user_id:session.user.id}).select('id').single();
   // Older existing tables may not yet have optional payout destination columns; retry without them so saved test previews keep working.
   if(error && /payout_method|payout_wallet|payout_bank|column/i.test(error.message||'')){
    const {payout_method,payout_wallet,payout_bank,...legacyPreview}=pendingTestPreview;
-   const retry=await supabase.from('transfer_history').insert({...legacyPreview,user_id:session.user.id});error=retry.error;
+   const retry=await supabase.from('transfer_history').insert({...legacyPreview,user_id:session.user.id}).select('id').single();savedRecord=retry.data;error=retry.error;
    if(!error){const status=$('transferStatus');if(status){status.textContent='Test preview saved. Your current history table does not store payout method yet; add the optional columns to retain it.';status.className='profile-status show ok';}}
   }
   button.disabled=!$('confirmTestOnly').checked; button.textContent='Confirm and save test record';
   if(error) { $('confirmationStatus').textContent='The test record was not saved. Please check the error below.'; $('confirmationStatus').className='profile-status show err'; historyMessage('Could not save test record: '+error.message+' Make sure you ran the Transfer History SQL setup.'); return; }
   $('transferReview').classList.add('hidden'); $('confirmTestOnly').checked=false; $('finishReview').disabled=true; $('confirmationStatus').textContent=''; $('transferStatus').textContent='Test record saved to your private history. No money was sent and no payment was collected.'; $('transferStatus').className='profile-status show ok';
-  pendingTestPreview=null; historyMessage('Test preview saved. No transfer or payment occurred.','ok'); await loadTransferHistory();
+  pendingTestPreview=null; historyMessage('Test preview saved. No transfer or payment occurred.','ok');
+  if(savedRecord?.id){
+    const {error:alertError}=await supabase.functions.invoke('notify-admin',{body:{transfer_id:savedRecord.id}});
+    if(alertError){console.warn('Admin email alert was not sent:',alertError.message);historyMessage('Test preview saved. Dashboard admin alert is active; email alert still needs its Resend secret configured.','ok');}
+  }
+  await loadTransferHistory();
 });
 $('refreshHistory').addEventListener('click',loadTransferHistory);
 $('goHistory').addEventListener('click',()=>{ $('historySection').scrollIntoView({behavior:'smooth',block:'start'}); loadTransferHistory(); });
