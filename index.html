@@ -965,6 +965,7 @@ body { margin:0; }
   <h3 id="adminHeading">Admin overview</h3>
   <p class="muted">Restricted to accounts whose Supabase app metadata role is set to <code>admin</code>. This panel shows test records only.</p>
   <div class="warning">Never make a user an admin by editing browser code or user-editable metadata. Set the role securely in Supabase Auth user app_metadata.</div>
+  <div id="adminNewAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
   <div id="adminStatus" class="profile-status" role="status" aria-live="polite"></div>
   <div class="stat-grid"><div class="stat"><small>Test records</small><strong id="adminRecordCount">—</strong></div><div class="stat"><small>Unique accounts</small><strong id="adminUserCount">—</strong></div><div class="stat"><small>Simulated send total</small><strong id="adminTotalAmount">$0</strong></div></div>
   <button class="secondary" type="button" id="refreshAdmin">Refresh admin data</button>
@@ -1895,6 +1896,8 @@ $('trackingList').addEventListener('change',async e=>{
   if(error){$('trackingStatus').textContent='Could not update test status: '+error.message;$('trackingStatus').className='profile-status show err';select.disabled=false;}
   else{$('trackingStatus').textContent='Test status updated by admin. No real payment was made.';$('trackingStatus').className='profile-status show ok';await loadTransferHistory();await loadAdminOverview();}
 });
+let adminSeenRecordIds = null;
+let adminAlertPoll = null;
 function adminMessage(text,type='err'){const el=$('adminStatus');el.textContent=text;el.className='profile-status show '+type;}
 async function loadAdminOverview(){
   if(!supabase)return;
@@ -1904,11 +1907,28 @@ async function loadAdminOverview(){
   const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,exchange_rate,payout_amount_etb,tracking_status,created_at').order('created_at',{ascending:false}).limit(200);
   if(error){adminMessage('Admin data could not load: '+error.message+' Check the admin RLS policy in the SQL setup.');return;}
   const rows=data||[];
+  const currentIds=new Set(rows.map(r=>String(r.id)));
+  if(adminSeenRecordIds){
+    const newRows=rows.filter(r=>!adminSeenRecordIds.has(String(r.id)));
+    if(newRows.length){
+      const newest=newRows[0];
+      const alert=$('adminNewAlert');
+      alert.textContent='New test transfer alert: '+newRows.length+' new test record'+(newRows.length===1?'':'s')+' saved. Latest: '+(newest.recipient_name||'Recipient')+' — '+(newest.recipient_country||'destination')+', '+money(newest.send_amount_usd,'USD')+'. No real payment was made.';
+      alert.classList.remove('hidden');
+      adminMessage('New test transfer received. Review the highlighted record below.','ok');
+    }
+  }
+  adminSeenRecordIds=currentIds;
+  if(!adminAlertPoll){
+    adminAlertPoll=setInterval(()=>{
+      if(!document.hidden) loadAdminOverview();
+    },20000);
+  }
   $('adminRecordCount').textContent=String(rows.length);
   $('adminUserCount').textContent=String(new Set(rows.map(r=>r.user_id)).size);
   $('adminTotalAmount').textContent=money(rows.reduce((s,r)=>s+Number(r.send_amount_usd||0),0),'USD');
   $('adminList').innerHTML=rows.length?rows.map(r=>`<article class="admin-row"><div class="rowline"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span></div><div class="muted">Account ID: ${escapeHtml(r.user_id)}</div><div class="muted">${money(r.send_amount_usd,'USD')} test amount · ${escapeHtml(safeDate(r.created_at))}</div><label class="field">Admin: change test payment status<select data-admin-track-id="${escapeHtml(r.id)}"><option value="saved" ${(r.tracking_status||'saved')==='saved'?'selected':''}>Saved</option><option value="under_review" ${r.tracking_status==='under_review'?'selected':''}>Under review</option><option value="simulated_complete" ${r.tracking_status==='simulated_complete'?'selected':''}>Simulated complete</option><option value="cancelled" ${r.tracking_status==='cancelled'?'selected':''}>Cancelled test</option></select></label></article>`).join(''):'<p class="muted">No test records found.</p>';
-  adminMessage('Loaded test-only records. No real payment data is connected.','ok');
+  if(!$('adminNewAlert').textContent) adminMessage('Admin alerts are active. New test records are checked every 20 seconds. No real payment data is connected.','ok');
 }
 $('adminList').addEventListener('change',async e=>{
   const select=e.target.closest('[data-admin-track-id]');if(!select)return;
