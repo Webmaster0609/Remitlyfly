@@ -13,6 +13,8 @@ const pairs: Record<string, string> = {
   KE: "KES",
   NG: "NGN",
   UG: "UGX",
+  TZ: "TZS",
+  ZA: "ZAR",
 };
 const allowedBases = new Set(["USD", "EUR", "GBP"]);
 
