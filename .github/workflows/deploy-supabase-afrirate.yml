@@ -73,3 +73,49 @@ jobs:
           PY
             done
           done
+
+      - name: Probe Tanzania and South Africa reference-rate coverage
+        shell: bash
+        run: |
+          ANON_KEY=$(python3 - <<'PY'
+          import re
+          html = open("index.html", encoding="utf-8").read()
+          match = re.search(r"""const SUPABASE_ANON_KEY = ['"]([^'"]+)['"]""", html)
+          if not match:
+              raise SystemExit("Could not read the public Supabase key from index.html")
+          print(match.group(1))
+          PY
+          )
+          for COUNTRY_PAIR in "TZ TZS" "ZA ZAR"; do
+            read -r COUNTRY QUOTE <<< "$COUNTRY_PAIR"
+            for BASE in USD EUR GBP; do
+              echo "Probing $BASE->$QUOTE ($COUNTRY)"
+              URL="https://$SUPABASE_PROJECT_ID.supabase.co/functions/v1/afrirate?country=$COUNTRY&base=$BASE"
+              CODE=$(curl -sS -o /tmp/afrirate-response.json -w "%{http_code}" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" -H "Accept: application/json" "$URL")
+              python3 - "$COUNTRY" "$BASE" "$QUOTE" "$CODE" <<'PY'
+          import json, sys
+          country, base, quote, code = sys.argv[1:5]
+          try:
+              with open("/tmp/afrirate-response.json", encoding="utf-8") as f:
+                  data = json.load(f)
+          except Exception:
+              data = {}
+          ready = (
+              code == "200"
+              and data.get("country") == country
+              and data.get("base") == base
+              and data.get("quote") == quote
+              and isinstance(data.get("rate"), (int, float))
+              and data["rate"] > 0
+              and data.get("indicativeOnly") is True
+              and data.get("stale") is False
+              and bool(data.get("source"))
+              and bool(data.get("date") or data.get("updatedAt"))
+          )
+          if ready:
+              print(f"READY: 1 {base} = {data['rate']} {quote}; source={data['source']}; date={data.get('date')}; updatedAt={data.get('updatedAt')}")
+          else:
+              print(f"NOT VERIFIED: {base}->{quote} ({country}); HTTP {code}; reason={data.get('error', 'rate missing, stale, or incomplete')}")
+          PY
+            done
+          done
