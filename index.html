@@ -1218,10 +1218,14 @@ const nigeriaBanks = ['Access Bank','First Bank of Nigeria','Guaranty Trust Bank
 const nigeriaWallets = ['OPay','PalmPay','Paga','Moniepoint'];
 const ugandaBanks = ['Stanbic Bank Uganda','Centenary Bank','Absa Bank Uganda','dfcu Bank','Equity Bank Uganda','Standard Chartered Uganda','Bank of Africa Uganda','Housing Finance Bank','I&M Bank Uganda','NCBA Bank Uganda','PostBank Uganda','Finance Trust Bank'];
 const ugandaWallets = ['MTN Mobile Money','Airtel Money Uganda'];
+// Illustrative local payout destinations only; no bank or wallet is connected to RemitlyFly.
+const tanzaniaBanks = ['NMB Bank','CRDB Bank','NBC Bank','Stanbic Bank Tanzania','Absa Bank Tanzania','Azania Bank','TCB Bank','Equity Bank Tanzania'];
+const tanzaniaWallets = ['M-Pesa','Mixx by Yas (Tigo Pesa)','Airtel Money','HaloPesa','T-Pesa'];
+const southAfricaBanks = ['ABSA','Capitec Bank','First National Bank (FNB)','Nedbank','Standard Bank','Investec','African Bank','Discovery Bank'];
 
 function updateRecipientPayoutFields() {
   const country = $('recipientCountry').value;
-  const supported = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda'].includes(country);
+  const supported = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda', 'Tanzania', 'South Africa'].includes(country);
   const box = $('recipientPayoutFields');
   const method = $('recipientPayoutMethod');
   const provider = $('recipientPayoutProvider');
@@ -1236,6 +1240,13 @@ function updateRecipientPayoutFields() {
     return;
   }
 
+  const allowedMethods = country === 'South Africa'
+    ? ['bank']
+    : ['bank', 'wallet'];
+  method.innerHTML = '<option value="">Choose payout method</option>' +
+    allowedMethods.map(value => '<option value="' + value + '">' +
+      (value === 'bank' ? 'Bank account' : 'Mobile wallet') + '</option>').join('');
+  if (!allowedMethods.includes(method.value)) method.value = '';
   updateRecipientPayoutProviders();
 }
 
@@ -1258,12 +1269,17 @@ function updateRecipientPayoutProviders() {
   } else if (country === 'Uganda') {
     options = method === 'bank' ? ugandaBanks :
               method === 'wallet' ? ugandaWallets : [];
+  } else if (country === 'Tanzania') {
+    options = method === 'bank' ? tanzaniaBanks :
+              method === 'wallet' ? tanzaniaWallets : [];
+  } else if (country === 'South Africa') {
+    options = method === 'bank' ? southAfricaBanks : [];
   }
 
   provider.innerHTML = '<option value="">Choose provider</option>' +
     options.map(name => `<option value="${name}">${name}</option>`).join('');
 
-  provider.required = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda'].includes(country);
+  provider.required = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda', 'Tanzania', 'South Africa'].includes(country);
 }
 
 $('recipientCountry').addEventListener('change', updateRecipientPayoutFields);
