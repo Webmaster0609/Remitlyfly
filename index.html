@@ -984,6 +984,8 @@ body { margin:0; }
     <option value="Kenya">Kenya</option>
     <option value="Nigeria">Nigeria</option>
     <option value="Uganda">Uganda</option>
+    <option value="Tanzania">Tanzania</option>
+    <option value="South Africa">South Africa</option>
   </select>
   <small class="muted">Choose the destination country. Bank and wallet names are examples; payout availability is not confirmed.</small>
 </div>
@@ -1390,9 +1392,9 @@ function money(value, currency='USD') {
   return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
 }
 function currentCurrency(){const country=$('senderCountry')?.value||'United States';return country==='United Kingdom'?'GBP':(['United States'].includes(country)?'USD':'EUR');}
-function destinationCurrencyForCountry(country){return ({Ethiopia:'ETB',Kenya:'KES',Nigeria:'NGN',Uganda:'UGX'})[String(country||'')]||'—';}
+function destinationCurrencyForCountry(country){return ({Ethiopia:'ETB',Kenya:'KES',Nigeria:'NGN',Uganda:'UGX',Tanzania:'TZS','South Africa':'ZAR'})[String(country||'')]||'—';}
 window.remitlyFlyCountryRates = window.remitlyFlyCountryRates || {};
-const AFRIRATE_COUNTRIES = {Kenya:'KE',Nigeria:'NG',Uganda:'UG'};
+const AFRIRATE_COUNTRIES = {Kenya:'KE',Nigeria:'NG',Uganda:'UG',Tanzania:'TZ','South Africa':'ZA'};
 const countryRateRequests = new Set();
 async function loadCountryReferenceRate(country){
   const code=AFRIRATE_COUNTRIES[country];
