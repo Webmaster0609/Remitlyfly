@@ -1902,7 +1902,12 @@ function adminMessage(text,type='err'){const el=$('adminStatus');el.textContent=
 async function loadAdminOverview(){
   if(!supabase)return;
   const {data:{session}}=await supabase.auth.getSession();
-  if(!session?.user || session.user.app_metadata?.role!=='admin'){ $('adminSection').classList.add('hidden'); return; }
+  if(!session?.user || session.user.app_metadata?.role!=='admin'){
+    $('adminSection').classList.add('hidden');
+    if(adminAlertPoll){clearInterval(adminAlertPoll);adminAlertPoll=null;}
+    adminSeenRecordIds=null;
+    return;
+  }
   $('adminSection').classList.remove('hidden');
   const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,exchange_rate,payout_amount_etb,tracking_status,created_at').order('created_at',{ascending:false}).limit(200);
   if(error){adminMessage('Admin data could not load: '+error.message+' Check the admin RLS policy in the SQL setup.');return;}
