@@ -1222,6 +1222,7 @@ const ugandaWallets = ['MTN Mobile Money','Airtel Money Uganda'];
 const tanzaniaBanks = ['NMB Bank','CRDB Bank','NBC Bank','Stanbic Bank Tanzania','Absa Bank Tanzania','Azania Bank','TCB Bank','Equity Bank Tanzania'];
 const tanzaniaWallets = ['M-Pesa','Mixx by Yas (Tigo Pesa)','Airtel Money','HaloPesa','T-Pesa'];
 const southAfricaBanks = ['ABSA','Capitec Bank','First National Bank (FNB)','Nedbank','Standard Bank','Investec','African Bank','Discovery Bank'];
+const southAfricaWallets = ['MTN MoMo','VodaPay','Telkom Pay'];
 
 function updateRecipientPayoutFields() {
   const country = $('recipientCountry').value;
@@ -1240,9 +1241,7 @@ function updateRecipientPayoutFields() {
     return;
   }
 
-  const allowedMethods = country === 'South Africa'
-    ? ['bank']
-    : ['bank', 'wallet'];
+  const allowedMethods = ['bank', 'wallet'];
   method.innerHTML = '<option value="">Choose payout method</option>' +
     allowedMethods.map(value => '<option value="' + value + '">' +
       (value === 'bank' ? 'Bank account' : 'Mobile wallet') + '</option>').join('');
@@ -1273,7 +1272,8 @@ function updateRecipientPayoutProviders() {
     options = method === 'bank' ? tanzaniaBanks :
               method === 'wallet' ? tanzaniaWallets : [];
   } else if (country === 'South Africa') {
-    options = method === 'bank' ? southAfricaBanks : [];
+    options = method === 'bank' ? southAfricaBanks :
+              method === 'wallet' ? southAfricaWallets : [];
   }
 
   provider.innerHTML = '<option value="">Choose provider</option>' +
