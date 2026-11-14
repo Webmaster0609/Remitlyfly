@@ -2589,7 +2589,7 @@ if (button && message) {
   if(icon)icon.textContent=open?'✕':'☰';
  }
  toggle.addEventListener('click',()=>setOpen(!menu.classList.contains('menu-open')));
- menu.addEventListener('click',event=>{if(event.target.closest('[data-menu-target]')&&window.matchMedia('(max-width: 650px)').matches)setOpen(false);});
+ menu.addEventListener('click',event=>{if(event.target.closest('[data-menu-target]'))setOpen(false);});
  document.addEventListener('keydown',event=>{if(event.key==='Escape')setOpen(false);});
  window.addEventListener('resize',()=>{if(window.innerWidth>650)setOpen(false);});
 })();
@@ -2666,26 +2666,5 @@ body .shell.dashboard-mode #dashboard{display:block!important}
 .shell.dashboard-mode .app-menu.menu-open { display:flex !important; }
 .shell.dashboard-mode .app-menu-toggle { display:inline-flex !important; }
 </style>
-<script id="rf-menu-only-behavior">
-/* Menu toggle works the same on every screen size and closes after navigation. */
-(function(){
-  const menu=document.getElementById('appMenu');
-  const toggle=document.getElementById('appMenuToggle');
-  if(!menu||!toggle)return;
-  function setOpen(open){
-    menu.classList.toggle('menu-open',open);
-    toggle.setAttribute('aria-expanded',String(open));
-    toggle.setAttribute('aria-label',open?'Close navigation menu':'Open navigation menu');
-    const icon=toggle.querySelector('.menu-toggle-icon');
-    if(icon)icon.textContent=open?'✕':'☰';
-  }
-  setOpen(false);
-  toggle.addEventListener('click',()=>setOpen(!menu.classList.contains('menu-open')));
-  menu.addEventListener('click',event=>{
-    if(event.target.closest('[data-menu-target]'))setOpen(false);
-  });
-  document.addEventListener('keydown',event=>{if(event.key==='Escape')setOpen(false);});
-})();
-</script>
 
 </body></html>
