@@ -2164,6 +2164,7 @@ async function loadAdminOverview(){
     return;
   }
   $('adminSection').classList.remove('hidden');
+  await rfLoadPaymentModeSetting();
   await loadAccountApprovals();
   if(typeof rfLoadApiKeys==='function') await rfLoadApiKeys();
   const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,exchange_rate,payout_amount_etb,tracking_status,created_at').order('created_at',{ascending:false}).limit(200);
