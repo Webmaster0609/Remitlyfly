@@ -860,8 +860,8 @@ body { margin:0; }
   <button type="button" class="app-menu-item" data-menu-target="profileCard"><span>⚙</span>Profile</button>
  </nav>
  <p id="menuNavigationStatus" class="navigation-feedback" role="status" aria-live="polite" style="display:none"></p>
- <span class="demo">TRANSFERS NOT ENABLED</span>
- <h2 style="margin-top:18px">Your money, your connections.</h2><p class="intro">Manage your recipients, review saved test previews, and keep your account details up to date — all in one place.</p>
+ <span class="demo" data-page="home">TRANSFERS NOT ENABLED</span>
+ <div data-page="home"><h2 style="margin-top:18px">Your money, your connections.</h2><p class="intro">Manage your recipients, review saved test previews, and keep your account details up to date — all in one place.</p></div>
  <section class="dashboard-hero" data-page="home" aria-label="Test transfer workspace">
   <div class="eyebrow">REMITLYFLY TEST WORKSPACE</div>
   <h3>Send with confidence.</h3>
@@ -1102,7 +1102,7 @@ body { margin:0; }
    <button class="primary" id="saveProfileButton" type="submit">Save profile</button>
   </form>
  </section>
- <p class="fine">Keep your account credentials private. Remittance services will be added only after provider and compliance approval.</p>
+ <p class="fine" data-page="home">Keep your account credentials private. Remittance services will be added only after provider and compliance approval.</p>
 </section>
 </main></div>
 <script>
