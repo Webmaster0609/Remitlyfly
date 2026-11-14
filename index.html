@@ -795,6 +795,12 @@ body { margin:0; }
 .shell.login-mode .dashboard{display:none!important}
 </style>
 
+<style id="rf-pending-account-visibility">
+/* Pending/restricted/rejected accounts can see their status and sign-out only. */
+.dashboard.account-pending > :not(#accountApprovalGate):not(.dash-head) {
+  display: none !important;
+}
+</style>
 </head>
 <body>
 <div class="shell intro-mode">
