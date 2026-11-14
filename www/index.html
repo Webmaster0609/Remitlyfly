@@ -488,14 +488,14 @@ body{background:#f3f7fb;letter-spacing:-.12px}
 .shell.dashboard-mode button{transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
 .shell.dashboard-mode button:active{transform:scale(.985)}
 .shell.dashboard-mode .app-menu-item.active{background:linear-gradient(110deg,#123f70,#1769aa);color:#fff;border-color:transparent;box-shadow:0 5px 15px #123f7024}
-.rf-stepper{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:26px 0 8px;padding:14px;background:#fff;border:1px solid #dce6ef;border-radius:18px;box-shadow:0 8px 24px #173e6008}
-.rf-stepper .rf-step-info{min-width:0;flex:1}.rf-stepper small{display:block;color:#647b91;font-size:11px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}.rf-stepper strong{display:block;color:#17324d;font-size:14px;margin-top:4px;overflow-wrap:anywhere}
-.rf-stepper button{border:1px solid #d6e2ed;background:#f7fbff;color:#123b67;border-radius:12px;padding:12px 15px;font-weight:800;min-height:46px;white-space:nowrap}
-.rf-stepper button.rf-next{background:linear-gradient(100deg,#123f70,#1769aa);color:#fff;border-color:transparent}
-.rf-stepper button:disabled{opacity:.38;cursor:not-allowed}
-.rf-progress{height:4px;background:#e9f0f6;border-radius:99px;overflow:hidden;margin-top:10px}.rf-progress span{display:block;height:100%;background:linear-gradient(90deg,#1769aa,#17a673);border-radius:99px;transition:width .2s}
+
+
+
+
+
+
 @keyframes rfPageIn{from{opacity:.55;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:520px){.rf-stepper{padding:10px;gap:8px}.rf-stepper button{padding:11px 10px;font-size:12px}.rf-stepper strong{font-size:12px}.shell.dashboard-mode .app-menu{top:66px}}
+
 @media(prefers-reduced-motion:reduce){.shell.dashboard-mode [data-page]:not(.page-hidden){animation:none}.rf-progress span{transition:none}}
 
 .dashboard.account-pending > :not(#dashboardTop):not(.dash-head):not(#accountApprovalGate){display:none!important}
@@ -2533,46 +2533,7 @@ if (button && message) {
 
 </script>
 
-<script>
-// Guided page-by-page navigation, while keeping the main menu available.
-(function installGuidedPageStepper(){
- const menu=document.getElementById('appMenu');
- const dashboard=document.getElementById('dashboard');
- if(!menu||!dashboard)return;
- const steps=[
-  {key:'home',label:'Home',target:'dashboardTop'},
-  {key:'send',label:'Send money',target:'transferSection'},
-  {key:'recipients',label:'Recipients',target:'recipientsSection'},
-  {key:'history',label:'History',target:'historySection'},
-  {key:'tracking',label:'Tracking',target:'trackingSection'},
-  {key:'profile',label:'Profile',target:'profileCard'},
- ];
- const stepper=document.createElement('nav');stepper.className='rf-stepper';stepper.setAttribute('aria-label','Next and previous app pages');
- stepper.innerHTML='<button type="button" class="rf-prev">← Back</button><div class="rf-step-info"><small class="rf-step-count"></small><strong class="rf-step-name"></strong><div class="rf-progress"><span></span></div></div><button type="button" class="rf-next">Next →</button>';
- dashboard.appendChild(stepper);
- let current=0;
- function infer(){
-  const active=menu.querySelector('.app-menu-item.active');
-  const target=active&&active.dataset.menuTarget;
-  const map={dashboardTop:0,transferSection:1,recipientsSection:2,historySection:3,trackingSection:4,profileCard:5};
-  if(target in map)current=map[target];
-  update();
- }
- function update(){
-  stepper.querySelector('.rf-step-count').textContent='STEP '+(current+1)+' OF '+steps.length;
-  stepper.querySelector('.rf-step-name').textContent=steps[current].label;
-  stepper.querySelector('.rf-progress span').style.width=((current+1)/steps.length*100)+'%';
-  stepper.querySelector('.rf-prev').disabled=current===0;
-  stepper.querySelector('.rf-next').textContent=current===steps.length-1?'Back to Home ↺':'Next →';
- }
- function go(i){current=(i+steps.length)%steps.length;const b=menu.querySelector('[data-menu-target="'+steps[current].target+'"]');if(b)b.click();update();}
- stepper.querySelector('.rf-prev').addEventListener('click',()=>{if(current>0)go(current-1)});
- stepper.querySelector('.rf-next').addEventListener('click',()=>go(current===steps.length-1?0:current+1));
- menu.addEventListener('click',()=>setTimeout(infer,0));
- dashboard.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&/^(tileSend|heroSend|goTransfer|tileRecipients|heroRecipients|goRecipients|tileTracking|goHistory|viewAllHistory|tileProfile)$/.test(b.id))setTimeout(infer,30)});
- infer();
-})();
-</script>
+
 
 
 <script>
