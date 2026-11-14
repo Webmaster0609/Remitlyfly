@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="700" height="180" viewBox="0 0 700 180"><rect width="700" height="180" fill="#ffffff" fill-opacity="0"/><text x="18" y="112" fill="#123b9a" font-family="Segoe Script, Brush Script MT, cursive" font-size="82" font-style="italic" letter-spacing="-3">Itunu Akinlade</text><path d="M24 142 C180 160 360 150 655 126" fill="none" stroke="#123b9a" stroke-width="4" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="900" height="260" viewBox="0 0 900 260">
+<rect width="900" height="260" rx="18" fill="#ffffff"/>
+<rect x="0" y="0" width="9" height="260" rx="4" fill="#123b8a"/>
+<text x="34" y="83" fill="#123b8a" font-family="cursive" font-size="62" font-style="italic" letter-spacing="-2">Itunu Akinlade</text>
+<path d="M38 100 C180 125 330 105 495 92" fill="none" stroke="#c69a36" stroke-width="3.2" stroke-linecap="round"/>
+<text x="38" y="145" fill="#17324d" font-family="Arial,sans-serif" font-size="25" font-weight="700">Itunu Akinlade</text>
+<text x="38" y="177" fill="#36516e" font-family="Arial,sans-serif" font-size="19">Chief Executive Officer</text>
+<text x="38" y="205" fill="#123b8a" font-family="Arial,sans-serif" font-size="20" font-weight="700">RemitlyFly</text>
+<text x="38" y="238" fill="#6b7d90" font-family="Arial,sans-serif" font-size="14">Send Money. Closer to Home.</text>
+<line x1="565" y1="28" x2="565" y2="232" stroke="#d8e1eb" stroke-width="2"/>
+<image x="595" y="28" width="150" height="150" preserveAspectRatio="xMidYMid slice" xlink:href="https://raw.githubusercontent.com/Webmaster0609/Remitlyfly/main/RemitlyFly%20Corporate%20Portrait.png"/>
+<text x="775" y="76" fill="#123b8a" font-family="Arial,sans-serif" font-size="27" font-weight="700">RemitlyFly</text>
+<text x="775" y="105" fill="#c18b20" font-family="Arial,sans-serif" font-size="14" font-weight="700">SEND MONEY</text>
+<text x="775" y="126" fill="#36516e" font-family="Arial,sans-serif" font-size="14">Closer to Home</text>
+<path d="M775 145 C815 130 850 130 878 145" fill="none" stroke="#c69a36" stroke-width="3"/>
+<text x="595" y="216" fill="#36516e" font-family="Arial,sans-serif" font-size="13">www.remitlyfly.org</text>
+</svg>
