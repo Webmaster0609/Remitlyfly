@@ -2642,4 +2642,50 @@ body .shell.dashboard-mode #dashboard{display:block!important}
     <a href="mailto:support@remitlyfly.com" style="color:white;">Contact Support</a>
   </p>
 </footer>
+
+<style id="rf-menu-only-dashboard">
+/* Keep the blue dashboard card as the only landing content.
+   All other dashboard tools are opened from the Menu button. */
+.shell.dashboard-mode .dashboard > .demo,
+.shell.dashboard-mode .dashboard > h2,
+.shell.dashboard-mode .dashboard > .intro,
+.shell.dashboard-mode .dashboard > .fine,
+.shell.dashboard-mode .dashboard [data-page="home"]:not(.dashboard-hero),
+.shell.dashboard-mode .dashboard-hero .hero-actions {
+  display:none !important;
+}
+/* The menu is collapsed on both desktop and mobile until requested. */
+.shell.dashboard-mode .app-menu {
+  display:none !important;
+  position:relative;
+  top:auto !important;
+  flex-wrap:wrap;
+  overflow:visible;
+  margin:0 0 16px;
+}
+.shell.dashboard-mode .app-menu.menu-open { display:flex !important; }
+.shell.dashboard-mode .app-menu-toggle { display:inline-flex !important; }
+</style>
+<script id="rf-menu-only-behavior">
+/* Menu toggle works the same on every screen size and closes after navigation. */
+(function(){
+  const menu=document.getElementById('appMenu');
+  const toggle=document.getElementById('appMenuToggle');
+  if(!menu||!toggle)return;
+  function setOpen(open){
+    menu.classList.toggle('menu-open',open);
+    toggle.setAttribute('aria-expanded',String(open));
+    toggle.setAttribute('aria-label',open?'Close navigation menu':'Open navigation menu');
+    const icon=toggle.querySelector('.menu-toggle-icon');
+    if(icon)icon.textContent=open?'✕':'☰';
+  }
+  setOpen(false);
+  toggle.addEventListener('click',()=>setOpen(!menu.classList.contains('menu-open')));
+  menu.addEventListener('click',event=>{
+    if(event.target.closest('[data-menu-target]'))setOpen(false);
+  });
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')setOpen(false);});
+})();
+</script>
+
 </body></html>
