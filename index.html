@@ -499,6 +499,22 @@ body{background:#f3f7fb;letter-spacing:-.12px}
 @media(prefers-reduced-motion:reduce){.shell.dashboard-mode [data-page]:not(.page-hidden){animation:none}.rf-progress span{transition:none}}
 
 .dashboard.account-pending > :not(#dashboardTop):not(.dash-head):not(#accountApprovalGate){display:none!important}
+
+/* Admin future-payment switch: visual toggle only, permanently disabled in this test build. */
+#rfLivePaymentsAdmin .rf-live-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 15px;border:1px solid #ead9bd;border-radius:15px;background:#fff}
+#rfLivePaymentsAdmin .rf-live-toggle-copy{min-width:0;flex:1}
+#rfLivePaymentsAdmin .rf-live-toggle-copy>strong{display:block;color:#243b53;font-size:15px;margin-bottom:5px}
+#rfLivePaymentsAdmin .rf-live-toggle-copy p{font-size:12px;line-height:1.5;margin:0}
+#rfLivePaymentsAdmin .rf-switch-control{position:relative;display:inline-flex;flex:0 0 auto;align-items:center;width:54px;height:32px;margin:0;cursor:not-allowed}
+#rfLivePaymentsAdmin .rf-switch-input{position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;min-height:1px!important;padding:0!important;margin:0!important}
+#rfLivePaymentsAdmin .rf-switch-track{position:absolute;inset:0;border-radius:999px;background:#cbd5df;border:1px solid #b9c5d0;transition:background .18s ease}
+#rfLivePaymentsAdmin .rf-switch-track:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #243b5340;transition:transform .18s ease}
+#rfLivePaymentsAdmin .rf-switch-input:checked+.rf-switch-track{background:#16845d}
+#rfLivePaymentsAdmin .rf-switch-input:checked+.rf-switch-track:before{transform:translateX(22px)}
+#rfLivePaymentsAdmin .rf-switch-input:focus-visible+.rf-switch-track{outline:3px solid #1769aa55;outline-offset:3px}
+#rfLivePaymentsAdmin .rf-switch-input:disabled+.rf-switch-track{opacity:.78;cursor:not-allowed}
+@media(max-width:420px){#rfLivePaymentsAdmin .rf-live-toggle-row{gap:12px;padding:12px}#rfLivePaymentsAdmin .rf-switch-control{width:50px;height:30px}#rfLivePaymentsAdmin .rf-switch-track:before{width:22px;height:22px}#rfLivePaymentsAdmin .rf-switch-input:checked+.rf-switch-track:before{transform:translateX(20px)}}
+
 </style>
 <style>
 /* Styles for the starter page. They only apply to its own classes. */
@@ -947,10 +963,12 @@ body { margin:0; }
    <p><strong>LOCKED — TEST ONLY</strong></p>
    <p class="muted">This restricted panel is visible only to accounts with the administrator role in Supabase Auth app_metadata. It does not activate live payments.</p>
    <div class="warning">Real-money processing is disabled at the server. The admin dashboard cannot override this lock. No real payment provider is connected and no money can be moved.</div>
-   <div class="field" style="margin:12px 0">
-    <label for="rfLivePaymentsSwitch">Real payments</label>
-    <input id="rfLivePaymentsSwitch" type="checkbox" disabled aria-describedby="rfLivePaymentsLock" style="width:20px;height:20px">
-    <p id="rfLivePaymentsLock" class="muted">Disabled and unavailable. This control will remain locked until business registration, required regulatory approvals, a verified payment-provider agreement, and secure server-side integration are completed.</p>
+   <div class="rf-live-toggle-row" style="margin:16px 0">
+    <div class="rf-live-toggle-copy"><strong>Real payments</strong><p id="rfLivePaymentsLock" class="muted">Locked and unavailable. This visual switch cannot enable payments. Activation requires business registration, required regulatory approvals, a verified payment-provider agreement, and secure server-side integration.</p></div>
+    <label class="rf-switch-control" aria-label="Real payments locked off">
+     <input id="rfLivePaymentsSwitch" class="rf-switch-input" type="checkbox" disabled aria-describedby="rfLivePaymentsLock">
+     <span class="rf-switch-track" aria-hidden="true"></span>
+    </label>
    </div>
    <p class="fine" style="text-align:left">Changing this page or browser code cannot enable real payments. Any future activation must be implemented and verified on the server, not in the website interface.</p>
   </section>
