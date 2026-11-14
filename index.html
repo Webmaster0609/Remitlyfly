@@ -818,6 +818,12 @@ body .shell.dashboard-mode .app-menu-toggle{display:inline-flex!important}
 body .shell.dashboard-mode .app-menu{display:none!important;position:relative!important;top:auto!important;flex-wrap:wrap!important;overflow:visible!important;margin:0 0 16px!important}
 body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
 </style>
+<style id="rf-force-menu-button-everywhere">
+/* Dashboard navigation must stay inside the Menu dropdown on every device width. */
+#appMenuToggle{display:inline-flex!important}
+#appMenu{display:none!important;position:relative!important;top:auto!important;flex-wrap:wrap!important;overflow:visible!important;margin:0 0 16px!important}
+#appMenu.menu-open{display:flex!important}
+</style>
 </head>
 <body>
 <div class="shell intro-mode">
