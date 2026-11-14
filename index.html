@@ -457,6 +457,7 @@ body{background:#f3f7fb;letter-spacing:-.12px}
 
 /* Page-by-page dashboard navigation: only the selected page is shown. */
 .page-hidden{display:none!important}
+ [hidden]{display:none!important}
 .app-menu{position:sticky;top:0;z-index:30;background:#fff}
 
 
@@ -2473,7 +2474,16 @@ refreshTransferSummary();
  if(!menu)return;
  const labels={home:'Home',send:'Send',recipients:'Recipients',history:'History',tracking:'Tracking',profile:'Profile',rates:'Rates'};
  function showPage(page,button){
-  document.querySelectorAll('[data-page]').forEach(el=>el.classList.toggle('page-hidden',el.dataset.page!==page));
+  const pageSections=['transferSection','historySection','trackingSection','recipientsSection','profileCard'];
+  document.querySelectorAll('[data-page]').forEach(el=>{
+   const visible=el.dataset.page===page;
+   el.classList.toggle('page-hidden',!visible);
+   el.hidden=!visible;
+  });
+  pageSections.forEach(id=>{
+   const el=document.getElementById(id);
+   if(el){const visible=el.dataset.page===page;el.classList.toggle('page-hidden',!visible);el.hidden=!visible;}
+  });
   // Home is the landing page; keep the menu/header visible on every page.
   document.querySelectorAll('.app-menu-item').forEach(b=>{
    const active=b===button || (!button && b.dataset.menuTarget==='dashboardTop');
