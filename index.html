@@ -848,7 +848,7 @@ body { margin:0; }
   <button type="button" class="app-menu-item" data-menu-target="historySection"><span>▤</span>History</button>
   <button type="button" class="app-menu-item" data-menu-target="trackingSection"><span>◷</span>Tracking</button>
   <button type="button" class="app-menu-item" data-menu-target="profileCard"><span>⚙</span>Profile</button>
-  <button type="button" class="app-menu-item" data-menu-target="ethiopiaRates"><span>↗</span>Rates</button>
+  <button type="button" class="app-menu-item" data-menu-target="walletDashboard"><span>▣</span>Wallet</button>
  </nav>
  <p id="menuNavigationStatus" class="navigation-feedback" role="status" aria-live="polite" style="display:none"></p>
  <span class="demo">TRANSFERS NOT ENABLED</span>
@@ -876,20 +876,9 @@ body { margin:0; }
   <div id="recentTransfersList" aria-live="polite"><div class="recent-empty muted">Sign in to load your recent test activity.</div></div>
  </section>
  <div class="nav-actions" data-page="home"><button class="secondary" type="button" id="goTransfer">Send money (test)</button><button class="secondary" type="button" id="goRecipients">Manage recipients</button><button class="secondary" type="button" id="goHistory">History & tracking</button><button class="secondary hidden" type="button" id="goAdmin">Admin overview</button></div>
- <section class="profile-card" data-page="rates" id="ethiopiaRates" aria-labelledby="ethiopiaRatesHeading" style="margin:18px 0">
-  <h3 id="ethiopiaRatesHeading">Ethiopian bank exchange rates</h3>
-  <p class="muted">View published bank rates from an external exchange-rate provider. Rates are for reference only and may differ from a remittance provider’s actual quote.</p>
-  <div class="transfer-summary" style="margin:12px 0">
-   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>Live bank rate feed</strong><button class="secondary" id="refreshLiveRates" type="button">Refresh rates</button></div>
-   <p id="liveRateStatus" class="muted" aria-live="polite">Connecting to ET-Forex live bank-rate API…</p>
-   <p class="fine" style="text-align:left">Source: ET-Forex public API, which aggregates published Ethiopian bank boards. Rates update when banks publish them; this is not a real-time remittance quote. API availability and browser CORS can affect loading.</p>
-   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px;font-size:13px"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line)">Bank</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line)">Currency</th><th style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">Cash buy</th><th style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">Cash sell</th><th style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">Transfer buy</th><th style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">Transfer sell</th></tr></thead><tbody id="liveRateRows"><tr><td colspan="6" style="padding:12px">Loading bank rates…</td></tr></tbody></table></div>
-   <p><a href="https://et-forex.com/" target="_blank" rel="noopener noreferrer">Open ET-Forex rate board</a> · <a href="https://exchange.et/" target="_blank" rel="noopener noreferrer">Open Exchange.et</a> · <a href="https://nbe.gov.et/exchange/" target="_blank" rel="noopener noreferrer">NBE indicative rates</a></p>
-  </div>
- </section>
  <section class="profile-card wallet-dashboard" data-page="rates" id="walletDashboard" aria-labelledby="walletSelectorHeading" style="margin:18px 0;padding:18px">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
-   <div><div class="eyebrow">ETHIOPIA PAYOUT</div><h3 id="walletSelectorHeading" style="margin:4px 0">Wallet rate dashboard</h3><p class="muted" style="margin:4px 0 12px">Choose a receiving wallet and review the latest available published bank reference rate, similar to the bank-rate dashboard.</p></div>
+   <div><div class="eyebrow">ETHIOPIA PAYOUT</div><h3 id="walletSelectorHeading" style="margin:4px 0">Wallet rate dashboard</h3><p class="muted" style="margin:4px 0 12px">Choose a receiving wallet and view the Commercial Bank of Ethiopia transfer-buying reference rate.</p></div>
    <button class="secondary" id="refreshWalletRate" type="button">↻ Refresh rate</button>
   </div>
   <div class="field"><label for="receivingWallet">Receiving wallet</label><select id="receivingWallet" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)">
@@ -900,7 +889,7 @@ body { margin:0; }
    <div class="stat"><small>Rate source</small><strong id="selectedWalletRateSource">Awaiting data</strong></div>
    <div class="stat"><small>Last updated</small><strong id="selectedWalletRateDate">Not available</strong></div>
   </div>
-  <p id="walletRateStatus" class="muted" aria-live="polite">Choose a wallet. Refresh to load published bank reference rates. Rates are indicative and are not specific wallet payout quotes.</p>
+  <p id="walletRateStatus" class="muted" aria-live="polite">Choose a wallet and refresh to load the Commercial Bank of Ethiopia transfer-buying reference rate. This is not a wallet-specific payout quote.</p>
   <div class="transfer-summary" style="margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:14px">
    <h4 style="margin:0 0 6px">Wallet send estimate</h4>
    <p class="muted" style="margin:0 0 12px">Enter how much you want to send. This creates an estimate only; it does not send money.</p>
@@ -916,7 +905,7 @@ body { margin:0; }
   <div style="width:min(100%,420px);background:var(--card,#fff);color:var(--ink,#172033);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.28)">
    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><h3 id="walletRateModalTitle" style="margin:0">Wallet reference rate</h3><button type="button" id="closeWalletRateModal" aria-label="Close rate popup" style="border:0;background:transparent;font-size:24px;cursor:pointer">×</button></div>
    <p id="walletRateModalWallet" class="muted">Choose a wallet</p>
-   <div style="padding:18px;border-radius:14px;background:var(--soft,#f2f5f9);margin:12px 0"><div class="fine">Published bank reference rate</div><div id="walletRateModalValue" style="font-size:28px;font-weight:800;margin:6px 0">Not loaded</div><div id="walletRateModalDate" class="fine">No update time available</div><div id="walletRateModalSource" class="fine">Source pending</div></div>
+   <div style="padding:18px;border-radius:14px;background:var(--soft,#f2f5f9);margin:12px 0"><div class="fine">CBE transfer-buying reference rate</div><div id="walletRateModalValue" style="font-size:28px;font-weight:800;margin:6px 0">Not loaded</div><div id="walletRateModalDate" class="fine">No update time available</div><div id="walletRateModalSource" class="fine">Source pending</div></div>
    <p id="walletRateModalStatus" class="muted" aria-live="polite">This is a reference rate only.</p>
    <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" id="applyCbeWalletRatePopup" disabled>Apply rate to estimate</button><button type="button" class="secondary" id="refreshWalletRatePopup">Refresh rate</button></div>
    <p class="fine" style="margin-top:12px">No wallet-specific quote is provided. This app does not send money.</p>
@@ -1649,11 +1638,12 @@ function safeRateDate(v){if(!v)return 'date not supplied';const d=new Date(v);re
 function findCbeReferenceRate(){
  const live=window.remitlyFlyLiveRates||{};const currency=currentCurrency();const banks=live.banks||[];
  const cbe=banks.find(b=>/commercial bank of ethiopia|^cbe$/i.test(String(b.bankName||b.name||b.bankCode||b.code||'')));
- const findRate=(bank)=>{const row=(bank?.rates||[]).find(r=>String(r.currency||'').toUpperCase()===currency);const rate=Number(row?.transactionalBuying||row?.transferBuying||row?.transactional_buying||row?.transfer_buying||row?.cashBuying||row?.cash_buying);return rate>0?{rate,currency,bank,updatedAt:bank?.updatedAt||bank?.lastRatesUpdatedAt||''}:null;};
- // Prefer CBE when present. Otherwise clearly identify the best available published bank rate instead of mislabelling it as CBE.
- const cbeResult=findRate(cbe);if(cbeResult)return {...cbeResult,sourceName:cbe.bankName||cbe.name||'Commercial Bank of Ethiopia',sourceType:'CBE published bank rate'};
- const best=live.bestByCurrency?.[currency];if(best?.rate){const bank=banks.find(b=>String(b.bankCode||b.code||'')===String(best.bankCode||''));return {rate:Number(best.rate),currency,bank,updatedAt:best.effectiveDate||bank?.updatedAt||bank?.lastRatesUpdatedAt||live.loadedAt||'',sourceName:best.bankName||bank?.bankName||bank?.name||'Published bank rate',sourceType:'Best available published bank reference'};}
- return null;
+ if(!cbe)return null;
+ const row=(cbe.rates||[]).find(r=>String(r.currency||'').toUpperCase()===currency);
+ // For incoming remittances, use CBE's published transfer/transactional buying rate only.
+ const rate=Number(row?.transactionalBuying||row?.transferBuying||row?.transactional_buying||row?.transfer_buying);
+ if(!(rate>0))return null;
+ return {rate,currency,bank:cbe,updatedAt:cbe.updatedAt||cbe.lastRatesUpdatedAt||'',sourceName:'Commercial Bank of Ethiopia',sourceType:'CBE published transfer-buying rate'};
 }
 function showWalletRatePopup(){
  const modal=$('walletRateModal');if(!modal)return;const wallet=$('receivingWallet')?.value;
@@ -1667,14 +1657,14 @@ function updateWalletRatePopup(){
  const inlineRate=$('selectedWalletRate'),inlineDate=$('selectedWalletRateDate'),inlineSource=$('selectedWalletRateSource'),inlineStatus=$('walletRateStatus');
  if(result){const rateText=`${fmtRate(result.rate)} ETB per ${result.currency}`;const dateText=safeRateDate(result.updatedAt);
   if(value)value.textContent=rateText;if(date)date.textContent=`Updated: ${dateText}`;if(source)source.textContent=`Source: ${result.sourceName} · ${result.sourceType}`;
-  if(status)status.textContent=wallet?`${wallet} selected. This is a published bank reference rate, not a wallet-specific quote.`:'Reference rate loaded; select a receiving wallet before applying it.';
+  if(status)status.textContent=wallet?`${wallet} selected. Using the Commercial Bank of Ethiopia transfer-buying reference rate; this is not a wallet-specific quote.`:'Reference rate loaded; select a receiving wallet before applying it.';
   if(inlineRate)inlineRate.textContent=rateText;if(inlineDate)inlineDate.textContent=dateText;if(inlineSource)inlineSource.textContent=result.sourceName;
-  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. Using ${result.sourceName} as an indicative ${result.currency}/ETB reference only.`:'Select a receiving wallet to enable applying this rate.';
+  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. Using the CBE ${result.currency}/ETB transfer-buying reference rate only.`:'Select a receiving wallet to enable applying this rate.';
  }else{
   if(value)value.textContent='Rate unavailable';if(date)date.textContent='No update time available';if(source)source.textContent='Source unavailable';
-  if(status)status.textContent='No published rate is currently available for this sending currency. Try Refresh rate; no rate will be invented.';
+  if(status)status.textContent='The Commercial Bank of Ethiopia transfer-buying rate is not available for this currency right now. Try Refresh rate; another bank rate will not be substituted.';
   if(inlineRate)inlineRate.textContent='Not available';if(inlineDate)inlineDate.textContent='Not available';if(inlineSource)inlineSource.textContent='Awaiting data';
-  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. Published ${currentCurrency()}/ETB reference rate unavailable; refresh to try again.`:'Choose a wallet, then refresh published bank reference rates.';
+  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. CBE ${currentCurrency()}/ETB transfer-buying rate unavailable; refresh to try again.`:'Choose a wallet, then refresh published bank reference rates.';
  }
  const enabled=!!(wallet&&result?.rate>0);if(apply)apply.disabled=!enabled;const inlineApply=$('applyCbeWalletRate');if(inlineApply)inlineApply.disabled=!enabled;
 }
@@ -1684,8 +1674,8 @@ function updateWalletSendPreview(){
  if(!output||!status)return;
  if(!amount||amount<=0){output.textContent='ETB —';status.textContent='Enter an amount to see an indicative payout estimate.';return;}
  if(!wallet){output.textContent='ETB —';status.textContent='Select a receiving wallet to continue. The estimate is for demonstration only.';return;}
- if(result?.rate>0){output.textContent='ETB '+(amount*result.rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});status.textContent=`Estimate uses ${result.sourceName}: ${fmtRate(result.rate)} ETB per ${currency}. Reference rate only; wallet payout may differ.`;}
- else {output.textContent='ETB —';status.textContent=`No published ${currency}/ETB reference rate is available yet. Tap Refresh rate; no rate will be invented.`;}
+ if(result?.rate>0){output.textContent='ETB '+(amount*result.rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});status.textContent=`Estimate uses Commercial Bank of Ethiopia transfer-buying rate: ${fmtRate(result.rate)} ETB per ${currency}. Reference rate only; wallet payout may differ.`;}
+ else {output.textContent='ETB —';status.textContent=`No Commercial Bank of Ethiopia ${currency}/ETB transfer-buying rate is available yet. Tap Refresh rate; no other bank rate will be substituted.`;}
 }
 function useWalletSendAmount(){
  const input=$('walletSendAmount'), amount=Number(input?.value||0), wallet=$('receivingWallet')?.value;
@@ -1885,7 +1875,7 @@ function syncTransferPayoutMethod(){
    const dashboardSelect=$('receivingWallet');if(dashboardSelect)dashboardSelect.value=wallet;
    const result=findCbeReferenceRate();
    if(result?.rate>0){$('demoRate').value=String(result.rate);$('demoRate').dataset.userEdited='1';$('demoRate').dataset.liveApplied='1';if(status)status.textContent=`${wallet} selected. Using ${result.sourceName} as an indicative reference rate only; this is not a wallet-specific quote.`;}
-   else if(status)status.textContent=`${wallet} selected. No published reference rate is available right now; the test estimate will use the example rate shown below.`;
+   else if(status)status.textContent=`${wallet} selected. The CBE transfer-buying rate is unavailable. The separate sandbox quote may show its own TEST ONLY rate; it is not a CBE rate.`;
   } else if(status) status.textContent='Choose the recipient’s mobile wallet for this test preview.';
  } else if(method==='bank'){
   const chosen=selectedBankCurrencyRate?.();if(chosen?.rate){$('demoRate').value=String(chosen.rate);$('demoRate').dataset.userEdited='1';$('demoRate').dataset.liveApplied='1';}
@@ -2439,7 +2429,7 @@ refreshTransferSummary();
   const first=document.querySelector('[data-page="'+page+'"]');
   if(first)first.scrollIntoView({behavior:'smooth',block:'start'});
  }
- function pageForTarget(id){return ({dashboardTop:'home',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile',ethiopiaRates:'rates',walletDashboard:'rates'})[id]||'home';}
+ function pageForTarget(id){return ({dashboardTop:'home',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile',walletDashboard:'rates'})[id]||'home';}
  menu.addEventListener('click',event=>{
   const button=event.target.closest('[data-menu-target]');
   if(!button)return;
@@ -2492,7 +2482,7 @@ if (button && message) {
   {key:'history',label:'History',target:'historySection'},
   {key:'tracking',label:'Tracking',target:'trackingSection'},
   {key:'profile',label:'Profile',target:'profileCard'},
-  {key:'rates',label:'Rates',target:'ethiopiaRates'}
+  {key:'wallet',label:'Wallet',target:'walletDashboard'}
  ];
  const stepper=document.createElement('nav');stepper.className='rf-stepper';stepper.setAttribute('aria-label','Next and previous app pages');
  stepper.innerHTML='<button type="button" class="rf-prev">← Back</button><div class="rf-step-info"><small class="rf-step-count"></small><strong class="rf-step-name"></strong><div class="rf-progress"><span></span></div></div><button type="button" class="rf-next">Next →</button>';
@@ -2501,7 +2491,7 @@ if (button && message) {
  function infer(){
   const active=menu.querySelector('.app-menu-item.active');
   const target=active&&active.dataset.menuTarget;
-  const map={dashboardTop:0,transferSection:1,recipientsSection:2,historySection:3,trackingSection:4,profileCard:5,ethiopiaRates:6};
+  const map={dashboardTop:0,transferSection:1,recipientsSection:2,historySection:3,trackingSection:4,profileCard:5,walletDashboard:6};
   if(target in map)current=map[target];
   update();
  }
