@@ -1109,7 +1109,9 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <p class="muted">Update the name and phone number on your account.</p>
   <form id="profileForm">
    <div class="field"><label for="profileName">Full name</label><input id="profileName" autocomplete="name" placeholder="Your full name" required></div>
-   <div class="field"><label for="profilePhone">Phone number (optional)</label><input id="profilePhone" type="tel" autocomplete="tel" placeholder="Your phone number"></div>
+   <div class="field"><label for="profileDateOfBirth">Date of birth</label><input id="profileDateOfBirth" type="date" autocomplete="bday" required></div>
+   <div class="field"><label for="profileAddress">Home address</label><input id="profileAddress" autocomplete="street-address" placeholder="Street, city, country" required></div>
+   <div class="field"><label for="profilePhone">Phone number (for SMS verification)</label><input id="profilePhone" type="tel" autocomplete="tel" placeholder="+251..." required></div>
    <div class="field"><label for="profileEmailInput">Email address</label><input id="profileEmailInput" type="email" readonly></div>
    <div id="profileStatus" class="profile-status" role="status" aria-live="polite"></div>
    <button class="primary" id="saveProfileButton" type="submit">Save profile</button>
@@ -1230,6 +1232,8 @@ async function showDashboard(user){
   $('welcome').textContent='Welcome, '+name;
   $('profileEmail').textContent=user.email||'Account profile';
   $('profileName').value=meta.full_name||'';
+  $('profileDateOfBirth').value=meta.date_of_birth||'';
+  $('profileAddress').value=meta.address||'';
   $('profilePhone').value=meta.phone||'';
   $('profileEmailInput').value=user.email||'';
   const isAdmin = user.app_metadata?.role === 'admin';
@@ -1311,10 +1315,13 @@ $('profileForm').addEventListener('submit',async e=>{
   $('profileStatus').className='profile-status';
   if(!supabase){profileMessage('Authentication service is unavailable. Reload the page and try again.');button.disabled=false;return}
   const fullName=$('profileName').value.trim();
+  const dateOfBirth=$('profileDateOfBirth').value;
+  const address=$('profileAddress').value.trim();
   const phone=$('profilePhone').value.trim();
-  if(!fullName){profileMessage('Please enter your full name.');button.disabled=false;return}
+  if(!fullName||!dateOfBirth||!address||!phone){profileMessage('Please complete your name, date of birth, address and phone number.');button.disabled=false;return}
+  if(new Date(dateOfBirth)>=new Date(new Date().toDateString())){profileMessage('Please enter a valid date of birth.');button.disabled=false;return}
   try{
-    const {data,error}=await supabase.auth.updateUser({data:{full_name:fullName,phone:phone}});
+    const {data,error}=await supabase.auth.updateUser({data:{full_name:fullName,date_of_birth:dateOfBirth,address:address,phone:phone}});
     if(error) profileMessage(error.message);
     else {showDashboard(data.user);profileMessage('Your profile was saved successfully.','ok');}
   }catch(err){profileMessage('Could not save your profile. Please try again.');}
