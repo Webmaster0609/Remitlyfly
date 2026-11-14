@@ -876,41 +876,6 @@ body { margin:0; }
   <div id="recentTransfersList" aria-live="polite"><div class="recent-empty muted">Sign in to load your recent test activity.</div></div>
  </section>
  <div class="nav-actions" data-page="home"><button class="secondary" type="button" id="goTransfer">Send money (test)</button><button class="secondary" type="button" id="goRecipients">Manage recipients</button><button class="secondary" type="button" id="goHistory">History & tracking</button><button class="secondary hidden" type="button" id="goAdmin">Admin overview</button></div>
- <section class="profile-card wallet-dashboard" data-page="rates" id="walletDashboard" aria-labelledby="walletSelectorHeading" style="margin:18px 0;padding:18px">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
-   <div><div class="eyebrow">ETHIOPIA PAYOUT</div><h3 id="walletSelectorHeading" style="margin:4px 0">Wallet rate dashboard</h3><p class="muted" style="margin:4px 0 12px">Choose a receiving wallet and view the Commercial Bank of Ethiopia transfer-buying reference rate.</p></div>
-   <button class="secondary" id="refreshWalletRate" type="button">↻ Refresh rate</button>
-  </div>
-  <div class="field"><label for="receivingWallet">Receiving wallet</label><select id="receivingWallet" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)">
-   <option value="">Choose a wallet</option><option value="Telebirr">Telebirr</option><option value="M-PESA Ethiopia">M-PESA Ethiopia</option><option value="Kacha">Kacha</option><option value="Yaya Wallet">Yaya Wallet</option>
-  </select></div>
-  <div class="stat-grid" style="margin:12px 0">
-   <div class="stat"><small>Reference rate</small><strong id="selectedWalletRate">Not loaded</strong></div>
-   <div class="stat"><small>Rate source</small><strong id="selectedWalletRateSource">Awaiting data</strong></div>
-   <div class="stat"><small>Last updated</small><strong id="selectedWalletRateDate">Not available</strong></div>
-  </div>
-  <p id="walletRateStatus" class="muted" aria-live="polite">Choose a wallet and refresh to load the Commercial Bank of Ethiopia transfer-buying reference rate. This is not a wallet-specific payout quote.</p>
-  <div class="transfer-summary" style="margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:14px">
-   <h4 style="margin:0 0 6px">Wallet send estimate</h4>
-   <p class="muted" style="margin:0 0 12px">Enter how much you want to send. This creates an estimate only; it does not send money.</p>
-   <div class="field" style="margin-bottom:10px"><label for="walletSendAmount">Amount to send (<span id="walletSendCurrencyLabel">USD</span>)</label><input id="walletSendAmount" type="number" min="0.01" max="10000" step="0.01" inputmode="decimal" placeholder="100.00" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"></div>
-   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span class="muted">Indicative wallet payout</span><strong id="walletSendReceive" style="font-size:20px">ETB —</strong></div>
-   <p id="walletSendEstimateStatus" class="fine" aria-live="polite" style="text-align:left;margin:6px 0 12px">Choose a wallet and load a published reference rate to calculate an estimate.</p>
-   <button id="useWalletSendAmount" type="button">Use amount in transfer form</button>
-  </div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap"><button id="applyCbeWalletRate" type="button" disabled>Apply reference rate to estimate</button><button class="secondary" id="walletRateDetails" type="button">Rate details</button></div>
-  <p class="fine" style="margin-top:12px">Test prototype only. This applies an indicative reference rate to your estimate; it does not initiate a payment or guarantee the amount received.</p>
- </section>
- <div id="walletRateModal" role="dialog" aria-modal="true" aria-labelledby="walletRateModalTitle" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,20,35,.62);padding:20px;align-items:center;justify-content:center">
-  <div style="width:min(100%,420px);background:var(--card,#fff);color:var(--ink,#172033);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.28)">
-   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><h3 id="walletRateModalTitle" style="margin:0">Wallet reference rate</h3><button type="button" id="closeWalletRateModal" aria-label="Close rate popup" style="border:0;background:transparent;font-size:24px;cursor:pointer">×</button></div>
-   <p id="walletRateModalWallet" class="muted">Choose a wallet</p>
-   <div style="padding:18px;border-radius:14px;background:var(--soft,#f2f5f9);margin:12px 0"><div class="fine">CBE transfer-buying reference rate</div><div id="walletRateModalValue" style="font-size:28px;font-weight:800;margin:6px 0">Not loaded</div><div id="walletRateModalDate" class="fine">No update time available</div><div id="walletRateModalSource" class="fine">Source pending</div></div>
-   <p id="walletRateModalStatus" class="muted" aria-live="polite">This is a reference rate only.</p>
-   <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" id="applyCbeWalletRatePopup" disabled>Apply rate to estimate</button><button type="button" class="secondary" id="refreshWalletRatePopup">Refresh rate</button></div>
-   <p class="fine" style="margin-top:12px">No wallet-specific quote is provided. This app does not send money.</p>
-  </div>
- </div>
  <section class="profile-card" data-page="send" id="transferSection" aria-labelledby="transferHeading">
   <h3 id="transferHeading">Test money transfer</h3>
   <p class="muted">Create test-only transfer previews from the United States, United Kingdom, or selected European countries to supported destinations. No money moves.</p>
@@ -2429,7 +2394,7 @@ refreshTransferSummary();
   const first=document.querySelector('[data-page="'+page+'"]');
   if(first)first.scrollIntoView({behavior:'smooth',block:'start'});
  }
- function pageForTarget(id){return ({dashboardTop:'home',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile',walletDashboard:'rates'})[id]||'home';}
+ function pageForTarget(id){return ({dashboardTop:'home',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile'})[id]||'home';}
  menu.addEventListener('click',event=>{
   const button=event.target.closest('[data-menu-target]');
   if(!button)return;
@@ -2491,7 +2456,7 @@ if (button && message) {
  function infer(){
   const active=menu.querySelector('.app-menu-item.active');
   const target=active&&active.dataset.menuTarget;
-  const map={dashboardTop:0,transferSection:1,recipientsSection:2,historySection:3,trackingSection:4,profileCard:5,walletDashboard:6};
+  const map={dashboardTop:0,transferSection:1,recipientsSection:2,historySection:3,trackingSection:4,profileCard:5};
   if(target in map)current=map[target];
   update();
  }
