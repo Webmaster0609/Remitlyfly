@@ -1897,37 +1897,119 @@ $('transferWallet')?.addEventListener('change',syncTransferPayoutMethod);
 $('openWalletDashboard')?.addEventListener('click',()=>{const w=$('transferWallet')?.value;if(w&&$('receivingWallet'))$('receivingWallet').value=w;updateWalletRateStatus();$('walletDashboard')?.scrollIntoView({behavior:'smooth',block:'start'});});
 refreshCurrencyLabels();
 syncTransferPayoutMethod();
-$('transferForm').addEventListener('submit', e => {
+let pendingTestPreview = null;
+let pendingSandboxQuote = null;
+
+async function rfDashboardSandboxRequest(path, body) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Please sign in again before using the sandbox.");
+  const response = await fetch(SUPABASE_URL + "/functions/v1/remitlyfly-sandbox" + path, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + session.access_token,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({ error: "Invalid sandbox API response." }));
+  if (!response.ok) throw new Error(data.error || "Sandbox API request failed (" + response.status + ").");
+  return data;
+}
+
+$('transferForm').addEventListener('submit', async e => {
   e.preventDefault();
   const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
-  const amount = Number($('sendAmount').value), rate = Number($('demoRate').value), fee = Number($('demoFee').value), currency=currentCurrency();
+  const amount = Number($('sendAmount').value), currency = currentCurrency();
+  let rate = Number($('demoRate').value), fee = Number($('demoFee').value);
   if (!recipient) { $('transferStatus').textContent = 'Choose a saved recipient first.'; $('transferStatus').className='profile-status show err'; return; }
-  if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(fee) || fee < 0) { $('transferStatus').textContent = 'Enter a valid amount, example rate, and fee.'; $('transferStatus').className='profile-status show err'; return; }
-  $('transferStatus').textContent = 'Review preview prepared. No money has been sent.'; $('transferStatus').className='profile-status show ok';
-  const total = amount + fee;
-  const receive = amount * rate;
-  const payoutMethod=recipient.payout_method||$('payoutMethod')?.value||'bank';const payoutLabel=(payoutMethod==='wallet'?'Mobile wallet — ':'Bank account — ')+(recipient.payout_provider||'saved payout destination');
+  if (!Number.isFinite(amount) || amount <= 0) { $('transferStatus').textContent = 'Enter a valid send amount.'; $('transferStatus').className='profile-status show err'; return; }
+  const payoutMethod=recipient.payout_method||$('payoutMethod')?.value||'bank';
+  const payoutLabel=(payoutMethod==='wallet'?'Mobile wallet — ':'Bank account — ')+(recipient.payout_provider||'saved payout destination');
   if(!recipient.payout_provider){$('transferStatus').textContent='This recipient is missing saved bank or wallet details. Edit the recipient and add the payout destination first.';$('transferStatus').className='profile-status show err';return;}
   if(recipient.country==='Ethiopia'&&payoutMethod==='wallet'&&!$('transferWallet')?.value){$('transferStatus').textContent='Choose a receiving mobile wallet.';$('transferStatus').className='profile-status show err';return;}
-  const destinationCurrency=destinationCurrencyForCountry(recipient.country);
-  $('reviewDetails').innerHTML = `<div><span>Recipient</span><strong>${escapeHtml(recipient.name)}</strong></div><div><span>Destination</span><strong>${escapeHtml(recipient.country)}${recipient.phone ? ' · '+escapeHtml(recipient.phone):''}</strong></div><div><span>Payout method</span><strong>${escapeHtml(payoutLabel)}</strong></div><div><span>Sending from</span><strong>${escapeHtml($('senderCountry').value)}</strong></div><div><span>Send amount</span><strong>${money(amount,currency)}</strong></div><div><span>Illustrative fee</span><strong>${money(fee,currency)}</strong></div><div><span>Total (example)</span><strong>${money(total,currency)}</strong></div><div><span>Indicative reference rate</span><strong>1 ${currency} = ${rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrency}</strong></div><div><span>Estimated payout (example)</span><strong>${destinationCurrency} ${receive.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>`;
+
+  const senderCodeByName = {
+    "United States":"US","United Kingdom":"GB","Austria":"AT","Belgium":"BE","Croatia":"HR",
+    "Cyprus":"CY","Estonia":"EE","Finland":"FI","France":"FR","Germany":"DE","Greece":"GR",
+    "Ireland":"IE","Italy":"IT","Latvia":"LV","Lithuania":"LT","Luxembourg":"LU","Malta":"MT",
+    "Netherlands":"NL","Portugal":"PT","Slovakia":"SK","Slovenia":"SI","Spain":"ES"
+  };
+  const senderCountry = $('senderCountry').value;
+  const senderCode = senderCodeByName[senderCountry];
+  if (!senderCode) { $('transferStatus').textContent='This sending country is not connected to the sandbox yet.'; $('transferStatus').className='profile-status show err'; return; }
+
+  $('transferStatus').textContent='Requesting a current TEST ONLY quote…';
+  $('transferStatus').className='profile-status show';
+  let quote;
+  try {
+    const result = await rfDashboardSandboxRequest('/v1/app/quotes', {
+      recipient_id: recipient.id,
+      sender_country: senderCode,
+      send_currency: currency,
+      send_amount: amount
+    });
+    quote = result.quote;
+    if (!quote || quote.test_only !== true || quote.real_money_enabled !== false) {
+      throw new Error('The sandbox did not return a verified test-only quote.');
+    }
+    rate = Number(quote.exchange_rate);
+    fee = Number(quote.fee_amount);
+    $('demoRate').value = String(rate);
+    $('demoFee').value = String(fee);
+    refreshTransferSummary();
+  } catch (err) {
+    $('transferStatus').textContent = err.message || 'Could not retrieve a sandbox quote.';
+    $('transferStatus').className='profile-status show err';
+    return;
+  }
+
+  const destinationCurrency = quote.receive_currency;
+  const total = Number(quote.total_amount);
+  const receive = Number(quote.payout_amount);
+  const usdFactor = currency==='USD'?1:(currency==='EUR'?1.08:1.27);
+  pendingSandboxQuote = quote;
+  pendingTestPreview = {
+    recipient_id: recipient.id,
+    recipient_name: recipient.name,
+    recipient_country: recipient.country,
+    send_amount_usd: amount / usdFactor,
+    fee_usd: fee / usdFactor,
+    total_usd: total / usdFactor,
+    send_currency: currency,
+    send_amount_original: amount,
+    sender_country: senderCountry,
+    exchange_rate: rate,
+    payout_amount_etb: receive,
+    payout_currency: destinationCurrency,
+    fee_amount_original: fee,
+    sandbox_reference: null,
+    sandbox_status: 'pending',
+    payout_method: recipient.payout_method,
+    payout_wallet: recipient.payout_method==='wallet'?recipient.payout_provider:null,
+    payout_bank: recipient.payout_method==='bank'?recipient.payout_provider:null,
+    status: 'test_preview'
+  };
+
+  $('transferStatus').textContent = 'Sandbox quote received. Review the test transfer below. No money has been sent.';
+  $('transferStatus').className='profile-status show ok';
+  $('reviewDetails').innerHTML =
+    `<div><span>Recipient</span><strong>${escapeHtml(recipient.name)}</strong></div>
+    <div><span>Destination</span><strong>${escapeHtml(recipient.country)}${recipient.phone ? ' · '+escapeHtml(recipient.phone):''}</strong></div>
+    <div><span>Payout method</span><strong>${escapeHtml(payoutLabel)}</strong></div>
+    <div><span>Sending from</span><strong>${escapeHtml(senderCountry)}</strong></div>
+    <div><span>Send amount</span><strong>${money(amount,currency)}</strong></div>
+    <div><span>Sandbox fee</span><strong>${money(fee,currency)}</strong></div>
+    <div><span>Total (test example)</span><strong>${money(total,currency)}</strong></div>
+    <div><span>Sandbox indicative rate</span><strong>1 ${currency} = ${rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${escapeHtml(destinationCurrency)}</strong></div>
+    <div><span>Estimated payout (test example)</span><strong>${escapeHtml(destinationCurrency)} ${receive.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>
+    <div><span>Rate source</span><strong>${escapeHtml(quote.rate_source||'RemitlyFly sandbox rate')}</strong></div>`;
   $('confirmTestOnly').checked=false;
   $('finishReview').disabled=true;
   $('confirmationStatus').textContent='';
   $('confirmationStatus').className='profile-status';
-  $('transferReview').classList.remove('hidden'); $('transferReview').scrollIntoView({behavior:'smooth',block:'start'});
-});
-let pendingTestPreview = null;
-$('transferForm').addEventListener('submit', () => {
- const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
-if (!recipient) return;
-
-if (!recipient.payout_method || !recipient.payout_provider) { $('transferStatus').textContent='This recipient is missing saved bank or wallet details. Edit the recipient and add the payout destination first.'; $('transferStatus').className='profile-status show err'; pendingTestPreview=null; return; }
-  if (recipient.country==='Ethiopia' && recipient.payout_method==='wallet' && !$('transferWallet')?.value) { $('transferStatus').textContent='Choose a receiving mobile wallet before saving this test preview.'; $('transferStatus').className='profile-status show err'; pendingTestPreview=null; return; }
-  const amount = Number($('sendAmount').value), rate = Number($('demoRate').value), fee = Number($('demoFee').value), currency=currentCurrency();
-  if (!(amount > 0 && rate > 0 && fee >= 0)) return;
-  pendingTestPreview = { recipient_id: recipient.id, recipient_name: recipient.name, recipient_country: recipient.country,
-    send_amount_usd: currency==='USD'?amount:(currency==='EUR'?amount/1.08:amount/1.27), fee_usd: currency==='USD'?fee:(currency==='EUR'?fee/1.08:fee/1.27), total_usd: currency==='USD'?amount+fee:(currency==='EUR'?(amount+fee)/1.08:(amount+fee)/1.27), send_currency:currency, send_amount_original:amount, sender_country:$('senderCountry').value, exchange_rate: rate, payout_amount_etb: amount * rate, payout_method:recipient.payout_method, payout_wallet:recipient.payout_method==='wallet'?recipient.payout_provider:null, payout_bank:recipient.payout_method==='bank'?recipient.payout_provider:null, status: 'test_preview' };
+  $('transferReview').classList.remove('hidden');
+  $('transferReview').scrollIntoView({behavior:'smooth',block:'start'});
 });
 function trackingTimeline(status='saved') {
   const steps = [
@@ -1954,7 +2036,7 @@ function renderRecentTransfers(rows) {
     const b=$('recentStartTest'); if(b)b.addEventListener('click',()=> $('transferSection').scrollIntoView({behavior:'smooth',block:'start'}));
     return;
   }
-  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span> · TEST ONLY</small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}<small>test preview</small></div></article>`).join('');
+  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span> · TEST ONLY · Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')}</small><small>Reference: ${escapeHtml(r.sandbox_reference||'—')}</small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}<small>test preview</small></div></article>`).join('');
 }
 async function loadTransferHistory() {
   const list=$('historyList'); if(!list || !supabase)return;
@@ -1964,14 +2046,14 @@ async function loadTransferHistory() {
   const {data:{session},error:sessionError}=await supabase.auth.getSession();
   if(sessionError) { list.innerHTML='<p class="muted">Could not check your sign-in session: '+escapeHtml(sessionError.message)+'</p>'; return; }
   if(!session?.user) { list.innerHTML='<p class="muted">Please sign in to view your test history.</p>'; $('trackingList').innerHTML='<p class="muted">Sign in to load test tracking records.</p>'; return; }
-  const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,send_currency,send_amount_original,sender_country,exchange_rate,payout_amount_etb,status,tracking_status,created_at').eq('user_id',session.user.id).order('created_at',{ascending:false}).limit(50);
+  const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,send_currency,send_amount_original,sender_country,exchange_rate,payout_amount_etb,payout_currency,sandbox_reference,sandbox_status,status,tracking_status,created_at').eq('user_id',session.user.id).order('created_at',{ascending:false}).limit(50);
   if(error) { list.innerHTML='<p class="muted">Could not load test history: '+escapeHtml(error.message)+'</p>'; $('trackingList').innerHTML='<p class="muted">History query failed. See the message above.</p>'; historyMessage('Could not load test history: '+error.message); return; }
   if(!data?.length) { list.innerHTML='<p class="muted">No test previews saved yet. Review a test transfer and tap Save test record.</p>'; $('trackingList').innerHTML='<p class="muted">No test records to track yet.</p>'; updateDashboardStats(data||[]); renderRecentTransfers([]); return; }
   updateDashboardStats(data);
   renderRecentTransfers(data.slice(0,4));
   const isAdmin = session.user.app_metadata?.role === 'admin';
-  $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note">TEST ONLY · This is a saved preview, not a real transfer. ${isAdmin?'Admin status controls are available in Admin overview.':'Only an administrator can change this test status.'}</div></article>`).join('');
-  list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Illustrative fee (USD equivalent)</span><strong>${money(r.fee_usd,'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrencyForCountry(r.recipient_country)}</strong></div><div><span>Estimated payout (test example)</span><strong>${destinationCurrencyForCountry(r.recipient_country)} ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
+  $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note">TEST ONLY · This is a saved preview, not a real transfer. ${isAdmin?'Admin status controls are available in Admin overview.':'Only an administrator can change this test status.'}<br>Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')} · Reference: ${escapeHtml(r.sandbox_reference||'—')}</div></article>`).join('');
+  list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Illustrative fee (USD equivalent)</span><strong>${money(r.fee_usd,'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrencyForCountry(r.recipient_country)}</strong></div><div><span>Estimated payout (test example)</span><strong>${escapeHtml(r.payout_currency||destinationCurrencyForCountry(r.recipient_country))} ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Sandbox API status</span><strong>${escapeHtml(r.sandbox_status||'Not connected')}</strong></div><div><span>Sandbox reference</span><strong>${escapeHtml(r.sandbox_reference||'—')}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
   } catch (err) {
     const detail = escapeHtml(err?.message || 'Unknown error');
     list.innerHTML='<p class="muted">Could not load test history: '+detail+'</p>';
@@ -2182,24 +2264,75 @@ $('finishReview').addEventListener('click', async () => {
   if(!supabase) { historyMessage('Database is unavailable. No test record was saved.'); return; }
   const {data:{session},error:sessionError}=await supabase.auth.getSession();
   if(sessionError || !session?.user) { historyMessage('Please sign in again. No test record was saved.'); return; }
-  if(!pendingTestPreview) { historyMessage('Please review a test transfer first.'); return; }
-  const button=$('finishReview'); button.disabled=true; button.textContent='Saving test record…';
-  let {data:savedRecord,error}=await supabase.from('transfer_history').insert({...pendingTestPreview,user_id:session.user.id}).select('id').single();
-  // Older existing tables may not yet have optional payout destination columns; retry without them so saved test previews keep working.
-  if(error && /payout_method|payout_wallet|payout_bank|column/i.test(error.message||'')){
-   const {payout_method,payout_wallet,payout_bank,...legacyPreview}=pendingTestPreview;
-   const retry=await supabase.from('transfer_history').insert({...legacyPreview,user_id:session.user.id}).select('id').single();savedRecord=retry.data;error=retry.error;
-   if(!error){const status=$('transferStatus');if(status){status.textContent='Test preview saved. Your current history table does not store payout method yet; add the optional columns to retain it.';status.className='profile-status show ok';}}
+  if(!pendingTestPreview || !pendingSandboxQuote) { historyMessage('Please request and review a fresh sandbox quote first.'); return; }
+  const button=$('finishReview');
+  button.disabled=true;
+  button.textContent='Creating sandbox test transfer…';
+
+  const senderCodeByName = {
+    "United States":"US","United Kingdom":"GB","Austria":"AT","Belgium":"BE","Croatia":"HR",
+    "Cyprus":"CY","Estonia":"EE","Finland":"FI","France":"FR","Germany":"DE","Greece":"GR",
+    "Ireland":"IE","Italy":"IT","Latvia":"LV","Lithuania":"LT","Luxembourg":"LU","Malta":"MT",
+    "Netherlands":"NL","Portugal":"PT","Slovakia":"SK","Slovenia":"SI","Spain":"ES"
+  };
+  let sandboxTransfer;
+  try {
+    const result = await rfDashboardSandboxRequest('/v1/app/transfers', {
+      recipient_id: pendingTestPreview.recipient_id,
+      sender_country: senderCodeByName[pendingTestPreview.sender_country],
+      send_currency: pendingTestPreview.send_currency,
+      send_amount: pendingTestPreview.send_amount_original,
+      expected_exchange_rate: pendingTestPreview.exchange_rate,
+      expected_fee_amount: pendingTestPreview.fee_amount_original
+    });
+    sandboxTransfer = result.transfer;
+    if (!sandboxTransfer?.reference || sandboxTransfer.test_only !== true) {
+      throw new Error('The sandbox did not confirm a test-only transfer reference.');
+    }
+  } catch (err) {
+    button.disabled=false;
+    button.textContent='Confirm and save test record';
+    $('confirmationStatus').textContent=err.message || 'The sandbox transfer was not created. No history record was saved.';
+    $('confirmationStatus').className='profile-status show err';
+    return;
   }
-  button.disabled=!$('confirmTestOnly').checked; button.textContent='Confirm and save test record';
-  if(error) { $('confirmationStatus').textContent='The test record was not saved. Please check the error below.'; $('confirmationStatus').className='profile-status show err'; historyMessage('Could not save test record: '+error.message+' Make sure you ran the Transfer History SQL setup.'); return; }
-  $('transferReview').classList.add('hidden'); $('confirmTestOnly').checked=false; $('finishReview').disabled=true; $('confirmationStatus').textContent=''; $('transferStatus').textContent='Test record saved to your private history. No money was sent and no payment was collected.'; $('transferStatus').className='profile-status show ok';
-  pendingTestPreview=null; historyMessage('Test preview saved. No transfer or payment occurred.','ok');
+
+  pendingTestPreview.sandbox_reference = sandboxTransfer.reference;
+  pendingTestPreview.sandbox_status = sandboxTransfer.status;
+  pendingTestPreview.payout_currency = sandboxTransfer.receive_currency;
+  pendingTestPreview.payout_amount_etb = Number(sandboxTransfer.payout_amount);
+  pendingTestPreview.exchange_rate = Number(sandboxTransfer.exchange_rate);
+  button.textContent='Saving test history…';
+
+  let {data:savedRecord,error}=await supabase.from('transfer_history')
+    .insert({...pendingTestPreview,user_id:session.user.id})
+    .select('id').single();
+
+  if(error) {
+    button.disabled=!$('confirmTestOnly').checked;
+    button.textContent='Confirm and save test record';
+    $('confirmationStatus').textContent='The sandbox test transfer was created ('+sandboxTransfer.reference+'), but the website history could not be saved: '+error.message;
+    $('confirmationStatus').className='profile-status show err';
+    historyMessage('Sandbox test transfer '+sandboxTransfer.reference+' exists. Website history save failed; contact support before retrying.','err');
+    return;
+  }
+
+  $('transferReview').classList.add('hidden');
+  $('confirmTestOnly').checked=false;
+  $('finishReview').disabled=true;
+  $('finishReview').textContent='Confirm and save test record';
+  $('confirmationStatus').textContent='';
+  $('transferStatus').textContent='Sandbox test transfer created and saved to your private history. Reference: '+sandboxTransfer.reference+'. No money was sent.';
+  $('transferStatus').className='profile-status show ok';
+  pendingTestPreview=null;
+  pendingSandboxQuote=null;
+  historyMessage('Sandbox test transfer saved. Reference: '+sandboxTransfer.reference+'. No money moved.','ok');
+
   if(savedRecord?.id){
     const {error:alertError}=await supabase.functions.invoke('notify-admin',{body:{transfer_id:savedRecord.id}});
-    if(alertError){console.warn('Admin email alert was not sent:',alertError.message);historyMessage('Test preview saved. Dashboard admin alert is active; admin email notification could not be sent.','ok');}
+    if(alertError){console.warn('Admin email alert was not sent:',alertError.message);historyMessage('Test transfer saved. Admin email notification could not be sent.','ok');}
     const {data:userNotice,error:userNoticeError}=await supabase.functions.invoke('notify-transfer-status',{body:{transfer_id:savedRecord.id}});
-    if(userNoticeError||!userNotice?.ok){console.warn('Sender status email was not sent:',userNoticeError?.message||userNotice?.error);historyMessage('Test preview saved, but the sender confirmation email could not be sent.','err');}
+    if(userNoticeError||!userNotice?.ok){console.warn('Sender status email was not sent:',userNoticeError?.message||userNotice?.error);historyMessage('Test transfer saved, but the sender confirmation email could not be sent.','err');}
   }
   await loadTransferHistory();
 });
