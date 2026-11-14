@@ -985,6 +985,17 @@ body { margin:0; }
   <div id="adminAccountAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
   <div id="adminAccountList"><p class="muted">Loading account registrations…</p></div>
   <div id="adminStatus" class="profile-status" role="status" aria-live="polite"></div>
+  <div class="profile-card" style="margin:18px 0;background:#f5f9fd">
+   <h3>Developer sandbox</h3>
+   <p class="muted">Create and manage test API keys for your own applications. Keys are shown only once when created. Never share a key publicly.</p>
+   <div class="field"><label for="rfApiKeyLabel">API key label</label><input id="rfApiKeyLabel" maxlength="80" value="My first test application" placeholder="e.g. Mobile app test"></div>
+   <button type="button" id="rfCreateApiKey">Create test API key</button>
+   <div id="rfApiKeyResult" class="warning hidden" role="status" aria-live="polite" style="overflow-wrap:anywhere;margin-top:12px"></div>
+   <div id="rfApiKeyList" style="margin-top:14px"><p class="muted">API keys will appear here after loading.</p></div>
+   <button class="secondary" type="button" id="rfRefreshApiKeys">Refresh API keys</button>
+   <p class="fine" style="text-align:left;margin-top:12px">TEST KEYS ONLY. These keys cannot move real money. Keep the full key private; only its prefix is listed after creation.</p>
+  </div>
+
   <div class="stat-grid"><div class="stat"><small>Test records</small><strong id="adminRecordCount">—</strong></div><div class="stat"><small>Unique accounts</small><strong id="adminUserCount">—</strong></div><div class="stat"><small>Simulated send total</small><strong id="adminTotalAmount">$0</strong></div></div>
   <button class="secondary" type="button" id="refreshAdmin">Refresh admin data</button>
   <div id="adminList"><p class="muted">Admin data has not been loaded.</p></div>
@@ -2017,6 +2028,46 @@ $('adminList').addEventListener('change',async e=>{
   }
 });
 $('goAdmin').addEventListener('click',()=>{loadAdminOverview();$('adminSection').scrollIntoView({behavior:'smooth',block:'start'});});
+
+async function rfSandboxAdminRequest(path, method='GET', body=null){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.access_token) throw new Error('Please sign in again as an administrator.');
+  const response=await fetch('https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox'+path,{
+    method,headers:{'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'},
+    body:body?JSON.stringify(body):undefined
+  });
+  const data=await response.json().catch(()=>({error:'Invalid API response'}));
+  if(!response.ok) throw new Error(data.error||'Sandbox API request failed.');
+  return data;
+}
+async function rfLoadApiKeys(){
+  const box=$('rfApiKeyList');if(!box)return;
+  box.innerHTML='<p class="muted">Loading API keys…</p>';
+  try{
+    const data=await rfSandboxAdminRequest('/v1/keys');
+    const keys=data.keys||[];
+    box.innerHTML=keys.length?keys.map(k=>'<article class="transfer-summary" style="margin:10px 0"><strong>'+escapeHtml(k.label)+'</strong><p class="muted" style="margin:6px 0">Prefix: <code>'+escapeHtml(k.key_prefix)+'</code> · '+escapeHtml(k.status)+'</p><small class="muted">Created: '+new Date(k.created_at).toLocaleString()+(k.last_used_at?' · Last used: '+new Date(k.last_used_at).toLocaleString():' · Not used yet')+'</small>'+(k.status==='active'?'<p><button type="button" class="secondary" data-rf-revoke-key="'+escapeHtml(k.id)+'">Revoke key</button></p>':'')+'</article>').join(''):'<p class="muted">No API keys created yet.</p>';
+  }catch(e){box.innerHTML='<p class="muted">'+escapeHtml(e.message)+'</p>';}
+}
+$('rfCreateApiKey')?.addEventListener('click',async()=>{
+  const btn=$('rfCreateApiKey'),result=$('rfApiKeyResult');btn.disabled=true;result.classList.remove('hidden');result.textContent='Creating secure test key…';
+  try{
+    const data=await rfSandboxAdminRequest('/v1/keys','POST',{label:$('rfApiKeyLabel').value.trim()});
+    result.innerHTML='<strong>Copy this key now — it will not be shown again:</strong><br><code style="overflow-wrap:anywhere">'+escapeHtml(data.api_key)+'</code><br><button type="button" class="secondary" id="rfCopyApiKey" style="margin-top:8px">Copy API key</button>';
+    $('rfCopyApiKey')?.addEventListener('click',()=>{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(data.api_key).then(()=>{$('rfCopyApiKey').textContent='Copied';}).catch(()=>{});});
+    await rfLoadApiKeys();
+  }catch(e){result.textContent=e.message;}
+  finally{btn.disabled=false;}
+});
+$('rfRefreshApiKeys')?.addEventListener('click',rfLoadApiKeys);
+$('rfApiKeyList')?.addEventListener('click',async e=>{
+  const btn=e.target.closest('[data-rf-revoke-key]');if(!btn)return;
+  if(!confirm('Revoke this test API key? Apps using it will no longer authenticate.'))return;
+  btn.disabled=true;
+  try{await rfSandboxAdminRequest('/v1/keys/'+encodeURIComponent(btn.dataset.rfRevokeKey)+'/revoke','POST');await rfLoadApiKeys();}
+  catch(err){alert(err.message);btn.disabled=false;}
+});
+
 $('refreshAdmin').addEventListener('click',loadAdminOverview);
 $('adminAccountList').addEventListener('click',async e=>{
   const button=e.target.closest('[data-account-action]');if(!button)return;
