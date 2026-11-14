@@ -996,6 +996,65 @@ body { margin:0; }
    <p class="fine" style="text-align:left;margin-top:12px">TEST KEYS ONLY. These keys cannot move real money. Keep the full key private; only its prefix is listed after creation.</p>
   </div>
 
+  <section class="profile-card" id="rfSandboxApiDocs" aria-labelledby="rfSandboxApiDocsHeading" style="margin:18px 0">
+   <h3 id="rfSandboxApiDocsHeading">Sandbox API documentation</h3>
+   <p class="muted">Use these endpoints to connect your own test application to RemitlyFly. All examples are simulations only.</p>
+   <div class="warning"><strong>TEST ONLY:</strong> This API cannot send, receive, or move real money. Never put your API key in public code, a website page, GitHub repository, or a screenshot. Use a secure server-side environment for your test application.</div>
+   <h4>1. Base URL and authentication</h4>
+   <p>Base URL:</p>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox</code></pre>
+   <p>For protected endpoints, send your test key in the <code>x-rf-api-key</code> header. Replace the placeholder below with the key you copied. Do not paste your key into this dashboard or share it with anyone.</p>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>x-rf-api-key: YOUR_RF_TEST_API_KEY</code></pre>
+   <h4>2. Check API health (no key required)</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -i "https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/health"</code></pre>
+   <p class="muted">A successful response reports <code>status: online</code>, <code>mode: TEST_ONLY</code>, and <code>real_money_enabled: false</code>.</p>
+   <h4>3. Read a configured exchange rate</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -H "x-rf-api-key: YOUR_RF_TEST_API_KEY" \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/rates?base_currency=USD&amp;quote_currency=ETB"</code></pre>
+   <p class="muted">Change the currency pair as needed. If no active sandbox rate exists, the API returns HTTP 404. A returned rate is indicative and for testing only.</p>
+   <h4>4. Request a quote (does not create a transfer)</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -X POST \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/quotes" \
+-H "Content-Type: application/json" \
+-H "x-rf-api-key: YOUR_RF_TEST_API_KEY" \
+-d '{
+  "sender_country": "US",
+  "receiver_country": "ET",
+  "send_currency": "USD",
+  "send_amount": 25
+}'</code></pre>
+   <h4>5. Create a simulated transfer</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -X POST \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/transfers" \
+-H "Content-Type: application/json" \
+-H "x-rf-api-key: YOUR_RF_TEST_API_KEY" \
+-d '{
+  "sender_country": "US",
+  "receiver_country": "ET",
+  "send_currency": "USD",
+  "send_amount": 25,
+  "scenario": "pending",
+  "metadata": {
+    "client_reference": "demo-001"
+  }
+}'</code></pre>
+   <p class="muted">Supported scenarios: <code>pending</code>, <code>under_review</code>, <code>success</code>, and <code>failure</code>. Success/failure are simulated statuses only. The response returns a transfer reference.</p>
+   <h4>6. Check a transfer status</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -H "x-rf-api-key: YOUR_RF_TEST_API_KEY" \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/transfers/YOUR_TRANSFER_REFERENCE"</code></pre>
+   <h4>7. Cancel a simulated transfer</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -X POST \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/transfers/YOUR_TRANSFER_REFERENCE/cancel" \
+-H "x-rf-api-key: YOUR_RF_TEST_API_KEY"</code></pre>
+   <h4>Supported codes and important responses</h4>
+   <ul>
+    <li>Sender country examples: <code>US</code>, <code>GB</code>, <code>DE</code>, <code>FR</code>, and other supported European codes.</li>
+    <li>Receiver country codes: <code>ET</code>, <code>KE</code>, <code>NG</code>, <code>UG</code>, <code>TZ</code>, <code>ZA</code>.</li>
+    <li>Sender currencies: <code>USD</code>, <code>EUR</code>, <code>GBP</code>.</li>
+    <li><code>401</code>: missing or invalid test API key. <code>403</code>: key scope not permitted. <code>404</code>: endpoint, transfer, or configured rate not found. <code>409</code>: no active rate configured for a requested quote/transfer or action cannot be performed.</li>
+   </ul>
+   <p class="fine" style="text-align:left">Keep your key private. If it is exposed, revoke it from the API key management area and create a replacement. These examples are for developer testing only; no live payout partners, licences, or real-money capability are implied.</p>
+  </section>
   <div class="stat-grid"><div class="stat"><small>Test records</small><strong id="adminRecordCount">—</strong></div><div class="stat"><small>Unique accounts</small><strong id="adminUserCount">—</strong></div><div class="stat"><small>Simulated send total</small><strong id="adminTotalAmount">$0</strong></div></div>
   <button class="secondary" type="button" id="refreshAdmin">Refresh admin data</button>
   <div id="adminList"><p class="muted">Admin data has not been loaded.</p></div>
