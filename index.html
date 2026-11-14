@@ -942,6 +942,18 @@ body { margin:0; }
   <h3 id="adminHeading">Admin overview</h3>
   <p class="muted">Restricted to accounts whose Supabase app metadata role is set to <code>admin</code>. This panel shows test records only.</p>
   <div class="warning">Never make a user an admin by editing browser code or user-editable metadata. Set the role securely in Supabase Auth user app_metadata.</div>
+  <section class="profile-card" id="rfLivePaymentsAdmin" aria-labelledby="rfLivePaymentsHeading" style="margin:18px 0;background:#fff8ed;border:1px solid #f0d6a8">
+   <h3 id="rfLivePaymentsHeading">Future real-payment controls</h3>
+   <p><strong>LOCKED — TEST ONLY</strong></p>
+   <p class="muted">This restricted panel is visible only to accounts with the administrator role in Supabase Auth app_metadata. It does not activate live payments.</p>
+   <div class="warning">Real-money processing is disabled at the server. The admin dashboard cannot override this lock. No real payment provider is connected and no money can be moved.</div>
+   <div class="field" style="margin:12px 0">
+    <label for="rfLivePaymentsSwitch">Real payments</label>
+    <input id="rfLivePaymentsSwitch" type="checkbox" disabled aria-describedby="rfLivePaymentsLock" style="width:20px;height:20px">
+    <p id="rfLivePaymentsLock" class="muted">Disabled and unavailable. This control will remain locked until business registration, required regulatory approvals, a verified payment-provider agreement, and secure server-side integration are completed.</p>
+   </div>
+   <p class="fine" style="text-align:left">Changing this page or browser code cannot enable real payments. Any future activation must be implemented and verified on the server, not in the website interface.</p>
+  </section>
   <div id="adminNewAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
   <h3>New user registrations</h3>
   <p class="muted">Review new accounts here. Pending users cannot access recipient or transfer features.</p>
