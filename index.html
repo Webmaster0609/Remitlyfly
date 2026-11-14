@@ -2004,7 +2004,19 @@ $('adminAccountList').addEventListener('click',async e=>{
   button.disabled=true;
   const {error}=await supabase.from('account_approvals').update({status,reviewed_at:new Date().toISOString(),reviewed_by:session.user.id}).eq('user_id',button.dataset.accountId).eq('status','pending');
   if(error){adminMessage('Could not update account approval: '+error.message);button.disabled=false;}
-  else{adminMessage(status==='approved'?'Account approved. The user can now sign in and use the app.':'Account rejected. Access to app features remains blocked.','ok');await loadAccountApprovals();}
+  else if(status==='approved'){
+    const {data:notice,error:noticeError}=await supabase.functions.invoke('notify-user-approved',{body:{user_id:button.dataset.accountId}});
+    if(noticeError||!notice?.ok){
+      console.error('Approval email notification failed:',noticeError?.message||notice?.error||'Unknown error');
+      adminMessage('Account approved, but the email notification could not be sent. Please check the notification function logs.','err');
+    }else{
+      adminMessage('Account approved. An approval email has been sent to the user.','ok');
+    }
+    await loadAccountApprovals();
+  }else{
+    adminMessage('Account rejected. Access to app features remains blocked.','ok');
+    await loadAccountApprovals();
+  }
 });
 $('goHistory').addEventListener('click',()=>{ $('historySection').scrollIntoView({behavior:'smooth',block:'start'}); loadTransferHistory(); $('trackingSection').classList.remove('hidden');});
 $('goHistory').addEventListener('click',()=>setTimeout(()=>$('trackingSection').scrollIntoView({behavior:'smooth',block:'start'}),350));
