@@ -1925,7 +1925,12 @@ $('trackingList').addEventListener('change',async e=>{
   select.disabled=true;
   const {error}=await supabase.from('transfer_history').update({tracking_status:select.value}).eq('id',select.dataset.trackId);
   if(error){$('trackingStatus').textContent='Could not update test status: '+error.message;$('trackingStatus').className='profile-status show err';select.disabled=false;}
-  else{$('trackingStatus').textContent='Test status updated by admin. No real payment was made.';$('trackingStatus').className='profile-status show ok';await loadTransferHistory();await loadAdminOverview();}
+  else{
+    const {data:notice,error:noticeError}=await supabase.functions.invoke('notify-transfer-status',{body:{transfer_id:select.dataset.trackId}});
+    $('trackingStatus').textContent=noticeError||!notice?.ok?'Test status updated, but the sender email could not be sent.':'Test status updated and sender email notification sent.';
+    $('trackingStatus').className='profile-status show '+(noticeError||!notice?.ok?'err':'ok');
+    await loadTransferHistory();await loadAdminOverview();
+  }
 });
 let adminSeenRecordIds = null;
 let adminSeenAccountIds = null;
@@ -1991,7 +1996,12 @@ $('adminList').addEventListener('change',async e=>{
   select.disabled=true;
   const {error}=await supabase.from('transfer_history').update({tracking_status:select.value}).eq('id',select.dataset.adminTrackId);
   if(error){adminMessage('Could not update test status: '+error.message);select.disabled=false;}
-  else{adminMessage('Test payment status updated. No real money was moved.','ok');await loadAdminOverview();}
+  else{
+    const {data:notice,error:noticeError}=await supabase.functions.invoke('notify-transfer-status',{body:{transfer_id:select.dataset.adminTrackId}});
+    if(noticeError||!notice?.ok)adminMessage('Test status updated, but the sender email could not be sent.','err');
+    else adminMessage('Test status updated and sender email notification sent. No real money was moved.','ok');
+    await loadAdminOverview();
+  }
 });
 $('goAdmin').addEventListener('click',()=>{loadAdminOverview();$('adminSection').scrollIntoView({behavior:'smooth',block:'start'});});
 $('refreshAdmin').addEventListener('click',loadAdminOverview);
@@ -2060,7 +2070,9 @@ $('finishReview').addEventListener('click', async () => {
   pendingTestPreview=null; historyMessage('Test preview saved. No transfer or payment occurred.','ok');
   if(savedRecord?.id){
     const {error:alertError}=await supabase.functions.invoke('notify-admin',{body:{transfer_id:savedRecord.id}});
-    if(alertError){console.warn('Admin email alert was not sent:',alertError.message);historyMessage('Test preview saved. Dashboard admin alert is active; email alert still needs its Resend secret configured.','ok');}
+    if(alertError){console.warn('Admin email alert was not sent:',alertError.message);historyMessage('Test preview saved. Dashboard admin alert is active; admin email notification could not be sent.','ok');}
+    const {data:userNotice,error:userNoticeError}=await supabase.functions.invoke('notify-transfer-status',{body:{transfer_id:savedRecord.id}});
+    if(userNoticeError||!userNotice?.ok){console.warn('Sender status email was not sent:',userNoticeError?.message||userNotice?.error);historyMessage('Test preview saved, but the sender confirmation email could not be sent.','err');}
   }
   await loadTransferHistory();
 });
