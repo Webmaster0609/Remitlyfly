@@ -500,19 +500,19 @@ body{background:#f3f7fb;letter-spacing:-.12px}
 
 .dashboard.account-pending > :not(#dashboardTop):not(.dash-head):not(#accountApprovalGate){display:none!important}
 
-/* Admin future-payment switch: visual toggle only, permanently disabled in this test build. */
+/* Admin future-payment switch: visual toggle only, admin-controlled request switch; backend remains test-only. */
 #rfLivePaymentsAdmin .rf-live-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 15px;border:1px solid #ead9bd;border-radius:15px;background:#fff}
 #rfLivePaymentsAdmin .rf-live-toggle-copy{min-width:0;flex:1}
 #rfLivePaymentsAdmin .rf-live-toggle-copy>strong{display:block;color:#243b53;font-size:15px;margin-bottom:5px}
 #rfLivePaymentsAdmin .rf-live-toggle-copy p{font-size:12px;line-height:1.5;margin:0}
-#rfLivePaymentsAdmin .rf-switch-control{position:relative;display:inline-flex;flex:0 0 auto;align-items:center;width:54px;height:32px;margin:0;cursor:not-allowed}
+#rfLivePaymentsAdmin .rf-switch-control{position:relative;display:inline-flex;flex:0 0 auto;align-items:center;width:54px;height:32px;margin:0;cursor:pointer}
 #rfLivePaymentsAdmin .rf-switch-input{position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;min-height:1px!important;padding:0!important;margin:0!important}
 #rfLivePaymentsAdmin .rf-switch-track{position:absolute;inset:0;border-radius:999px;background:#cbd5df;border:1px solid #b9c5d0;transition:background .18s ease}
 #rfLivePaymentsAdmin .rf-switch-track:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #243b5340;transition:transform .18s ease}
 #rfLivePaymentsAdmin .rf-switch-input:checked+.rf-switch-track{background:#16845d}
 #rfLivePaymentsAdmin .rf-switch-input:checked+.rf-switch-track:before{transform:translateX(22px)}
 #rfLivePaymentsAdmin .rf-switch-input:focus-visible+.rf-switch-track{outline:3px solid #1769aa55;outline-offset:3px}
-#rfLivePaymentsAdmin .rf-switch-input:disabled+.rf-switch-track{opacity:.78;cursor:not-allowed}
+
 @media(max-width:420px){#rfLivePaymentsAdmin .rf-live-toggle-row{gap:12px;padding:12px}#rfLivePaymentsAdmin .rf-switch-control{width:50px;height:30px}#rfLivePaymentsAdmin .rf-switch-track:before{width:22px;height:22px}#rfLivePaymentsAdmin .rf-switch-input:checked+.rf-switch-track:before{transform:translateX(20px)}}
 
 </style>
@@ -960,17 +960,17 @@ body { margin:0; }
   <div class="warning">Never make a user an admin by editing browser code or user-editable metadata. Set the role securely in Supabase Auth user app_metadata.</div>
   <section class="profile-card" id="rfLivePaymentsAdmin" aria-labelledby="rfLivePaymentsHeading" style="margin:18px 0;background:#fff8ed;border:1px solid #f0d6a8">
    <h3 id="rfLivePaymentsHeading">Future real-payment controls</h3>
-   <p><strong>LOCKED — TEST ONLY</strong></p>
-   <p class="muted">This restricted panel is visible only to accounts with the administrator role in Supabase Auth app_metadata. It does not activate live payments.</p>
-   <div class="warning">Real-money processing is disabled at the server. The admin dashboard cannot override this lock. No real payment provider is connected and no money can be moved.</div>
+   <p><strong id="rfPaymentModeBadge">TEST ONLY — LIVE LOCKED</strong></p>
+   <p class="muted">This control is available only to accounts with the administrator role in Supabase Auth app_metadata.</p>
+   <div class="warning">The switch saves the administrator's requested mode. The backend still enforces TEST ONLY because no production payment provider or required approvals are configured. No money can be moved.</div>
    <div class="rf-live-toggle-row" style="margin:16px 0">
-    <div class="rf-live-toggle-copy"><strong>Real payments</strong><p id="rfLivePaymentsLock" class="muted">Locked and unavailable. This visual switch cannot enable payments. Activation requires business registration, required regulatory approvals, a verified payment-provider agreement, and secure server-side integration.</p></div>
-    <label class="rf-switch-control" aria-label="Real payments locked off">
-     <input id="rfLivePaymentsSwitch" class="rf-switch-input" type="checkbox" disabled aria-describedby="rfLivePaymentsLock">
+    <div class="rf-live-toggle-copy"><strong>Request LIVE mode</strong><p id="rfLivePaymentsLock" class="muted">Loading the secure backend setting…</p></div>
+    <label class="rf-switch-control" aria-label="Request live mode">
+     <input id="rfLivePaymentsSwitch" class="rf-switch-input" type="checkbox" aria-describedby="rfLivePaymentsLock">
      <span class="rf-switch-track" aria-hidden="true"></span>
     </label>
    </div>
-   <p class="fine" style="text-align:left">Changing this page or browser code cannot enable real payments. Any future activation must be implemented and verified on the server, not in the website interface.</p>
+   <p class="fine" style="text-align:left">ON means “LIVE requested by admin”, not live payments. The server's effective mode remains TEST ONLY until the required provider, approvals and secure payment integration are verified.</p>
   </section>
   <div id="adminNewAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
   <h3>New user registrations</h3>
@@ -1231,6 +1231,53 @@ async function showDashboard(user){
   updateDashboardStats();
   loadTransferHistory();
 }
+async function rfLoadPaymentModeSetting(){
+ const toggle=$('rfLivePaymentsSwitch'), lock=$('rfLivePaymentsLock'), badge=$('rfPaymentModeBadge');
+ if(!toggle||!supabase)return;
+ try{
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.access_token)throw new Error('Please sign in again.');
+  const response=await fetch(SUPABASE_URL+'/functions/v1/remitlyfly-sandbox/v1/admin/payment-mode',{
+   method:'GET',headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token}
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||'Could not load the backend payment setting.');
+  toggle.checked=data.setting?.requested_mode==='LIVE';
+  toggle.disabled=false;
+  lock.textContent=toggle.checked
+   ? 'LIVE has been requested by the administrator. Effective mode is still TEST ONLY; no production provider is configured.'
+   : 'Admin request is TEST ONLY. The backend blocks real payments until a verified production provider and required approvals are configured.';
+  if(badge)badge.textContent='EFFECTIVE MODE: '+(data.setting?.effective_mode||'TEST_ONLY')+' — LIVE LOCKED';
+ }catch(err){
+  toggle.disabled=true;
+  lock.textContent=(err.message||'Unable to load setting.')+' The switch is disabled until the secure backend responds.';
+ }
+}
+$('rfLivePaymentsSwitch')?.addEventListener('change',async()=>{
+ const toggle=$('rfLivePaymentsSwitch'), lock=$('rfLivePaymentsLock'), badge=$('rfPaymentModeBadge');
+ const requested=toggle.checked?'LIVE':'TEST_ONLY';
+ toggle.disabled=true;
+ try{
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.access_token)throw new Error('Please sign in again.');
+  const response=await fetch(SUPABASE_URL+'/functions/v1/remitlyfly-sandbox/v1/admin/payment-mode',{
+   method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'},
+   body:JSON.stringify({requested_mode:requested})
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||'The backend rejected the setting change.');
+  toggle.checked=data.setting?.requested_mode==='LIVE';
+  lock.textContent=toggle.checked
+   ? 'LIVE request saved by admin, but effective mode remains TEST ONLY. Real payments are blocked until the provider and required approvals are verified.'
+   : 'TEST ONLY request saved. The backend continues to block all real payments.';
+  if(badge)badge.textContent='EFFECTIVE MODE: '+(data.setting?.effective_mode||'TEST_ONLY')+' — LIVE LOCKED';
+  adminMessage(data.message||'Payment mode request saved. Effective mode remains TEST ONLY.','ok');
+ }catch(err){
+  toggle.checked=!toggle.checked;
+  lock.textContent=err.message||'Could not save the setting.';
+  adminMessage(lock.textContent,'err');
+ }finally{toggle.disabled=false;}
+});
 function profileMessage(text,type='err'){
   const el=$('profileStatus');el.textContent=text;el.className='profile-status show '+type;
 }
