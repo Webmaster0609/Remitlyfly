@@ -2046,14 +2046,14 @@ async function loadTransferHistory() {
   const {data:{session},error:sessionError}=await supabase.auth.getSession();
   if(sessionError) { list.innerHTML='<p class="muted">Could not check your sign-in session: '+escapeHtml(sessionError.message)+'</p>'; return; }
   if(!session?.user) { list.innerHTML='<p class="muted">Please sign in to view your test history.</p>'; $('trackingList').innerHTML='<p class="muted">Sign in to load test tracking records.</p>'; return; }
-  const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,send_currency,send_amount_original,sender_country,exchange_rate,payout_amount_etb,payout_currency,sandbox_reference,sandbox_status,status,tracking_status,created_at').eq('user_id',session.user.id).order('created_at',{ascending:false}).limit(50);
+  const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,send_currency,send_amount_original,sender_country,exchange_rate,payout_amount_etb,payout_currency,fee_amount_original,sandbox_reference,sandbox_status,status,tracking_status,created_at').eq('user_id',session.user.id).order('created_at',{ascending:false}).limit(50);
   if(error) { list.innerHTML='<p class="muted">Could not load test history: '+escapeHtml(error.message)+'</p>'; $('trackingList').innerHTML='<p class="muted">History query failed. See the message above.</p>'; historyMessage('Could not load test history: '+error.message); return; }
   if(!data?.length) { list.innerHTML='<p class="muted">No test previews saved yet. Review a test transfer and tap Save test record.</p>'; $('trackingList').innerHTML='<p class="muted">No test records to track yet.</p>'; updateDashboardStats(data||[]); renderRecentTransfers([]); return; }
   updateDashboardStats(data);
   renderRecentTransfers(data.slice(0,4));
   const isAdmin = session.user.app_metadata?.role === 'admin';
   $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note">TEST ONLY · This is a saved preview, not a real transfer. ${isAdmin?'Admin status controls are available in Admin overview.':'Only an administrator can change this test status.'}<br>Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')} · Reference: ${escapeHtml(r.sandbox_reference||'—')}</div></article>`).join('');
-  list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Illustrative fee (USD equivalent)</span><strong>${money(r.fee_usd,'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrencyForCountry(r.recipient_country)}</strong></div><div><span>Estimated payout (test example)</span><strong>${escapeHtml(r.payout_currency||destinationCurrencyForCountry(r.recipient_country))} ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Sandbox API status</span><strong>${escapeHtml(r.sandbox_status||'Not connected')}</strong></div><div><span>Sandbox reference</span><strong>${escapeHtml(r.sandbox_reference||'—')}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
+  list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Sandbox fee</span><strong>${money(r.fee_amount_original ?? r.fee_usd,r.send_currency||'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrencyForCountry(r.recipient_country)}</strong></div><div><span>Estimated payout (test example)</span><strong>${escapeHtml(r.payout_currency||destinationCurrencyForCountry(r.recipient_country))} ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Sandbox API status</span><strong>${escapeHtml(r.sandbox_status||'Not connected')}</strong></div><div><span>Sandbox reference</span><strong>${escapeHtml(r.sandbox_reference||'—')}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
   } catch (err) {
     const detail = escapeHtml(err?.message || 'Unknown error');
     list.innerHTML='<p class="muted">Could not load test history: '+detail+'</p>';
@@ -2275,17 +2275,26 @@ $('finishReview').addEventListener('click', async () => {
     "Ireland":"IE","Italy":"IT","Latvia":"LV","Lithuania":"LT","Luxembourg":"LU","Malta":"MT",
     "Netherlands":"NL","Portugal":"PT","Slovakia":"SK","Slovenia":"SI","Spain":"ES"
   };
-  let sandboxTransfer;
+  let sandboxTransfer = pendingTestPreview.sandbox_reference ? {
+    reference: pendingTestPreview.sandbox_reference,
+    status: pendingTestPreview.sandbox_status,
+    receive_currency: pendingTestPreview.payout_currency,
+    payout_amount: pendingTestPreview.payout_amount_etb,
+    exchange_rate: pendingTestPreview.exchange_rate,
+    test_only: true
+  } : null;
   try {
-    const result = await rfDashboardSandboxRequest('/v1/app/transfers', {
-      recipient_id: pendingTestPreview.recipient_id,
-      sender_country: senderCodeByName[pendingTestPreview.sender_country],
-      send_currency: pendingTestPreview.send_currency,
-      send_amount: pendingTestPreview.send_amount_original,
-      expected_exchange_rate: pendingTestPreview.exchange_rate,
-      expected_fee_amount: pendingTestPreview.fee_amount_original
-    });
-    sandboxTransfer = result.transfer;
+    if (!sandboxTransfer) {
+      const result = await rfDashboardSandboxRequest('/v1/app/transfers', {
+        recipient_id: pendingTestPreview.recipient_id,
+        sender_country: senderCodeByName[pendingTestPreview.sender_country],
+        send_currency: pendingTestPreview.send_currency,
+        send_amount: pendingTestPreview.send_amount_original,
+        expected_exchange_rate: pendingTestPreview.exchange_rate,
+        expected_fee_amount: pendingTestPreview.fee_amount_original
+      });
+      sandboxTransfer = result.transfer;
+    }
     if (!sandboxTransfer?.reference || sandboxTransfer.test_only !== true) {
       throw new Error('The sandbox did not confirm a test-only transfer reference.');
     }
