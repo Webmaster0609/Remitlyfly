@@ -1144,8 +1144,8 @@ async function showDashboard(user){
     return;
   }
   if(approval.status!=='approved'){
-    const title=approval.status==='restricted'?'Account restricted':(approval.status==='rejected'?'Registration not approved':'Account awaiting approval');
-    const statusText=approval.status==='restricted'?'Your account has been restricted following an administrator review. Please check your email for the reason or contact support@remitlyfly.com.':(approval.status==='rejected'?'Your registration was not approved. Please contact support@remitlyfly.com.':'Your account is pending admin approval. You can log in, but dashboard features will remain unavailable until an administrator approves your account.');
+    const title=approval.status==='restricted'?'Account restricted':(approval.status==='rejected'?'Account denied':'Account awaiting approval');
+    const statusText=approval.status==='restricted'?'Your account has been restricted following an administrator review. Please check your email for the reason or contact support@remitlyfly.com.':(approval.status==='rejected'?'Your registration has been denied by a RemitlyFly administrator. You can still log in to view this notice, but dashboard features and transfers are unavailable. Please check your email for the reason or contact support@remitlyfly.com if you believe this decision should be reviewed.':'Your account is pending admin approval. You can log in, but dashboard features will remain unavailable until an administrator approves your account.');
     showApprovalGate(title,statusText);
     if(approval.status==='pending') supabase.functions.invoke('notify-admin-signup').catch(()=>{});
     return;
