@@ -498,6 +498,23 @@ body{background:#f3f7fb;letter-spacing:-.12px}
 @media(max-width:520px){.rf-stepper{padding:10px;gap:8px}.rf-stepper button{padding:11px 10px;font-size:12px}.rf-stepper strong{font-size:12px}.shell.dashboard-mode .app-menu{top:66px}}
 @media(prefers-reduced-motion:reduce){.shell.dashboard-mode [data-page]:not(.page-hidden){animation:none}.rf-progress span{transition:none}}
 
+.dashboard.account-pending > :not(#dashboardTop):not(.dash-head):not(#accountApprovalGate){display:none!important}
+
+/* Admin future-payment switch: visual toggle only, admin-controlled request switch; backend remains test-only. */
+#rfLivePaymentsAdmin .rf-live-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 15px;border:1px solid #ead9bd;border-radius:15px;background:#fff}
+#rfLivePaymentsAdmin .rf-live-toggle-copy{min-width:0;flex:1}
+#rfLivePaymentsAdmin .rf-live-toggle-copy>strong{display:block;color:#243b53;font-size:15px;margin-bottom:5px}
+#rfLivePaymentsAdmin .rf-live-toggle-copy p{font-size:12px;line-height:1.5;margin:0}
+#rfLivePaymentsAdmin .rf-switch-control{position:relative;display:inline-flex;flex:0 0 auto;align-items:center;width:54px;height:32px;margin:0;cursor:pointer}
+#rfLivePaymentsAdmin .rf-switch-input{position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;min-height:1px!important;padding:0!important;margin:0!important}
+#rfLivePaymentsAdmin .rf-switch-track{position:absolute;inset:0;border-radius:999px;background:#cbd5df;border:1px solid #b9c5d0;transition:background .18s ease}
+#rfLivePaymentsAdmin .rf-switch-track:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #243b5340;transition:transform .18s ease}
+#rfLivePaymentsAdmin .rf-switch-input:checked+.rf-switch-track{background:#16845d}
+#rfLivePaymentsAdmin .rf-switch-input:checked+.rf-switch-track:before{transform:translateX(22px)}
+#rfLivePaymentsAdmin .rf-switch-input:focus-visible+.rf-switch-track{outline:3px solid #1769aa55;outline-offset:3px}
+
+@media(max-width:420px){#rfLivePaymentsAdmin .rf-live-toggle-row{gap:12px;padding:12px}#rfLivePaymentsAdmin .rf-switch-control{width:50px;height:30px}#rfLivePaymentsAdmin .rf-switch-track:before{width:22px;height:22px}#rfLivePaymentsAdmin .rf-switch-input:checked+.rf-switch-track:before{transform:translateX(20px)}}
+
 </style>
 <style>
 /* Styles for the starter page. They only apply to its own classes. */
@@ -794,6 +811,12 @@ body { margin:0; }
 .shell.login-mode .dashboard{display:none!important}
 </style>
 
+<style id="rf-pending-account-visibility">
+/* Pending/restricted/rejected accounts can see their status and sign-out only. */
+.dashboard.account-pending > :not(#accountApprovalGate):not(.dash-head) {
+  display: none !important;
+}
+</style>
 </head>
 <body>
 <div class="shell intro-mode">
@@ -824,15 +847,15 @@ body { margin:0; }
  </form>
  <p class="fine">Account access is handled by Supabase. No remittance API, payment gateway, or real transfers are connected.</p>
  <div class="switch" id="switchLine">New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button></div>
- <div style="margin-top:18px;text-align:center;font-size:13px;line-height:2;">
-  <a href="https://remitlyfly.org/privacy.html">Privacy Policy</a>
-  ·
-  <a href="https://remitlyfly.org/terms.html">Terms of Service</a>
-  <br>
-  <a href="mailto:support@remitlyfly.com">Contact Support</a>
- </div>
 </section>
 <section class="dashboard" id="dashboard"><div id="dashboardTop" tabindex="-1" aria-hidden="true"></div>
+  <section id="accountApprovalGate" class="profile-card hidden" style="margin:24px 0;padding:24px">
+   <h2>Account awaiting approval</h2>
+   <p>Your email registration is recorded. An administrator must review and approve your RemitlyFly account before you can use the dashboard features.</p>
+   <p class="muted">You can sign out and return later. If you need help, contact support@remitlyfly.com.</p>
+   <button class="secondary" type="button" id="pendingRefresh">Check approval status</button>
+   <p id="pendingApprovalStatus" class="profile-status" role="status" aria-live="polite"></p>
+  </section>
  <div class="dash-head"><div class="dash-head-brand"><div class="dash-brand">RemitlyFly</div><div class="muted" id="welcome">Your account</div></div><div class="dash-head-controls"><button type="button" class="secondary app-menu-toggle" id="appMenuToggle" aria-controls="appMenu" aria-expanded="false" aria-label="Open navigation menu"><span class="menu-toggle-icon" aria-hidden="true">☰</span><span class="menu-toggle-label">Menu</span></button><button class="secondary" id="logout">Log out</button></div></div>
  <nav class="app-menu" id="appMenu" aria-label="Main dashboard menu">
   <button type="button" class="app-menu-item active" data-menu-target="dashboardTop" aria-current="page"><span>⌂</span>Home</button>
@@ -841,7 +864,6 @@ body { margin:0; }
   <button type="button" class="app-menu-item" data-menu-target="historySection"><span>▤</span>History</button>
   <button type="button" class="app-menu-item" data-menu-target="trackingSection"><span>◷</span>Tracking</button>
   <button type="button" class="app-menu-item" data-menu-target="profileCard"><span>⚙</span>Profile</button>
-  <button type="button" class="app-menu-item" data-menu-target="ethiopiaRates"><span>↗</span>Rates</button>
  </nav>
  <p id="menuNavigationStatus" class="navigation-feedback" role="status" aria-live="polite" style="display:none"></p>
  <span class="demo">TRANSFERS NOT ENABLED</span>
@@ -869,80 +891,25 @@ body { margin:0; }
   <div id="recentTransfersList" aria-live="polite"><div class="recent-empty muted">Sign in to load your recent test activity.</div></div>
  </section>
  <div class="nav-actions" data-page="home"><button class="secondary" type="button" id="goTransfer">Send money (test)</button><button class="secondary" type="button" id="goRecipients">Manage recipients</button><button class="secondary" type="button" id="goHistory">History & tracking</button><button class="secondary hidden" type="button" id="goAdmin">Admin overview</button></div>
- <section class="profile-card" data-page="rates" id="ethiopiaRates" aria-labelledby="ethiopiaRatesHeading" style="margin:18px 0">
-  <h3 id="ethiopiaRatesHeading">Ethiopian bank exchange rates</h3>
-  <p class="muted">View published bank rates from an external exchange-rate provider. Rates are for reference only and may differ from a remittance provider’s actual quote.</p>
-  <div class="transfer-summary" style="margin:12px 0">
-   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>Live bank rate feed</strong><button class="secondary" id="refreshLiveRates" type="button">Refresh rates</button></div>
-   <p id="liveRateStatus" class="muted" aria-live="polite">Connecting to ET-Forex live bank-rate API…</p>
-   <p class="fine" style="text-align:left">Source: ET-Forex public API, which aggregates published Ethiopian bank boards. Rates update when banks publish them; this is not a real-time remittance quote. API availability and browser CORS can affect loading.</p>
-   <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px;font-size:13px"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line)">Bank</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line)">Currency</th><th style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">Cash buy</th><th style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">Cash sell</th><th style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">Transfer buy</th><th style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">Transfer sell</th></tr></thead><tbody id="liveRateRows"><tr><td colspan="6" style="padding:12px">Loading bank rates…</td></tr></tbody></table></div>
-   <p><a href="https://et-forex.com/" target="_blank" rel="noopener noreferrer">Open ET-Forex rate board</a> · <a href="https://exchange.et/" target="_blank" rel="noopener noreferrer">Open Exchange.et</a> · <a href="https://nbe.gov.et/exchange/" target="_blank" rel="noopener noreferrer">NBE indicative rates</a></p>
-  </div>
- </section>
- <section class="profile-card wallet-dashboard" data-page="rates" id="walletDashboard" aria-labelledby="walletSelectorHeading" style="margin:18px 0;padding:18px">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
-   <div><div class="eyebrow">ETHIOPIA PAYOUT</div><h3 id="walletSelectorHeading" style="margin:4px 0">Wallet rate dashboard</h3><p class="muted" style="margin:4px 0 12px">Choose a receiving wallet and review the latest available published bank reference rate, similar to the bank-rate dashboard.</p></div>
-   <button class="secondary" id="refreshWalletRate" type="button">↻ Refresh rate</button>
-  </div>
-  <div class="field"><label for="receivingWallet">Receiving wallet</label><select id="receivingWallet" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)">
-   <option value="">Choose a wallet</option><option value="Telebirr">Telebirr</option><option value="M-PESA Ethiopia">M-PESA Ethiopia</option><option value="Kacha">Kacha</option><option value="Yaya Wallet">Yaya Wallet</option>
-  </select></div>
-  <div class="stat-grid" style="margin:12px 0">
-   <div class="stat"><small>Reference rate</small><strong id="selectedWalletRate">Not loaded</strong></div>
-   <div class="stat"><small>Rate source</small><strong id="selectedWalletRateSource">Awaiting data</strong></div>
-   <div class="stat"><small>Last updated</small><strong id="selectedWalletRateDate">Not available</strong></div>
-  </div>
-  <p id="walletRateStatus" class="muted" aria-live="polite">Choose a wallet. Refresh to load published bank reference rates. Rates are indicative and are not specific wallet payout quotes.</p>
-  <div class="transfer-summary" style="margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:14px">
-   <h4 style="margin:0 0 6px">Wallet send estimate</h4>
-   <p class="muted" style="margin:0 0 12px">Enter how much you want to send. This creates an estimate only; it does not send money.</p>
-   <div class="field" style="margin-bottom:10px"><label for="walletSendAmount">Amount to send (<span id="walletSendCurrencyLabel">USD</span>)</label><input id="walletSendAmount" type="number" min="0.01" max="10000" step="0.01" inputmode="decimal" placeholder="100.00" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"></div>
-   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span class="muted">Indicative wallet payout</span><strong id="walletSendReceive" style="font-size:20px">ETB —</strong></div>
-   <p id="walletSendEstimateStatus" class="fine" aria-live="polite" style="text-align:left;margin:6px 0 12px">Choose a wallet and load a published reference rate to calculate an estimate.</p>
-   <button id="useWalletSendAmount" type="button">Use amount in transfer form</button>
-  </div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap"><button id="applyCbeWalletRate" type="button" disabled>Apply reference rate to estimate</button><button class="secondary" id="walletRateDetails" type="button">Rate details</button></div>
-  <p class="fine" style="margin-top:12px">Test prototype only. This applies an indicative reference rate to your estimate; it does not initiate a payment or guarantee the amount received.</p>
- </section>
- <div id="walletRateModal" role="dialog" aria-modal="true" aria-labelledby="walletRateModalTitle" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,20,35,.62);padding:20px;align-items:center;justify-content:center">
-  <div style="width:min(100%,420px);background:var(--card,#fff);color:var(--ink,#172033);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.28)">
-   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><h3 id="walletRateModalTitle" style="margin:0">Wallet reference rate</h3><button type="button" id="closeWalletRateModal" aria-label="Close rate popup" style="border:0;background:transparent;font-size:24px;cursor:pointer">×</button></div>
-   <p id="walletRateModalWallet" class="muted">Choose a wallet</p>
-   <div style="padding:18px;border-radius:14px;background:var(--soft,#f2f5f9);margin:12px 0"><div class="fine">Published bank reference rate</div><div id="walletRateModalValue" style="font-size:28px;font-weight:800;margin:6px 0">Not loaded</div><div id="walletRateModalDate" class="fine">No update time available</div><div id="walletRateModalSource" class="fine">Source pending</div></div>
-   <p id="walletRateModalStatus" class="muted" aria-live="polite">This is a reference rate only.</p>
-   <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" id="applyCbeWalletRatePopup" disabled>Apply rate to estimate</button><button type="button" class="secondary" id="refreshWalletRatePopup">Refresh rate</button></div>
-   <p class="fine" style="margin-top:12px">No wallet-specific quote is provided. This app does not send money.</p>
-  </div>
- </div>
  <section class="profile-card" data-page="send" id="transferSection" aria-labelledby="transferHeading">
   <h3 id="transferHeading">Test money transfer</h3>
-  <p class="muted">Send from the United States, United Kingdom, or selected European countries to Ethiopia. Prototype only — no money moves.</p>
-  <div class="warning"><strong>Illustrative values only.</strong> The exchange rate and fee below are examples for testing, not live quotes or an offer to transfer money.</div>
+  <p class="muted">Create test-only transfer previews from the United States, United Kingdom, or selected European countries to supported destinations. No money moves.</p>
+  <div class="warning"><strong>TEST ONLY — NO MONEY MOVES.</strong> Published reference rates may be shown for supported destinations; fees remain illustrative. These are not guaranteed payout quotes or an offer to transfer money.</div>
   <form id="transferForm">
    <div class="field"><label for="senderCountry">Sending from</label><select id="senderCountry" required style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="United States" data-currency="USD">United States (USD)</option><option value="United Kingdom" data-currency="GBP">United Kingdom (GBP)</option><option value="Austria" data-currency="EUR">Austria (EUR)</option><option value="Belgium" data-currency="EUR">Belgium (EUR)</option><option value="Croatia" data-currency="EUR">Croatia (EUR)</option><option value="Cyprus" data-currency="EUR">Cyprus (EUR)</option><option value="Estonia" data-currency="EUR">Estonia (EUR)</option><option value="Finland" data-currency="EUR">Finland (EUR)</option><option value="France" data-currency="EUR">France (EUR)</option><option value="Germany" data-currency="EUR">Germany (EUR)</option><option value="Greece" data-currency="EUR">Greece (EUR)</option><option value="Ireland" data-currency="EUR">Ireland (EUR)</option><option value="Italy" data-currency="EUR">Italy (EUR)</option><option value="Latvia" data-currency="EUR">Latvia (EUR)</option><option value="Lithuania" data-currency="EUR">Lithuania (EUR)</option><option value="Luxembourg" data-currency="EUR">Luxembourg (EUR)</option><option value="Malta" data-currency="EUR">Malta (EUR)</option><option value="Netherlands" data-currency="EUR">Netherlands (EUR)</option><option value="Portugal" data-currency="EUR">Portugal (EUR)</option><option value="Slovakia" data-currency="EUR">Slovakia (EUR)</option><option value="Slovenia" data-currency="EUR">Slovenia (EUR)</option><option value="Spain" data-currency="EUR">Spain (EUR)</option></select><small class="muted">Country and currency are for prototype selection only; availability is not verified.</small></div>
    <div class="field"><label for="transferRecipient">Choose saved recipient</label><select id="transferRecipient" required style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="">Loading saved recipients…</option></select></div>
-   <div class="field"><label for="payoutMethod">How should the recipient receive the payout?</label><select id="payoutMethod" required style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="bank">Ethiopian bank account</option><option value="wallet">Mobile wallet</option></select><small class="muted">Choose a payout method for this test preview. No payment will be sent.</small></div>
-   <section id="transferWalletPayoutSection" class="transfer-summary" style="display:none;margin:12px 0;padding:14px" aria-labelledby="transferWalletHeading">
-    <h4 id="transferWalletHeading" style="margin:0 0 8px">Mobile wallet payout</h4>
-    <div class="field"><label for="transferWallet">Receiving wallet in Ethiopia</label><select id="transferWallet" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="">Choose a wallet</option><option value="Telebirr">Telebirr</option><option value="M-PESA Ethiopia">M-PESA Ethiopia</option><option value="Kacha">Kacha</option><option value="Yaya Wallet">Yaya Wallet</option></select></div>
-    <p id="transferWalletStatus" class="muted" aria-live="polite">Choose a wallet. Published bank reference rates are indicative only and are not wallet-specific quotes.</p>
-    <button class="secondary" id="openWalletDashboard" type="button">Open wallet rate dashboard</button>
-   </section>
+   <div id="savedRecipientPayoutInfo" class="transfer-summary" style="display:none;margin:12px 0;padding:14px">
+  <strong>Saved recipient payout details</strong>
+  <p id="savedRecipientPayoutCountry">Destination: —</p>
+  <p id="savedRecipientPayoutMethod">Payout method: —</p>
+  <p id="savedRecipientPayoutProvider">Bank or wallet: —</p>
+  <small class="muted">TEST ONLY — no money will be sent.</small>
+   </div>
+   <input type="hidden" id="payoutMethod" value="bank">
+   <select id="transferWallet" hidden aria-hidden="true"><option value="">Choose a wallet</option><option value="Telebirr">Telebirr</option><option value="M-PESA Ethiopia">M-PESA Ethiopia</option><option value="Kacha">Kacha</option><option value="Yaya Wallet">Yaya Wallet</option></select>
    <div class="field"><label for="sendAmount">You send (<span id="sendCurrencyLabel">USD</span>)</label><input id="sendAmount" type="number" min="1" max="10000" step="0.01" inputmode="decimal" placeholder="100.00" required></div>
-   <section id="transferBankPayoutSection" class="transfer-summary" aria-labelledby="liveBankRatesHeading" style="margin:14px 0;padding:14px">
-    <h4 id="liveBankRatesHeading" style="margin:0 0 8px">Choose receiving bank</h4>
-    <p class="muted">Choose the Ethiopian bank for this transfer preview. When live data is available, the selected bank’s published transfer-buying rate will be shown and used as the reference rate in the estimate.</p>
-    <div class="field"><label for="receivingBank">Receiving bank in Ethiopia</label><select id="receivingBank" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;color:var(--ink)"><option value="">Loading banks…</option></select></div>
-    <div class="transfer-summary" style="margin:10px 0">
-     <p id="calculatorRateStatus" class="muted" aria-live="polite">Waiting for the live bank feed…</p>
-     <div><span>Selected bank rate</span><strong id="selectedBankRate">Not loaded</strong></div>
-     <div><span>Rate updated</span><strong id="selectedBankRateDate">Not available</strong></div>
-     <button class="secondary" id="useLiveRate" type="button" disabled>Apply selected bank rate</button>
-    </div>
-    <p class="fine">Rates are published bank reference rates, not a remittance-provider quote or guaranteed payout. This app still creates test previews only; it does not send money.</p>
-   </section>
-   <div class="field"><label for="demoRate">Reference exchange rate (ETB per <span id="rateCurrencyLabel">USD</span>)</label><input id="demoRate" type="number" min="0.01" max="100000" step="any" inputmode="decimal" value="150.00" required><small class="muted">Live published bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.</small></div>
+   <select id="receivingBank" hidden aria-hidden="true"><option value="">Loading banks…</option></select>
+   <div class="field"><label for="demoRate">Reference exchange rate (<span id="destinationCurrencyLabel">ETB</span> per <span id="rateCurrencyLabel">USD</span>)</label><input id="demoRate" type="number" min="0.01" max="100000" step="any" inputmode="decimal" value="150.00" required><small class="muted">Live published bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.</small></div>
    <div class="field"><label for="demoFee">Illustrative fee (<span id="feeCurrencyLabel">USD</span>)</label><input id="demoFee" type="number" min="0" max="1000" step="0.01" value="2.99" required><small class="muted">Demo fee only — actual fees are not available.</small></div>
    <div class="transfer-summary" aria-live="polite"><div><span>Transfer amount</span><strong id="summarySend">$0.00 USD</strong></div><div><span>Illustrative fee</span><strong id="summaryFee">$2.99 USD</strong></div><div><span>Total paid (example)</span><strong id="summaryTotal">$2.99 USD</strong></div><div><span>Recipient receives (example)</span><strong id="summaryReceive">ETB 0.00</strong></div><div><span>Example rate</span><strong id="summaryRate">1 USD = 150.00 ETB</strong></div></div>
    <button class="primary" type="submit" id="reviewTransferButton">Review test transfer</button>
@@ -952,6 +919,16 @@ body { margin:0; }
    <h3 style="margin-top:18px">Review your test transfer</h3>
    <div id="reviewDetails" class="transfer-summary"></div>
    <div class="warning"><strong>TEST ONLY — NO MONEY MOVES.</strong> This is an estimate using illustrative/reference values. It does not collect payment, contact a payout provider, or send money to the recipient.</div>
+   <div class="profile-card" id="cardPaymentDemo" style="margin:16px 0;background:#f7fbff">
+    <h3 style="margin-top:0">Card payment demo</h3>
+    <p class="muted">Choose a simulated result to preview a card checkout. No card number, expiry date, CVV or OTP is collected. No payment is attempted.</p>
+    <div class="warning">DEMO ONLY — an approved result here is not a real card authorization or proof of payment.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px">
+     <button type="button" class="primary" id="simulateCardApproved">Simulate approval</button>
+     <button type="button" class="secondary" id="simulateCardDeclined">Simulate decline</button>
+    </div>
+    <p id="cardPaymentDemoStatus" class="profile-status" role="status" aria-live="polite">No card payment has been simulated.</p>
+   </div>
    <div class="field" style="margin:14px 0">
     <label for="confirmTestOnly" style="display:flex;align-items:flex-start;gap:10px;font-weight:600">
      <input id="confirmTestOnly" type="checkbox" style="width:20px;height:20px;flex:0 0 auto;margin-top:1px">
@@ -981,19 +958,134 @@ body { margin:0; }
   <h3 id="adminHeading">Admin overview</h3>
   <p class="muted">Restricted to accounts whose Supabase app metadata role is set to <code>admin</code>. This panel shows test records only.</p>
   <div class="warning">Never make a user an admin by editing browser code or user-editable metadata. Set the role securely in Supabase Auth user app_metadata.</div>
+  <section class="profile-card" id="rfLivePaymentsAdmin" aria-labelledby="rfLivePaymentsHeading" style="margin:18px 0;background:#fff8ed;border:1px solid #f0d6a8">
+   <h3 id="rfLivePaymentsHeading">Future real-payment controls</h3>
+   <p><strong id="rfPaymentModeBadge">TEST ONLY — LIVE LOCKED</strong></p>
+   <p class="muted">This control is available only to accounts with the administrator role in Supabase Auth app_metadata.</p>
+   <div class="warning">The switch saves the administrator's requested mode. The backend still enforces TEST ONLY because no production payment provider or required approvals are configured. No money can be moved.</div>
+   <div class="rf-live-toggle-row" style="margin:16px 0">
+    <div class="rf-live-toggle-copy"><strong>Request LIVE mode</strong><p id="rfLivePaymentsLock" class="muted">Loading the secure backend setting…</p></div>
+    <label class="rf-switch-control" aria-label="Request live mode">
+     <input id="rfLivePaymentsSwitch" class="rf-switch-input" type="checkbox" aria-describedby="rfLivePaymentsLock">
+     <span class="rf-switch-track" aria-hidden="true"></span>
+    </label>
+   </div>
+   <p class="fine" style="text-align:left">ON means “LIVE requested by admin”, not live payments. The server's effective mode remains TEST ONLY until the required provider, approvals and secure payment integration are verified.</p>
+  </section>
+  <div id="adminNewAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
+  <h3>New user registrations</h3>
+  <p class="muted">Review new accounts here. Pending users cannot access recipient or transfer features.</p>
+  <div id="adminAccountAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
+  <div id="adminAccountList"><p class="muted">Loading account registrations…</p></div>
   <div id="adminStatus" class="profile-status" role="status" aria-live="polite"></div>
+  <div class="profile-card" style="margin:18px 0;background:#f5f9fd">
+   <h3>Developer sandbox</h3>
+   <p class="muted">Create and manage test API keys for your own applications. Keys are shown only once when created. Never share a key publicly.</p>
+   <div class="field"><label for="rfApiKeyLabel">API key label</label><input id="rfApiKeyLabel" maxlength="80" value="My first test application" placeholder="e.g. Mobile app test"></div>
+   <button type="button" id="rfCreateApiKey">Create test API key</button>
+   <div id="rfApiKeyResult" class="warning hidden" role="status" aria-live="polite" style="overflow-wrap:anywhere;margin-top:12px"></div>
+   <div id="rfApiKeyList" style="margin-top:14px"><p class="muted">API keys will appear here after loading.</p></div>
+   <button class="secondary" type="button" id="rfRefreshApiKeys">Refresh API keys</button>
+   <p class="fine" style="text-align:left;margin-top:12px">TEST KEYS ONLY. These keys cannot move real money. Keep the full key private; only its prefix is listed after creation.</p>
+  </div>
+
+  <section class="profile-card" id="rfSandboxApiDocs" aria-labelledby="rfSandboxApiDocsHeading" style="margin:18px 0">
+   <h3 id="rfSandboxApiDocsHeading">Sandbox API documentation</h3>
+   <p class="muted">Use these endpoints to connect your own test application to RemitlyFly. All examples are simulations only.</p>
+   <div class="warning"><strong>TEST ONLY:</strong> This API cannot send, receive, or move real money. Never put your API key in public code, a website page, GitHub repository, or a screenshot. Use a secure server-side environment for your test application.</div>
+   <h4>1. Base URL and authentication</h4>
+   <p>Base URL:</p>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox</code></pre>
+   <p>For protected endpoints, send your test key in the <code>x-rf-api-key</code> header. Replace the placeholder below with the key you copied. Do not paste your key into this dashboard or share it with anyone.</p>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>x-rf-api-key: YOUR_RF_TEST_API_KEY</code></pre>
+   <h4>2. Check API health (no key required)</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -i "https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/health"</code></pre>
+   <p class="muted">A successful response reports <code>status: online</code>, <code>mode: TEST_ONLY</code>, and <code>real_money_enabled: false</code>.</p>
+   <h4>3. Read a configured exchange rate</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -H "x-rf-api-key: YOUR_RF_TEST_API_KEY" \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/rates?base_currency=USD&amp;quote_currency=ETB"</code></pre>
+   <p class="muted">Change the currency pair as needed. If no active sandbox rate exists, the API returns HTTP 404. A returned rate is indicative and for testing only.</p>
+   <h4>4. Request a quote (does not create a transfer)</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -X POST \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/quotes" \
+-H "Content-Type: application/json" \
+-H "x-rf-api-key: YOUR_RF_TEST_API_KEY" \
+-d '{
+  "sender_country": "US",
+  "receiver_country": "ET",
+  "send_currency": "USD",
+  "send_amount": 25
+}'</code></pre>
+   <h4>5. Create a simulated transfer</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -X POST \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/transfers" \
+-H "Content-Type: application/json" \
+-H "x-rf-api-key: YOUR_RF_TEST_API_KEY" \
+-d '{
+  "sender_country": "US",
+  "receiver_country": "ET",
+  "send_currency": "USD",
+  "send_amount": 25,
+  "scenario": "pending",
+  "metadata": {
+    "client_reference": "demo-001"
+  }
+}'</code></pre>
+   <p class="muted">Supported scenarios: <code>pending</code>, <code>under_review</code>, <code>success</code>, and <code>failure</code>. Success/failure are simulated statuses only. The response returns a transfer reference.</p>
+   <h4>6. Check a transfer status</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -H "x-rf-api-key: YOUR_RF_TEST_API_KEY" \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/transfers/YOUR_TRANSFER_REFERENCE"</code></pre>
+   <h4>7. Cancel a simulated transfer</h4>
+   <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>curl -X POST \
+"https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox/v1/transfers/YOUR_TRANSFER_REFERENCE/cancel" \
+-H "x-rf-api-key: YOUR_RF_TEST_API_KEY"</code></pre>
+   <h4>Supported codes and important responses</h4>
+   <ul>
+    <li>Sender country examples: <code>US</code>, <code>GB</code>, <code>DE</code>, <code>FR</code>, and other supported European codes.</li>
+    <li>Receiver country codes: <code>ET</code>, <code>KE</code>, <code>NG</code>, <code>UG</code>, <code>TZ</code>, <code>ZA</code>.</li>
+    <li>Sender currencies: <code>USD</code>, <code>EUR</code>, <code>GBP</code>.</li>
+    <li><code>401</code>: missing or invalid test API key. <code>403</code>: key scope not permitted. <code>404</code>: endpoint, transfer, or configured rate not found. <code>409</code>: no active rate configured for a requested quote/transfer or action cannot be performed.</li>
+   </ul>
+   <p class="fine" style="text-align:left">Keep your key private. If it is exposed, revoke it from the API key management area and create a replacement. These examples are for developer testing only; no live payout partners, licences, or real-money capability are implied.</p>
+  </section>
   <div class="stat-grid"><div class="stat"><small>Test records</small><strong id="adminRecordCount">—</strong></div><div class="stat"><small>Unique accounts</small><strong id="adminUserCount">—</strong></div><div class="stat"><small>Simulated send total</small><strong id="adminTotalAmount">$0</strong></div></div>
   <button class="secondary" type="button" id="refreshAdmin">Refresh admin data</button>
   <div id="adminList"><p class="muted">Admin data has not been loaded.</p></div>
  </section>
  <section class="profile-card" data-page="recipients" id="recipientsSection" aria-labelledby="recipientsHeading">
   <h3 id="recipientsHeading">Manage recipients</h3>
-  <p class="muted">Save recipient details for your own reference. No transfers are available in this version.</p>
+  <p class="muted">Save recipient details for test-only transfer previews. No real payments or payouts are available.</p>
   <form id="recipientForm">
    <input id="recipientEditId" type="hidden" value="">
    <div class="field"><label for="recipientName">Recipient full name</label><input id="recipientName" autocomplete="name" placeholder="Full name" required></div>
    <div class="field"><label for="recipientRelationship">Relationship (optional)</label><input id="recipientRelationship" placeholder="e.g. Family, friend"></div>
-   <div class="field"><label for="recipientCountry">Recipient country</label><select id="recipientCountry" required><option value="Ethiopia" selected>Ethiopia</option></select><small class="muted">This prototype is configured for sending to Ethiopia.</small></div>
+<div class="field">
+  <label for="recipientCountry">Recipient country</label>
+  <select id="recipientCountry" required>
+    <option value="Ethiopia" selected>Ethiopia</option>
+    <option value="Kenya">Kenya</option>
+    <option value="Nigeria">Nigeria</option>
+    <option value="Uganda">Uganda</option>
+    <option value="Tanzania">Tanzania</option>
+    <option value="South Africa">South Africa</option>
+  </select>
+  <small class="muted">Choose the destination country. Bank and wallet names are examples; payout availability is not confirmed.</small>
+</div>
+   <div id="recipientPayoutFields" class="field hidden">
+  <label for="recipientPayoutMethod">Payout method</label>
+  <select id="recipientPayoutMethod">
+    <option value="">Choose payout method</option>
+    <option value="bank">Bank account</option>
+    <option value="wallet">Mobile wallet</option>
+  </select>
+
+  <label for="recipientPayoutProvider">Choose bank or wallet</label>
+  <select id="recipientPayoutProvider">
+    <option value="">Choose provider</option>
+  </select>
+
+  <small class="muted">Test mode only. These are example options, not confirmed RemitlyFly provider connections.</small>
+   </div>
    <div class="field"><label for="recipientPhone">Phone number (optional)</label><input id="recipientPhone" type="tel" autocomplete="tel" placeholder="Phone number"></div>
    <div class="field"><label for="recipientNote">Note (optional)</label><input id="recipientNote" placeholder="Personal note"></div>
    <div class="rowline" style="justify-content:flex-start"><button class="primary" style="width:auto;flex:1" id="recipientSubmit" type="submit">Add recipient</button><button class="secondary hidden" id="cancelRecipientEdit" type="button">Cancel edit</button></div>
@@ -1096,8 +1188,33 @@ $('backToIntro').addEventListener('click',()=>{const shell=document.querySelecto
 function message(text,type='err'){const n=$('notice');n.textContent=text;n.className='notice show '+type}
 function clearMessage(){$('notice').className='notice'}
 function setMode(next){mode=next;clearMessage();$('loginTab').classList.toggle('active',mode==='login');$('signupTab').classList.toggle('active',mode==='signup');$('nameField').classList.toggle('hidden',mode!=='signup');$('confirmField').classList.toggle('hidden',mode!=='signup');$('loginOptions').classList.toggle('hidden',mode!=='login');$('formTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('formIntro').textContent=mode==='login'?'Log in to your RemitlyFly account.':'Create your RemitlyFly account.';$('submitButton').textContent=mode==='login'?'Log in':'Create account';$('switchLine').innerHTML=mode==='login'?'New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button>':'Already registered? <button class="link" id="switchMode" type="button">Log in</button>'; }
-function showDashboard(user){
+async function showDashboard(user){
+  const {data:approval,error:approvalError}=await supabase.from('account_approvals').select('status').eq('user_id',user.id).maybeSingle();
   const shell=document.querySelector('.shell');
+  function showApprovalGate(title,statusText){
+    $('dashboard').classList.add('account-pending');
+    $('accountApprovalGate').classList.remove('hidden');
+    $('accountApprovalGate').querySelector('h2').textContent=title;
+    $('pendingApprovalStatus').textContent=statusText;
+    $('welcome').textContent='Account status';
+    if(shell) shell.classList.remove('intro-mode','login-mode');
+    if(shell) shell.classList.add('dashboard-mode');
+    $('authCard').style.display='none';
+    $('dashboard').style.display='block';
+  }
+  if(approvalError || !approval){
+    showApprovalGate('Account status','We could not verify your approval status. Access is paused for your protection. Please try again or contact support@remitlyfly.com.');
+    return;
+  }
+  if(approval.status!=='approved'){
+    const title=approval.status==='restricted'?'Account restricted':(approval.status==='rejected'?'Account denied':'Account awaiting approval');
+    const statusText=approval.status==='restricted'?'Your account has been restricted following an administrator review. Please check your email for the reason or contact support@remitlyfly.com.':(approval.status==='rejected'?'Your registration has been denied by a RemitlyFly administrator. You can still log in to view this notice, but dashboard features and transfers are unavailable. Please check your email for the reason or contact support@remitlyfly.com if you believe this decision should be reviewed.':'Your account is pending admin approval. You can log in, but dashboard features will remain unavailable until an administrator approves your account.');
+    showApprovalGate(title,statusText);
+    if(approval.status==='pending') supabase.functions.invoke('notify-admin-signup').catch(()=>{});
+    return;
+  }
+  $('dashboard').classList.remove('account-pending');
+  $('accountApprovalGate').classList.add('hidden');
   if(shell) shell.classList.remove('intro-mode','login-mode');
   if(shell) shell.classList.add('dashboard-mode');
   $('authCard').style.display='none';$('dashboard').style.display='block';
@@ -1114,10 +1231,58 @@ function showDashboard(user){
   updateDashboardStats();
   loadTransferHistory();
 }
+async function rfLoadPaymentModeSetting(){
+ const toggle=$('rfLivePaymentsSwitch'), lock=$('rfLivePaymentsLock'), badge=$('rfPaymentModeBadge');
+ if(!toggle||!supabase)return;
+ try{
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.access_token)throw new Error('Please sign in again.');
+  const response=await fetch(SUPABASE_URL+'/functions/v1/remitlyfly-sandbox/v1/admin/payment-mode',{
+   method:'GET',headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token}
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||'Could not load the backend payment setting.');
+  toggle.checked=data.setting?.requested_mode==='LIVE';
+  toggle.disabled=false;
+  lock.textContent=toggle.checked
+   ? 'LIVE has been requested by the administrator. Effective mode is still TEST ONLY; no production provider is configured.'
+   : 'Admin request is TEST ONLY. The backend blocks real payments until a verified production provider and required approvals are configured.';
+  if(badge)badge.textContent='EFFECTIVE MODE: '+(data.setting?.effective_mode||'TEST_ONLY')+' — LIVE LOCKED';
+ }catch(err){
+  toggle.disabled=true;
+  lock.textContent=(err.message||'Unable to load setting.')+' The switch is disabled until the secure backend responds.';
+ }
+}
+$('rfLivePaymentsSwitch')?.addEventListener('change',async()=>{
+ const toggle=$('rfLivePaymentsSwitch'), lock=$('rfLivePaymentsLock'), badge=$('rfPaymentModeBadge');
+ const requested=toggle.checked?'LIVE':'TEST_ONLY';
+ toggle.disabled=true;
+ try{
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.access_token)throw new Error('Please sign in again.');
+  const response=await fetch(SUPABASE_URL+'/functions/v1/remitlyfly-sandbox/v1/admin/payment-mode',{
+   method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'},
+   body:JSON.stringify({requested_mode:requested})
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||'The backend rejected the setting change.');
+  toggle.checked=data.setting?.requested_mode==='LIVE';
+  lock.textContent=toggle.checked
+   ? 'LIVE request saved by admin, but effective mode remains TEST ONLY. Real payments are blocked until the provider and required approvals are verified.'
+   : 'TEST ONLY request saved. The backend continues to block all real payments.';
+  if(badge)badge.textContent='EFFECTIVE MODE: '+(data.setting?.effective_mode||'TEST_ONLY')+' — LIVE LOCKED';
+  adminMessage(data.message||'Payment mode request saved. Effective mode remains TEST ONLY.','ok');
+ }catch(err){
+  toggle.checked=!toggle.checked;
+  lock.textContent=err.message||'Could not save the setting.';
+  adminMessage(lock.textContent,'err');
+ }finally{toggle.disabled=false;}
+});
 function profileMessage(text,type='err'){
   const el=$('profileStatus');el.textContent=text;el.className='profile-status show '+type;
 }
-function showAuth(){ const shell=document.querySelector('.shell');shell.classList.remove('dashboard-mode','intro-mode');shell.classList.add('login-mode');$('dashboard').style.display='none';$('authCard').style.display='block' }
+function showAuth(){ const shell=document.querySelector('.shell');shell.classList.remove('dashboard-mode','intro-mode');shell.classList.add('login-mode');$('dashboard').classList.remove('account-pending');$('dashboard').style.display='none';$('authCard').style.display='block' }
+$('pendingRefresh').addEventListener('click',async()=>{const {data:{user}}=await supabase.auth.getUser();if(user)await showDashboard(user);});
 $('loginTab').addEventListener('click',()=>setMode('login'));$('signupTab').addEventListener('click',()=>setMode('signup'));$('switchLine').addEventListener('click',(e)=>{if(e.target && e.target.id==='switchMode')setMode(mode==='login'?'signup':'login')}); 
 $('forgot').addEventListener('click',async()=>{clearMessage();if(!configured){message('Setup is not finished. Add your Supabase project URL and public key first.');return}if(!supabase){message('Could not load the authentication service. Check your internet connection and reload the page.');return}const email=$('email').value.trim();if(!email){message('Enter your email address first.');return}const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});if(error)message(error.message);else message('If this email belongs to an account, password recovery instructions will be sent. Check your inbox.','ok')});
 $('authForm').addEventListener('submit',async e=>{e.preventDefault();clearMessage();if(!configured){message('Authentication is not configured yet. Add your Supabase project URL and public key.');return}if(!supabase){message('Could not load the authentication service. Check your internet connection and reload the page.');return}
@@ -1126,10 +1291,10 @@ $('authForm').addEventListener('submit',async e=>{e.preventDefault();clearMessag
   if(mode==='signup'){
    const name=$('fullName').value.trim();if(!name){message('Enter your full name.');return}if(password!==$('confirmPassword').value){message('The passwords do not match.');return}
    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:window.location.origin}});
-   if(error)message(error.message);else if(data.session && data.user) {showDashboard(data.user);message('Account created.','ok')} else message('Registration submitted. Check your email to confirm your account before logging in.','ok');
+   if(error)message(error.message);else if(data.session && data.user) {await showDashboard(data.user);message('Registration submitted. Your account is awaiting admin approval.','ok')} else message('Registration submitted. Confirm your email, then wait for admin approval before accessing the app.','ok');
   } else {
    const {data,error}=await supabase.auth.signInWithPassword({email,password});
-   if(error)message(error.message);else showDashboard(data.user);
+   if(error)message(error.message);else await showDashboard(data.user);
   }
  } catch(err){message('Something went wrong. Please try again.')} finally {btn.disabled=false}
 });
@@ -1149,10 +1314,132 @@ $('profileForm').addEventListener('submit',async e=>{
   finally{button.disabled=false}
 });
 $('logout').addEventListener('click',async()=>{if(supabase)await supabase.auth.signOut();showAuth();setMode('login');$('password').value='';});
-if(configured && supabase){const {data:{session}}=await supabase.auth.getSession();if(session?.user)showDashboard(session.user);supabase.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>{if(session?.user)showDashboard(session.user);else showAuth()},0)})} else if (supabaseLoadError) { message('The login form is ready, but the authentication library did not load. Check your internet connection and reload.'); }
+if(configured && supabase){supabase.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(session?.user){showDashboard(session.user);}else if(event==='SIGNED_OUT'){showAuth();setMode('login');}},0)});const {data:{session},error:sessionError}=await supabase.auth.getSession();if(session?.user)await showDashboard(session.user);else if(sessionError)message('Could not restore your sign-in session. Please try logging in again.');} else if (supabaseLoadError) { message('The login form is ready, but the authentication library did not load. Check your internet connection and reload.'); }
 
 // Recipient manager: all records are stored in public.recipients under the signed-in user's ID.
 const recipientState = { items: [], view: 'all', busy: false };
+ const kenyaBanks = [
+  'KCB Bank',
+  'Equity Bank',
+  'Co-operative Bank',
+  'Absa Bank',
+  'NCBA Bank',
+  'Stanbic Bank',
+  'DTB',
+  'Family Bank',
+  'I&M Bank',
+  'Standard Chartered',
+  'National Bank of Kenya',
+  'Ecobank',
+  'Bank of Africa',
+  'Sidian Bank'
+];
+
+const kenyaWallets = [
+  'M-PESA',
+  'Airtel Money',
+  'T-Kash',
+  'Equitel',
+  'SasaPay'
+];
+
+const ethiopiaBanks = [
+  'Commercial Bank of Ethiopia',
+  'Awash Bank',
+  'Dashen Bank',
+  'Bank of Abyssinia',
+  'Wegagen Bank',
+  'Hibret Bank',
+  'Nib International Bank',
+  'Cooperative Bank of Oromia',
+  'Oromia Bank',
+  'Zemen Bank',
+  'Berhan Bank',
+  'Bunna Bank',
+  'Enat Bank',
+  'Amhara Bank',
+  'Tsedey Bank',
+  'Siinqee Bank'
+];
+
+const ethiopiaWallets = [
+  'Telebirr',
+  'M-PESA Ethiopia',
+  'Kacha',
+  'Yaya Wallet'
+];
+
+const nigeriaBanks = ['Access Bank','First Bank of Nigeria','Guaranty Trust Bank (GTBank)','United Bank for Africa (UBA)','Zenith Bank','Fidelity Bank','Sterling Bank','Stanbic IBTC Bank','Wema Bank','Ecobank Nigeria','Union Bank of Nigeria'];
+const nigeriaWallets = ['OPay','PalmPay','Paga','Moniepoint'];
+const ugandaBanks = ['Stanbic Bank Uganda','Centenary Bank','Absa Bank Uganda','dfcu Bank','Equity Bank Uganda','Standard Chartered Uganda','Bank of Africa Uganda','Housing Finance Bank','I&M Bank Uganda','NCBA Bank Uganda','PostBank Uganda','Finance Trust Bank'];
+const ugandaWallets = ['MTN Mobile Money','Airtel Money Uganda'];
+// Illustrative local payout destinations only; no bank or wallet is connected to RemitlyFly.
+const tanzaniaBanks = ['NMB Bank','CRDB Bank','NBC Bank','Stanbic Bank Tanzania','Absa Bank Tanzania','Azania Bank','TCB Bank','Equity Bank Tanzania'];
+const tanzaniaWallets = ['M-Pesa','Mixx by Yas (Tigo Pesa)','Airtel Money','HaloPesa','T-Pesa'];
+const southAfricaBanks = ['ABSA','Capitec Bank','First National Bank (FNB)','Nedbank','Standard Bank','Investec','African Bank','Discovery Bank'];
+const southAfricaWallets = ['MTN MoMo','VodaPay','Telkom Pay'];
+
+function updateRecipientPayoutFields() {
+  const country = $('recipientCountry').value;
+  const supported = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda', 'Tanzania', 'South Africa'].includes(country);
+  const box = $('recipientPayoutFields');
+  const method = $('recipientPayoutMethod');
+  const provider = $('recipientPayoutProvider');
+
+  box.classList.toggle('hidden', !supported);
+  method.required = supported;
+
+  if (!supported) {
+    method.value = '';
+    provider.innerHTML = '<option value="">Choose provider</option>';
+    provider.required = false;
+    return;
+  }
+
+  const allowedMethods = ['bank', 'wallet'];
+  method.innerHTML = '<option value="">Choose payout method</option>' +
+    allowedMethods.map(value => '<option value="' + value + '">' +
+      (value === 'bank' ? 'Bank account' : 'Mobile wallet') + '</option>').join('');
+  if (!allowedMethods.includes(method.value)) method.value = '';
+  updateRecipientPayoutProviders();
+}
+
+function updateRecipientPayoutProviders() {
+  const country = $('recipientCountry').value;
+  const method = $('recipientPayoutMethod').value;
+  const provider = $('recipientPayoutProvider');
+
+  let options = [];
+
+  if (country === 'Kenya') {
+    options = method === 'bank' ? kenyaBanks :
+              method === 'wallet' ? kenyaWallets : [];
+  } else if (country === 'Ethiopia') {
+    options = method === 'bank' ? ethiopiaBanks :
+              method === 'wallet' ? ethiopiaWallets : [];
+  } else if (country === 'Nigeria') {
+    options = method === 'bank' ? nigeriaBanks :
+              method === 'wallet' ? nigeriaWallets : [];
+  } else if (country === 'Uganda') {
+    options = method === 'bank' ? ugandaBanks :
+              method === 'wallet' ? ugandaWallets : [];
+  } else if (country === 'Tanzania') {
+    options = method === 'bank' ? tanzaniaBanks :
+              method === 'wallet' ? tanzaniaWallets : [];
+  } else if (country === 'South Africa') {
+    options = method === 'bank' ? southAfricaBanks :
+              method === 'wallet' ? southAfricaWallets : [];
+  }
+
+  provider.innerHTML = '<option value="">Choose provider</option>' +
+    options.map(name => `<option value="${name}">${name}</option>`).join('');
+
+  provider.required = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda', 'Tanzania', 'South Africa'].includes(country);
+}
+
+$('recipientCountry').addEventListener('change', updateRecipientPayoutFields);
+$('recipientPayoutMethod').addEventListener('change', updateRecipientPayoutProviders);
+updateRecipientPayoutFields();
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 function recipientStatus(text, type='err') {
   const el = $('recipientStatus'); if (!el) return;
@@ -1173,6 +1460,7 @@ function renderRecipients() {
   if (!items.length) { list.innerHTML = '<p class="muted">No saved recipients found. Add a recipient using the form above.</p>'; return; }
   list.innerHTML = items.map(r => `<article class="profile-card" style="margin-top:12px;padding:14px">
     <div class="rowline" style="justify-content:space-between;align-items:flex-start;gap:12px"><div><strong>${escapeHtml(r.name)}</strong><div class="muted">${escapeHtml(r.country)}${r.relationship ? ' · '+escapeHtml(r.relationship):''}</div></div><button type="button" class="secondary" data-action="favorite" data-id="${escapeHtml(r.id)}" aria-label="Toggle favorite">${r.favorite?'★ Favorite':'☆ Favorite'}</button></div>
+    <p class="muted" style="margin:8px 0">${r.payout_method ? 'Payout method: '+escapeHtml(r.payout_method === 'wallet' ? 'Mobile wallet' : 'Bank account') : 'Payout method: Not selected'} · ${r.payout_provider ? 'Provider: '+escapeHtml(r.payout_provider) : 'Bank or wallet: Not selected'}</p>
     ${r.phone ? `<p style="margin:8px 0">${escapeHtml(r.phone)}</p>`:''}${r.note ? `<p class="muted" style="margin:8px 0">${escapeHtml(r.note)}</p>`:''}
     <div class="rowline" style="margin-top:10px;justify-content:flex-start"><button type="button" class="secondary" data-action="edit" data-id="${escapeHtml(r.id)}">Edit</button><button type="button" class="secondary" data-action="delete" data-id="${escapeHtml(r.id)}">Delete</button></div>
   </article>`).join('');
@@ -1182,7 +1470,7 @@ async function loadRecipients() {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) { recipientStatus(sessionError.message); return; }
   if (!session?.user) { recipientState.items=[]; renderRecipients(); return; }
-  const { data, error } = await supabase.from('recipients').select('id,user_id,name,relationship,country,phone,note,favorite,created_at,updated_at').order('created_at',{ascending:false});
+  const { data, error } = await supabase.from('recipients').select('id,user_id,name,relationship,country,phone,note,favorite,payout_method,payout_provider,created_at,updated_at').order('created_at',{ascending:false});
   if (error) { recipientStatus('Could not load recipients: '+error.message); return; }
   recipientState.items = data || []; renderRecipients(); updateDashboardStats();
 }
@@ -1192,7 +1480,20 @@ $('recipientForm').addEventListener('submit', async e => {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !session?.user) { recipientStatus('Please log in again before saving a recipient.'); return; }
   const id = $('recipientEditId').value;
-  const record = { name:$('recipientName').value.trim(), relationship:$('recipientRelationship').value.trim(), country:$('recipientCountry').value.trim(), phone:$('recipientPhone').value.trim(), note:$('recipientNote').value.trim() };
+  const supportsPayout = ['Ethiopia', 'Kenya', 'Nigeria', 'Uganda', 'Tanzania', 'South Africa'].includes($('recipientCountry').value);
+  const record = {
+    name:$('recipientName').value.trim(),
+    relationship:$('recipientRelationship').value.trim(),
+    country:$('recipientCountry').value.trim(),
+    phone:$('recipientPhone').value.trim(),
+    note:$('recipientNote').value.trim(),
+    payout_method:supportsPayout ? $('recipientPayoutMethod').value : null,
+payout_provider:supportsPayout ? $('recipientPayoutProvider').value : null
+  };
+  if (supportsPayout && (!record.payout_method || !record.payout_provider)) {
+  recipientStatus('Please choose a bank or mobile wallet and provider.');
+  return;
+}
   if (!record.name || !record.country) { recipientStatus('Enter the recipient name and country.'); return; }
   const button = $('recipientSubmit'); button.disabled = true;
   try {
@@ -1212,8 +1513,20 @@ $('recipientList').addEventListener('click', async e => {
   const b=e.target.closest('[data-action]'); if (!b) return;
   const item=recipientState.items.find(r=>r.id===b.dataset.id); if (!item) return;
   if (b.dataset.action==='edit') {
-    $('recipientEditId').value=item.id; $('recipientName').value=item.name||''; $('recipientRelationship').value=item.relationship||''; $('recipientCountry').value=item.country||''; $('recipientPhone').value=item.phone||''; $('recipientNote').value=item.note||'';
-    $('recipientSubmit').textContent='Save changes'; $('cancelRecipientEdit').classList.remove('hidden'); $('recipientsSection').scrollIntoView({behavior:'smooth',block:'start'}); return;
+    $('recipientEditId').value=item.id;
+    $('recipientName').value=item.name||'';
+    $('recipientRelationship').value=item.relationship||'';
+    $('recipientCountry').value=item.country||'';
+    $('recipientPhone').value=item.phone||'';
+    $('recipientNote').value=item.note||'';
+    updateRecipientPayoutFields();
+    $('recipientPayoutMethod').value=item.payout_method||'';
+    updateRecipientPayoutProviders();
+    $('recipientPayoutProvider').value=item.payout_provider||'';
+    $('recipientSubmit').textContent='Save changes';
+    $('cancelRecipientEdit').classList.remove('hidden');
+    $('recipientsSection').scrollIntoView({behavior:'smooth',block:'start'});
+    return;
   }
   if (b.dataset.action==='delete') {
     if (!confirm(`Delete ${item.name} from your saved recipients?`)) return;
@@ -1227,7 +1540,7 @@ $('recipientList').addEventListener('click', async e => {
   }
 });
 
-// Load database recipients for an existing session and after future sign-ins.
+// // Load database recipients for an existing session and after future sign-ins.
 if (supabase) {
   supabase.auth.getSession().then(({ data, error }) => {
     if (error) recipientStatus('Could not check sign-in session: ' + error.message, 'err');
@@ -1251,19 +1564,120 @@ function money(value, currency='USD') {
   return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
 }
 function currentCurrency(){const country=$('senderCountry')?.value||'United States';return country==='United Kingdom'?'GBP':(['United States'].includes(country)?'USD':'EUR');}
-function refreshCurrencyLabels(){const currency=currentCurrency();$('sendCurrencyLabel').textContent=currency;$('rateCurrencyLabel').textContent=currency;$('feeCurrencyLabel').textContent=currency;const walletCurrency=$('walletSendCurrencyLabel');if(walletCurrency)walletCurrency.textContent=currency;if(!$('demoRate').dataset.userEdited){const live=window.remitlyFlyLiveRates?.bestByCurrency?.[currency];if(live?.rate){$('demoRate').value=String(live.rate);$('demoRate').dataset.liveApplied='1';}else{$('demoRate').value=String(({USD:150,EUR:162,GBP:190})[currency]||150);delete $('demoRate').dataset.liveApplied;}}refreshTransferSummary();updateCalculatorRateStatus();if(typeof updateWalletSendPreview==='function')updateWalletSendPreview();}
+function destinationCurrencyForCountry(country){return ({Ethiopia:'ETB',Kenya:'KES',Nigeria:'NGN',Uganda:'UGX',Tanzania:'TZS','South Africa':'ZAR'})[String(country||'')]||'—';}
+window.remitlyFlyCountryRates = window.remitlyFlyCountryRates || {};
+const AFRIRATE_COUNTRIES = {Kenya:'KE',Nigeria:'NG',Uganda:'UG',Tanzania:'TZ','South Africa':'ZA'};
+const countryRateRequests = new Set();
+async function loadCountryReferenceRate(country){
+  const code=AFRIRATE_COUNTRIES[country];
+  if(!code)return;
+  const base=currentCurrency();
+  const key=country+':'+base;
+  const cached=window.remitlyFlyCountryRates[key];
+  if(cached){
+    if($('demoRate')?.disabled && recipientState.items.find(r=>r.id===$('transferRecipient')?.value)?.country===country){
+      $('demoRate').value=String(cached.rate);
+      const small=$('demoRate').closest('.field')?.querySelector('small');
+      if(small)small.textContent='Indicative AfriRate reference · '+(cached.rateDate||'date not supplied')+'. Not a remittance payout quote.';
+    }
+    refreshTransferSummary();
+    return;
+  }
+  if(countryRateRequests.has(key))return;
+  countryRateRequests.add(key);
+  try{
+    const response=await fetch(SUPABASE_URL+'/functions/v1/afrirate?country='+encodeURIComponent(code)+'&base='+encodeURIComponent(base),{headers:{'Accept':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY},cache:'no-store'});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||('HTTP '+response.status));
+    if(!(Number(data.rate)>0))throw new Error('Provider returned no usable rate');
+    window.remitlyFlyCountryRates[key]=data;
+    const selected=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
+    if(selected?.country===country && currentCurrency()===base && $('demoRate')?.disabled){
+      $('demoRate').value=String(data.rate);
+      const small=$('demoRate').closest('.field')?.querySelector('small');
+      if(small)small.textContent='Indicative AfriRate reference · '+(data.rateDate||'date not supplied')+'. Not a remittance payout quote.';
+    }
+  }catch(error){
+    console.warn('AfriRate reference rate unavailable for '+key,error);
+  }finally{
+    countryRateRequests.delete(key);
+    refreshTransferSummary();
+  }
+}
+
+function refreshDestinationCurrencyLabel(){
+  const recipient=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
+  const country=recipient?.country||'Ethiopia';
+  const destinationCurrency=destinationCurrencyForCountry(country);
+  const label=$('destinationCurrencyLabel');
+  if(label)label.textContent=destinationCurrency;
+  const rate=$('demoRate');
+  const rateLabel=rate?.closest('.field')?.querySelector('small');
+  if(rate){
+    if(country!=='Ethiopia'){
+      if(!rate.disabled&&rate.value){
+        rate.dataset.ethiopiaRateCache=rate.value;
+        rate.dataset.ethiopiaRateCurrency=currentCurrency();
+        if(rate.dataset.userEdited)rate.dataset.ethiopiaRateUserEdited='1';
+        else delete rate.dataset.ethiopiaRateUserEdited;
+      }
+      rate.disabled=true;
+      rate.value='';
+      delete rate.dataset.userEdited;
+      delete rate.dataset.liveApplied;
+      loadCountryReferenceRate(country);
+    }else{
+      const wasDisabled=rate.disabled;
+      rate.disabled=false;
+      if(wasDisabled||!rate.value){
+        const currency=currentCurrency();
+        const live=window.remitlyFlyLiveRates?.bestByCurrency?.[currency];
+        const cacheMatches=rate.dataset.ethiopiaRateCurrency===currency;
+        const cached=cacheMatches?(Number(rate.dataset.ethiopiaRateCache)||0):0;
+        rate.value=String(cached||live?.rate||({USD:150,EUR:162,GBP:190})[currency]||150);
+        if(cacheMatches&&rate.dataset.ethiopiaRateUserEdited){
+          rate.dataset.userEdited='1';
+          delete rate.dataset.liveApplied;
+        }else{
+          delete rate.dataset.userEdited;
+          if(live?.rate&&!cached)rate.dataset.liveApplied='1';
+          else delete rate.dataset.liveApplied;
+        }
+      }
+    }
+  }
+  if(rateLabel){
+    const pairRate=window.remitlyFlyCountryRates?.[country+':'+currentCurrency()];
+    rateLabel.textContent=country!=='Ethiopia'
+      ? (pairRate ? 'Indicative central-bank reference rate from AfriRate · '+(pairRate.rateDate||'date not supplied')+'. Not a RemitlyFly payout quote.' : 'Loading published '+destinationCurrency+' reference rate for '+country+'… If this currency pair is not published, no estimate will be shown.')
+      : 'Live published Ethiopian bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.';
+  }
+}
+function refreshCurrencyLabels(){const currency=currentCurrency();$('sendCurrencyLabel').textContent=currency;$('rateCurrencyLabel').textContent=currency;$('feeCurrencyLabel').textContent=currency;const walletCurrency=$('walletSendCurrencyLabel');if(walletCurrency)walletCurrency.textContent=currency;if(!$('demoRate').dataset.userEdited){const live=window.remitlyFlyLiveRates?.bestByCurrency?.[currency];if(live?.rate){$('demoRate').value=String(live.rate);$('demoRate').dataset.liveApplied='1';}else{$('demoRate').value=String(({USD:150,EUR:162,GBP:190})[currency]||150);delete $('demoRate').dataset.liveApplied;}}refreshDestinationCurrencyLabel();refreshTransferSummary();updateCalculatorRateStatus();if(typeof updateWalletSendPreview==='function')updateWalletSendPreview();}
 function refreshTransferSummary() {
-  const currency=currentCurrency();
+  const currency = currentCurrency();
   const amount = Math.max(0, Number($('sendAmount').value) || 0);
   const rate = Math.max(0, Number($('demoRate').value) || 0);
   const fee = Math.max(0, Number($('demoFee').value) || 0);
   $('summarySend').textContent = money(amount, currency);
   $('summaryFee').textContent = money(fee, currency);
   $('summaryTotal').textContent = money(amount + fee, currency);
-  $('summaryReceive').textContent = 'ETB ' + (amount * rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  $('summaryRate').textContent = '1 ' + currency + ' = ' + rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ETB';
+  const selectedRecipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
+  const destinationCurrency = destinationCurrencyForCountry(selectedRecipient?.country || 'Ethiopia');
+  if (selectedRecipient && selectedRecipient.country !== 'Ethiopia') {
+    const live=window.remitlyFlyCountryRates?.[selectedRecipient.country+':'+currency];
+    if(!live?.rate){
+      $('summaryReceive').textContent = destinationCurrency + ' —';
+      $('summaryRate').textContent = 'Published reference rate is loading or unavailable for '+selectedRecipient.country+' ('+currency+').';
+      return;
+    }
+    $('summaryReceive').textContent = destinationCurrency + ' ' + (amount * live.rate).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    $('summaryRate').textContent = '1 ' + currency + ' = ' + live.rate.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:4}) + ' ' + destinationCurrency + ' · AfriRate central-bank reference' + (live.stale?' · source marked stale':'') + ' · TEST ONLY';
+    return;
+  }
+  $('summaryReceive').textContent = destinationCurrency + ' ' + (amount * rate).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  $('summaryRate').textContent = '1 ' + currency + ' = ' + rate.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:4}) + ' ' + destinationCurrency;
 }
-
 
 // Live Ethiopian bank board via ET-Forex's documented anonymous read API.
 // The API publishes bank boards (usually daily), not guaranteed remittance quotes.
@@ -1275,11 +1689,12 @@ function safeRateDate(v){if(!v)return 'date not supplied';const d=new Date(v);re
 function findCbeReferenceRate(){
  const live=window.remitlyFlyLiveRates||{};const currency=currentCurrency();const banks=live.banks||[];
  const cbe=banks.find(b=>/commercial bank of ethiopia|^cbe$/i.test(String(b.bankName||b.name||b.bankCode||b.code||'')));
- const findRate=(bank)=>{const row=(bank?.rates||[]).find(r=>String(r.currency||'').toUpperCase()===currency);const rate=Number(row?.transactionalBuying||row?.transferBuying||row?.transactional_buying||row?.transfer_buying||row?.cashBuying||row?.cash_buying);return rate>0?{rate,currency,bank,updatedAt:bank?.updatedAt||bank?.lastRatesUpdatedAt||''}:null;};
- // Prefer CBE when present. Otherwise clearly identify the best available published bank rate instead of mislabelling it as CBE.
- const cbeResult=findRate(cbe);if(cbeResult)return {...cbeResult,sourceName:cbe.bankName||cbe.name||'Commercial Bank of Ethiopia',sourceType:'CBE published bank rate'};
- const best=live.bestByCurrency?.[currency];if(best?.rate){const bank=banks.find(b=>String(b.bankCode||b.code||'')===String(best.bankCode||''));return {rate:Number(best.rate),currency,bank,updatedAt:best.effectiveDate||bank?.updatedAt||bank?.lastRatesUpdatedAt||live.loadedAt||'',sourceName:best.bankName||bank?.bankName||bank?.name||'Published bank rate',sourceType:'Best available published bank reference'};}
- return null;
+ if(!cbe)return null;
+ const row=(cbe.rates||[]).find(r=>String(r.currency||'').toUpperCase()===currency);
+ // For incoming remittances, use CBE's published transfer/transactional buying rate only.
+ const rate=Number(row?.transactionalBuying||row?.transferBuying||row?.transactional_buying||row?.transfer_buying);
+ if(!(rate>0))return null;
+ return {rate,currency,bank:cbe,updatedAt:cbe.updatedAt||cbe.lastRatesUpdatedAt||'',sourceName:'Commercial Bank of Ethiopia',sourceType:'CBE published transfer-buying rate'};
 }
 function showWalletRatePopup(){
  const modal=$('walletRateModal');if(!modal)return;const wallet=$('receivingWallet')?.value;
@@ -1293,14 +1708,14 @@ function updateWalletRatePopup(){
  const inlineRate=$('selectedWalletRate'),inlineDate=$('selectedWalletRateDate'),inlineSource=$('selectedWalletRateSource'),inlineStatus=$('walletRateStatus');
  if(result){const rateText=`${fmtRate(result.rate)} ETB per ${result.currency}`;const dateText=safeRateDate(result.updatedAt);
   if(value)value.textContent=rateText;if(date)date.textContent=`Updated: ${dateText}`;if(source)source.textContent=`Source: ${result.sourceName} · ${result.sourceType}`;
-  if(status)status.textContent=wallet?`${wallet} selected. This is a published bank reference rate, not a wallet-specific quote.`:'Reference rate loaded; select a receiving wallet before applying it.';
+  if(status)status.textContent=wallet?`${wallet} selected. Using the Commercial Bank of Ethiopia transfer-buying reference rate; this is not a wallet-specific quote.`:'Reference rate loaded; select a receiving wallet before applying it.';
   if(inlineRate)inlineRate.textContent=rateText;if(inlineDate)inlineDate.textContent=dateText;if(inlineSource)inlineSource.textContent=result.sourceName;
-  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. Using ${result.sourceName} as an indicative ${result.currency}/ETB reference only.`:'Select a receiving wallet to enable applying this rate.';
+  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. Using the CBE ${result.currency}/ETB transfer-buying reference rate only.`:'Select a receiving wallet to enable applying this rate.';
  }else{
   if(value)value.textContent='Rate unavailable';if(date)date.textContent='No update time available';if(source)source.textContent='Source unavailable';
-  if(status)status.textContent='No published rate is currently available for this sending currency. Try Refresh rate; no rate will be invented.';
+  if(status)status.textContent='The Commercial Bank of Ethiopia transfer-buying rate is not available for this currency right now. Try Refresh rate; another bank rate will not be substituted.';
   if(inlineRate)inlineRate.textContent='Not available';if(inlineDate)inlineDate.textContent='Not available';if(inlineSource)inlineSource.textContent='Awaiting data';
-  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. Published ${currentCurrency()}/ETB reference rate unavailable; refresh to try again.`:'Choose a wallet, then refresh published bank reference rates.';
+  if(inlineStatus)inlineStatus.textContent=wallet?`${wallet} selected. CBE ${currentCurrency()}/ETB transfer-buying rate unavailable; refresh to try again.`:'Choose a wallet, then refresh published bank reference rates.';
  }
  const enabled=!!(wallet&&result?.rate>0);if(apply)apply.disabled=!enabled;const inlineApply=$('applyCbeWalletRate');if(inlineApply)inlineApply.disabled=!enabled;
 }
@@ -1310,8 +1725,8 @@ function updateWalletSendPreview(){
  if(!output||!status)return;
  if(!amount||amount<=0){output.textContent='ETB —';status.textContent='Enter an amount to see an indicative payout estimate.';return;}
  if(!wallet){output.textContent='ETB —';status.textContent='Select a receiving wallet to continue. The estimate is for demonstration only.';return;}
- if(result?.rate>0){output.textContent='ETB '+(amount*result.rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});status.textContent=`Estimate uses ${result.sourceName}: ${fmtRate(result.rate)} ETB per ${currency}. Reference rate only; wallet payout may differ.`;}
- else {output.textContent='ETB —';status.textContent=`No published ${currency}/ETB reference rate is available yet. Tap Refresh rate; no rate will be invented.`;}
+ if(result?.rate>0){output.textContent='ETB '+(amount*result.rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});status.textContent=`Estimate uses Commercial Bank of Ethiopia transfer-buying rate: ${fmtRate(result.rate)} ETB per ${currency}. Reference rate only; wallet payout may differ.`;}
+ else {output.textContent='ETB —';status.textContent=`No Commercial Bank of Ethiopia ${currency}/ETB transfer-buying rate is available yet. Tap Refresh rate; no other bank rate will be substituted.`;}
 }
 function useWalletSendAmount(){
  const input=$('walletSendAmount'), amount=Number(input?.value||0), wallet=$('receivingWallet')?.value;
@@ -1361,11 +1776,12 @@ function renderReceivingBankOptions(){
   const name=String(b.bankName||b.name||code);
   return `<option value="${escapeHtml(code)}">${escapeHtml(name)}</option>`;
  }).join('');
- if(banks.some(b=>String(b.bankCode||b.code)===previous))select.value=previous;
- else {
-  const preferred=banks.find(b=>/awash/i.test(String(b.bankName||b.name||'')))||banks[0];
-  if(preferred)select.value=String(preferred.bankCode||preferred.code||'');
- }
+ const recipient=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
+ const savedBank=String(recipient?.payout_provider||'').trim().toLowerCase();
+ const matchingBank=banks.find(b=>String(b.bankName||b.name||'').trim().toLowerCase()===savedBank);
+ select.value=matchingBank?String(matchingBank.bankCode||matchingBank.code||''):'';
+ const chosen=selectedBankCurrencyRate();
+ if(chosen?.rate&&!$('demoRate').dataset.userEdited){$('demoRate').value=String(chosen.rate);$('demoRate').dataset.liveApplied='1';}
  updateCalculatorRateStatus();
 }
 function updateCalculatorRateStatus(){
@@ -1419,7 +1835,8 @@ async function loadLiveBankRates(){
   renderReceivingBankOptions();
   updateWalletRateStatus();
   const date=new Date().toLocaleString();if(status)status.textContent=`Connected: loaded ${fetched.length} bank board(s) at ${date}. ${failed?`${failed} bank request(s) failed; those boards are omitted.`:''} Published rates can be stale and are not remittance quotes.`;
-  if(!$('demoRate').dataset.userEdited){const currency=currentCurrency();if(best[currency]?.rate){$('demoRate').value=String(best[currency].rate);$('demoRate').dataset.liveApplied='1';}}
+  const chosen=selectedBankCurrencyRate();
+  if(chosen?.rate&&!$('demoRate').dataset.userEdited){$('demoRate').value=String(chosen.rate);$('demoRate').dataset.liveApplied='1';}
  }catch(error){
   window.remitlyFlyLiveRates.error=String(error?.message||error);
   if(status)status.textContent=`Live API unavailable: ${error?.name==='AbortError'?'request timed out':String(error?.message||error)}. If this file is opened from content:// on Android, browser CORS may block API access; host the app or add a server-side proxy to resolve that.`;
@@ -1440,21 +1857,76 @@ function populateTransferRecipients() {
   if (items.some(r => r.id === previous)) select.value = previous;
   if (!items.length) select.innerHTML = '<option value="">No saved recipients — add one below first</option>';
 }
+ function showSavedRecipientPayoutInfo() {
+  const recipient = recipientState.items.find(
+    r => r.id === $('transferRecipient').value
+  );
+
+  const box = $('savedRecipientPayoutInfo');
+
+  if (!recipient) {
+    box.style.display = 'none';
+    return;
+  }
+
+  $('savedRecipientPayoutCountry').textContent =
+    'Destination: ' + (recipient.country || '—');
+
+  $('savedRecipientPayoutMethod').textContent =
+    'Payout method: ' + (recipient.payout_method || 'Not selected');
+
+  $('savedRecipientPayoutProvider').textContent =
+    'Bank or wallet: ' + (recipient.payout_provider || 'Not selected');
+
+  box.style.display = 'block';
+
+  $('payoutMethod').value = recipient.payout_method || 'bank';
+  if (recipient.country === 'Ethiopia') {
+
+    if (recipient.payout_method === 'wallet') {
+      const wallet = $('transferWallet');
+      const option = [...wallet.options].find(
+        o => o.value === recipient.payout_provider ||
+             o.textContent.trim().toLowerCase() === String(recipient.payout_provider||'').trim().toLowerCase()
+      );
+      if (option) wallet.value = option.value;
+    }
+
+    if (recipient.payout_method === 'bank') {
+      const bank = $('receivingBank');
+      const option = [...bank.options].find(
+        o => o.textContent.trim() === recipient.payout_provider
+      );
+      if (option) bank.value = option.value;
+    }
+  }
+    syncTransferPayoutMethod();
+  }
+$('transferRecipient').addEventListener(
+  'change',
+  ()=>{showSavedRecipientPayoutInfo();refreshDestinationCurrencyLabel();refreshTransferSummary();}
+);
 $('demoRate').addEventListener('input',()=>{$('demoRate').dataset.userEdited='1';delete $('demoRate').dataset.liveApplied;refreshTransferSummary();}); ['sendAmount','demoFee'].forEach(id => $(id).addEventListener('input', refreshTransferSummary));
 $('senderCountry').addEventListener('change',refreshCurrencyLabels);
 function syncTransferPayoutMethod(){
  const method=$('payoutMethod')?.value||'bank';
  const bankSection=$('transferBankPayoutSection'),walletSection=$('transferWalletPayoutSection');
- if(bankSection)bankSection.style.display=method==='bank'?'block':'none';
+ if(bankSection)bankSection.style.display='none';
  if(walletSection)walletSection.style.display=method==='wallet'?'block':'none';
  const wallet=$('transferWallet')?.value;
  const status=$('transferWalletStatus');
+ const selectedRecipient=recipientState.items.find(r=>r.id===$('transferRecipient')?.value);
+ if(selectedRecipient && selectedRecipient.country!=='Ethiopia'){
+  refreshTransferSummary();
+  if(status)status.textContent=(selectedRecipient.payout_method==='wallet'?'Mobile wallet: ':'Bank account: ')+(selectedRecipient.payout_provider||'saved payout destination')+'. Test preview only; no payout provider is connected.';
+  return;
+ }
  if(method==='wallet'){
   if(wallet){
    const dashboardSelect=$('receivingWallet');if(dashboardSelect)dashboardSelect.value=wallet;
    const result=findCbeReferenceRate();
    if(result?.rate>0){$('demoRate').value=String(result.rate);$('demoRate').dataset.userEdited='1';$('demoRate').dataset.liveApplied='1';if(status)status.textContent=`${wallet} selected. Using ${result.sourceName} as an indicative reference rate only; this is not a wallet-specific quote.`;}
-   else if(status)status.textContent=`${wallet} selected. No published reference rate is available right now; the test estimate will use the example rate shown below.`;
+   else if(status)status.textContent=`${wallet} selected. The CBE transfer-buying rate is unavailable. The separate sandbox quote may show its own TEST ONLY rate; it is not a CBE rate.`;
   } else if(status) status.textContent='Choose the recipient’s mobile wallet for this test preview.';
  } else if(method==='bank'){
   const chosen=selectedBankCurrencyRate?.();if(chosen?.rate){$('demoRate').value=String(chosen.rate);$('demoRate').dataset.userEdited='1';$('demoRate').dataset.liveApplied='1';}
@@ -1463,36 +1935,121 @@ function syncTransferPayoutMethod(){
 }
 $('payoutMethod')?.addEventListener('change',syncTransferPayoutMethod);
 $('transferWallet')?.addEventListener('change',syncTransferPayoutMethod);
-$('openWalletDashboard')?.addEventListener('click',()=>{const w=$('transferWallet')?.value;if(w&&$('receivingWallet'))$('receivingWallet').value=w;updateWalletRateStatus();$('walletDashboard')?.scrollIntoView({behavior:'smooth',block:'start'});});
 refreshCurrencyLabels();
 syncTransferPayoutMethod();
-$('transferForm').addEventListener('submit', e => {
+let pendingTestPreview = null;
+let pendingSandboxQuote = null;
+
+async function rfDashboardSandboxRequest(path, body) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Please sign in again before using the sandbox.");
+  const response = await fetch(SUPABASE_URL + "/functions/v1/remitlyfly-sandbox" + path, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + session.access_token,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({ error: "Invalid sandbox API response." }));
+  if (!response.ok) throw new Error(data.error || "Sandbox API request failed (" + response.status + ").");
+  return data;
+}
+
+$('transferForm').addEventListener('submit', async e => {
   e.preventDefault();
   const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
-  const amount = Number($('sendAmount').value), rate = Number($('demoRate').value), fee = Number($('demoFee').value), currency=currentCurrency();
+  const amount = Number($('sendAmount').value), currency = currentCurrency();
+  let rate = Number($('demoRate').value), fee = Number($('demoFee').value);
   if (!recipient) { $('transferStatus').textContent = 'Choose a saved recipient first.'; $('transferStatus').className='profile-status show err'; return; }
-  if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(fee) || fee < 0) { $('transferStatus').textContent = 'Enter a valid amount, example rate, and fee.'; $('transferStatus').className='profile-status show err'; return; }
-  $('transferStatus').textContent = 'Review preview prepared. No money has been sent.'; $('transferStatus').className='profile-status show ok';
-  const total = amount + fee;
-  const receive = amount * rate;
-  const payoutMethod=$('payoutMethod')?.value||'bank';const payoutLabel=payoutMethod==='wallet'?`Mobile wallet — ${$('transferWallet')?.value||'not selected'}`:`Bank account${$('receivingBank')?.selectedOptions?.[0]?.textContent?` — ${$('receivingBank').selectedOptions[0].textContent}`:''}`;
-  if(payoutMethod==='wallet'&&!$('transferWallet')?.value){$('transferStatus').textContent='Choose a receiving mobile wallet.';$('transferStatus').className='profile-status show err';return;}
-  $('reviewDetails').innerHTML = `<div><span>Recipient</span><strong>${escapeHtml(recipient.name)}</strong></div><div><span>Destination</span><strong>${escapeHtml(recipient.country)}${recipient.phone ? ' · '+escapeHtml(recipient.phone):''}</strong></div><div><span>Payout method</span><strong>${escapeHtml(payoutLabel)}</strong></div><div><span>Sending from</span><strong>${escapeHtml($('senderCountry').value)}</strong></div><div><span>Send amount</span><strong>${money(amount,currency)}</strong></div><div><span>Illustrative fee</span><strong>${money(fee,currency)}</strong></div><div><span>Total (example)</span><strong>${money(total,currency)}</strong></div><div><span>Example rate</span><strong>1 ${currency} = ${rate.toFixed(2)} ETB</strong></div><div><span>Estimated payout (example)</span><strong>ETB ${receive.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>`;
+  if (!Number.isFinite(amount) || amount <= 0) { $('transferStatus').textContent = 'Enter a valid send amount.'; $('transferStatus').className='profile-status show err'; return; }
+  const payoutMethod=recipient.payout_method||$('payoutMethod')?.value||'bank';
+  const payoutLabel=(payoutMethod==='wallet'?'Mobile wallet — ':'Bank account — ')+(recipient.payout_provider||'saved payout destination');
+  if(!recipient.payout_provider){$('transferStatus').textContent='This recipient is missing saved bank or wallet details. Edit the recipient and add the payout destination first.';$('transferStatus').className='profile-status show err';return;}
+  if(recipient.country==='Ethiopia'&&payoutMethod==='wallet'&&!$('transferWallet')?.value){$('transferStatus').textContent='Choose a receiving mobile wallet.';$('transferStatus').className='profile-status show err';return;}
+
+  const senderCodeByName = {
+    "United States":"US","United Kingdom":"GB","Austria":"AT","Belgium":"BE","Croatia":"HR",
+    "Cyprus":"CY","Estonia":"EE","Finland":"FI","France":"FR","Germany":"DE","Greece":"GR",
+    "Ireland":"IE","Italy":"IT","Latvia":"LV","Lithuania":"LT","Luxembourg":"LU","Malta":"MT",
+    "Netherlands":"NL","Portugal":"PT","Slovakia":"SK","Slovenia":"SI","Spain":"ES"
+  };
+  const senderCountry = $('senderCountry').value;
+  const senderCode = senderCodeByName[senderCountry];
+  if (!senderCode) { $('transferStatus').textContent='This sending country is not connected to the sandbox yet.'; $('transferStatus').className='profile-status show err'; return; }
+
+  $('transferStatus').textContent='Requesting a current TEST ONLY quote…';
+  $('transferStatus').className='profile-status show';
+  let quote;
+  try {
+    const result = await rfDashboardSandboxRequest('/v1/app/quotes', {
+      recipient_id: recipient.id,
+      sender_country: senderCode,
+      send_currency: currency,
+      send_amount: amount
+    });
+    quote = result.quote;
+    if (!quote || quote.test_only !== true || quote.real_money_enabled !== false) {
+      throw new Error('The sandbox did not return a verified test-only quote.');
+    }
+    rate = Number(quote.exchange_rate);
+    fee = Number(quote.fee_amount);
+    $('demoRate').value = String(rate);
+    $('demoFee').value = String(fee);
+    refreshTransferSummary();
+  } catch (err) {
+    $('transferStatus').textContent = err.message || 'Could not retrieve a sandbox quote.';
+    $('transferStatus').className='profile-status show err';
+    return;
+  }
+
+  const destinationCurrency = quote.receive_currency;
+  const total = Number(quote.total_amount);
+  const receive = Number(quote.payout_amount);
+  const usdFactor = currency==='USD'?1:(currency==='EUR'?1.08:1.27);
+  pendingSandboxQuote = quote;
+  pendingTestPreview = {
+    recipient_id: recipient.id,
+    recipient_name: recipient.name,
+    recipient_country: recipient.country,
+    send_amount_usd: amount / usdFactor,
+    fee_usd: fee / usdFactor,
+    total_usd: total / usdFactor,
+    send_currency: currency,
+    send_amount_original: amount,
+    sender_country: senderCountry,
+    exchange_rate: rate,
+    payout_amount_etb: receive,
+    payout_currency: destinationCurrency,
+    fee_amount_original: fee,
+    sandbox_reference: null,
+    sandbox_status: 'pending',
+    payout_method: recipient.payout_method,
+    payout_wallet: recipient.payout_method==='wallet'?recipient.payout_provider:null,
+    payout_bank: recipient.payout_method==='bank'?recipient.payout_provider:null,
+    status: 'test_preview'
+  };
+
+  $('transferStatus').textContent = 'Sandbox quote received. Review the test transfer below. No money has been sent.';
+  $('transferStatus').className='profile-status show ok';
+  $('reviewDetails').innerHTML =
+    `<div><span>Recipient</span><strong>${escapeHtml(recipient.name)}</strong></div>
+    <div><span>Destination</span><strong>${escapeHtml(recipient.country)}${recipient.phone ? ' · '+escapeHtml(recipient.phone):''}</strong></div>
+    <div><span>Payout method</span><strong>${escapeHtml(payoutLabel)}</strong></div>
+    <div><span>Sending from</span><strong>${escapeHtml(senderCountry)}</strong></div>
+    <div><span>Send amount</span><strong>${money(amount,currency)}</strong></div>
+    <div><span>Sandbox fee</span><strong>${money(fee,currency)}</strong></div>
+    <div><span>Total (test example)</span><strong>${money(total,currency)}</strong></div>
+    <div><span>Sandbox indicative rate</span><strong>1 ${currency} = ${rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${escapeHtml(destinationCurrency)}</strong></div>
+    <div><span>Estimated payout (test example)</span><strong>${escapeHtml(destinationCurrency)} ${receive.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>
+    <div><span>Rate source</span><strong>${escapeHtml(quote.rate_source||'RemitlyFly sandbox rate')}</strong></div>`;
   $('confirmTestOnly').checked=false;
   $('finishReview').disabled=true;
   $('confirmationStatus').textContent='';
   $('confirmationStatus').className='profile-status';
-  $('transferReview').classList.remove('hidden'); $('transferReview').scrollIntoView({behavior:'smooth',block:'start'});
-});
-let pendingTestPreview = null;
-$('transferForm').addEventListener('submit', () => {
-  const recipient = recipientState.items.find(r => r.id === $('transferRecipient').value);
-  if (!recipient) return;
-  if (($('payoutMethod')?.value||'bank')==='wallet'&&!$('transferWallet')?.value) { $('transferStatus').textContent='Choose a receiving mobile wallet before saving this test preview.'; $('transferStatus').className='profile-status show err'; pendingTestPreview=null; return; }
-  const amount = Number($('sendAmount').value), rate = Number($('demoRate').value), fee = Number($('demoFee').value), currency=currentCurrency();
-  if (!(amount > 0 && rate > 0 && fee >= 0)) return;
-  pendingTestPreview = { recipient_id: recipient.id, recipient_name: recipient.name, recipient_country: recipient.country,
-    send_amount_usd: currency==='USD'?amount:(currency==='EUR'?amount/1.08:amount/1.27), fee_usd: currency==='USD'?fee:(currency==='EUR'?fee/1.08:fee/1.27), total_usd: currency==='USD'?amount+fee:(currency==='EUR'?(amount+fee)/1.08:(amount+fee)/1.27), send_currency:currency, send_amount_original:amount, sender_country:$('senderCountry').value, exchange_rate: rate, payout_amount_etb: amount * rate, payout_method:$('payoutMethod')?.value||'bank', payout_wallet:($('payoutMethod')?.value==='wallet'?$('transferWallet')?.value:null), payout_bank:($('payoutMethod')?.value==='bank'?$('receivingBank')?.selectedOptions?.[0]?.textContent||null:null), status: 'test_preview' };
+  $('transferReview').classList.remove('hidden');
+  $('transferReview').scrollIntoView({behavior:'smooth',block:'start'});
 });
 function trackingTimeline(status='saved') {
   const steps = [
@@ -1519,7 +2076,7 @@ function renderRecentTransfers(rows) {
     const b=$('recentStartTest'); if(b)b.addEventListener('click',()=> $('transferSection').scrollIntoView({behavior:'smooth',block:'start'}));
     return;
   }
-  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span> · TEST ONLY</small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}<small>test preview</small></div></article>`).join('');
+  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span> · TEST ONLY · Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')}</small><small>Reference: ${escapeHtml(r.sandbox_reference||'—')}</small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}<small>test preview</small></div></article>`).join('');
 }
 async function loadTransferHistory() {
   const list=$('historyList'); if(!list || !supabase)return;
@@ -1529,13 +2086,14 @@ async function loadTransferHistory() {
   const {data:{session},error:sessionError}=await supabase.auth.getSession();
   if(sessionError) { list.innerHTML='<p class="muted">Could not check your sign-in session: '+escapeHtml(sessionError.message)+'</p>'; return; }
   if(!session?.user) { list.innerHTML='<p class="muted">Please sign in to view your test history.</p>'; $('trackingList').innerHTML='<p class="muted">Sign in to load test tracking records.</p>'; return; }
-  const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,send_currency,send_amount_original,sender_country,exchange_rate,payout_amount_etb,status,tracking_status,created_at').eq('user_id',session.user.id).order('created_at',{ascending:false}).limit(50);
+  const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,send_currency,send_amount_original,sender_country,exchange_rate,payout_amount_etb,payout_currency,fee_amount_original,sandbox_reference,sandbox_status,status,tracking_status,created_at').eq('user_id',session.user.id).order('created_at',{ascending:false}).limit(50);
   if(error) { list.innerHTML='<p class="muted">Could not load test history: '+escapeHtml(error.message)+'</p>'; $('trackingList').innerHTML='<p class="muted">History query failed. See the message above.</p>'; historyMessage('Could not load test history: '+error.message); return; }
   if(!data?.length) { list.innerHTML='<p class="muted">No test previews saved yet. Review a test transfer and tap Save test record.</p>'; $('trackingList').innerHTML='<p class="muted">No test records to track yet.</p>'; updateDashboardStats(data||[]); renderRecentTransfers([]); return; }
   updateDashboardStats(data);
   renderRecentTransfers(data.slice(0,4));
-  $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note">TEST ONLY · This is a saved preview, not a real transfer. Change the illustrative status below.</div><label class="field">Update test status<select data-track-id="${escapeHtml(r.id)}"><option value="saved" ${(r.tracking_status||'saved')==='saved'?'selected':''}>Saved</option><option value="under_review" ${r.tracking_status==='under_review'?'selected':''}>Under review</option><option value="simulated_complete" ${r.tracking_status==='simulated_complete'?'selected':''}>Simulated complete</option><option value="cancelled" ${r.tracking_status==='cancelled'?'selected':''}>Cancelled test</option></select></label></article>`).join('');
-  list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Illustrative fee (USD equivalent)</span><strong>${money(r.fee_usd,'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} ETB</strong></div><div><span>Estimated payout</span><strong>ETB ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
+  const isAdmin = session.user.app_metadata?.role === 'admin';
+  $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note">TEST ONLY · This is a saved preview, not a real transfer. ${isAdmin?'Admin status controls are available in Admin overview.':'Only an administrator can change this test status.'}<br>Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')} · Reference: ${escapeHtml(r.sandbox_reference||'—')}</div></article>`).join('');
+  list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Sandbox fee</span><strong>${money(r.fee_amount_original ?? r.fee_usd,r.send_currency||'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrencyForCountry(r.recipient_country)}</strong></div><div><span>Estimated payout (test example)</span><strong>${escapeHtml(r.payout_currency||destinationCurrencyForCountry(r.recipient_country))} ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Sandbox API status</span><strong>${escapeHtml(r.sandbox_status||'Not connected')}</strong></div><div><span>Sandbox reference</span><strong>${escapeHtml(r.sandbox_reference||'—')}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
   } catch (err) {
     const detail = escapeHtml(err?.message || 'Unknown error');
     list.innerHTML='<p class="muted">Could not load test history: '+detail+'</p>';
@@ -1559,36 +2117,197 @@ async function updateDashboardStats(rows) {
   $('dashTotalAmount').textContent=money(total,'USD');
 }
 $('trackingList').addEventListener('change',async e=>{
-  const select=e.target.closest('[data-track-id]'); if(!select)return;
-  if(!supabase){return}
+  const select=e.target.closest('[data-track-id]');if(!select)return;
+  if(!supabase)return;
+  const {data:{session}}=await supabase.auth.getSession();
+  if(session?.user?.app_metadata?.role!=='admin'){
+    $('trackingStatus').textContent='Only an administrator can change test payment status.';
+    $('trackingStatus').className='profile-status show err';
+    await loadTransferHistory();return;
+  }
   const allowed=['saved','under_review','simulated_complete','cancelled'];
   if(!allowed.includes(select.value))return;
   select.disabled=true;
   const {error}=await supabase.from('transfer_history').update({tracking_status:select.value}).eq('id',select.dataset.trackId);
-  select.disabled=false;
-  if(error){$('trackingStatus').textContent='Could not update test status: '+error.message+' Run the updated tracking SQL first.';$('trackingStatus').className='profile-status show err';}
-  else {$('trackingStatus').textContent='Test status updated. This is not a real transfer status.';$('trackingStatus').className='profile-status show ok';await loadTransferHistory();}
+  if(error){$('trackingStatus').textContent='Could not update test status: '+error.message;$('trackingStatus').className='profile-status show err';select.disabled=false;}
+  else{
+    const {data:notice,error:noticeError}=await supabase.functions.invoke('notify-transfer-status',{body:{transfer_id:select.dataset.trackId}});
+    $('trackingStatus').textContent=noticeError||!notice?.ok?'Test status updated, but the sender email could not be sent.':'Test status updated and sender email notification sent.';
+    $('trackingStatus').className='profile-status show '+(noticeError||!notice?.ok?'err':'ok');
+    await loadTransferHistory();await loadAdminOverview();
+  }
 });
+let adminSeenRecordIds = null;
+let adminSeenAccountIds = null;
+let adminAlertPoll = null;
+async function loadAccountApprovals(){
+  const {data,error}=await supabase.from('account_approvals').select('user_id,email,full_name,status,created_at,restriction_reason,rejection_reason').order('created_at',{ascending:false}).limit(100);
+  if(error){$('adminAccountList').innerHTML='<p class="muted">Could not load account registrations: '+escapeHtml(error.message)+'</p>';return;}
+  const rows=data||[];
+  const pending=rows.filter(r=>r.status==='pending');
+  const ids=new Set(pending.map(r=>String(r.user_id)));
+  if(adminSeenAccountIds){
+    const added=pending.filter(r=>!adminSeenAccountIds.has(String(r.user_id)));
+    if(added.length){$('adminAccountAlert').textContent='New registration alert: '+added.length+' account'+(added.length===1?'':'s')+' awaiting approval. Latest: '+(added[0].email||'New user');$('adminAccountAlert').classList.remove('hidden');}
+  }
+  adminSeenAccountIds=ids;
+  $('adminAccountList').innerHTML=rows.length?rows.map(r=>'<article class="admin-row"><div class="rowline"><strong>'+escapeHtml(r.full_name||'New user')+'</strong><span class="status-pill">'+escapeHtml(r.status.toUpperCase())+'</span></div><div class="muted">'+escapeHtml(r.email||'No email')+'</div><div class="muted">Registered: '+escapeHtml(safeDate(r.created_at))+'</div>'+(r.status==='restricted'?'<p class="muted">Restriction reason: '+escapeHtml(r.restriction_reason||'Not recorded')+'</p>':r.status==='rejected'?'<p class="muted">Rejection reason: '+escapeHtml(r.rejection_reason||'Not recorded')+'</p>':'')+(r.status==='pending'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve</button><button type="button" class="secondary" data-account-action="rejected" data-account-id="'+escapeHtml(r.user_id)+'">Reject</button></div>':r.status==='approved'?'<div class="rowline" style="margin-top:10px"><button type="button" class="secondary" data-account-action="restricted" data-account-id="'+escapeHtml(r.user_id)+'">Restrict account</button></div>':r.status==='restricted'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="restored" data-account-id="'+escapeHtml(r.user_id)+'">Restore account</button></div>':r.status==='rejected'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve again</button></div>':'')+'</article>').join(''):'<p class="muted">No registrations found.</p>';
+}
 function adminMessage(text,type='err'){const el=$('adminStatus');el.textContent=text;el.className='profile-status show '+type;}
 async function loadAdminOverview(){
   if(!supabase)return;
   const {data:{session}}=await supabase.auth.getSession();
-  if(!session?.user || session.user.app_metadata?.role!=='admin'){ $('adminSection').classList.add('hidden'); return; }
+  if(!session?.user || session.user.app_metadata?.role!=='admin'){
+    $('adminSection').classList.add('hidden');
+    if(adminAlertPoll){clearInterval(adminAlertPoll);adminAlertPoll=null;}
+    adminSeenRecordIds=null;
+    return;
+  }
   $('adminSection').classList.remove('hidden');
+  await rfLoadPaymentModeSetting();
+  await loadAccountApprovals();
+  if(typeof rfLoadApiKeys==='function') await rfLoadApiKeys();
   const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,exchange_rate,payout_amount_etb,tracking_status,created_at').order('created_at',{ascending:false}).limit(200);
   if(error){adminMessage('Admin data could not load: '+error.message+' Check the admin RLS policy in the SQL setup.');return;}
   const rows=data||[];
+  const currentIds=new Set(rows.map(r=>String(r.id)));
+  if(adminSeenRecordIds){
+    const newRows=rows.filter(r=>!adminSeenRecordIds.has(String(r.id)));
+    if(newRows.length){
+      const newest=newRows[0];
+      const alert=$('adminNewAlert');
+      alert.textContent='New test transfer alert: '+newRows.length+' new test record'+(newRows.length===1?'':'s')+' saved. Latest: '+(newest.recipient_name||'Recipient')+' — '+(newest.recipient_country||'destination')+', '+money(newest.send_amount_usd,'USD')+'. No real payment was made.';
+      alert.classList.remove('hidden');
+      adminMessage('New test transfer received. Review the highlighted record below.','ok');
+    }
+  }
+  adminSeenRecordIds=currentIds;
+  if(!adminAlertPoll){
+    adminAlertPoll=setInterval(()=>{
+      if(!document.hidden) loadAdminOverview();
+    },20000);
+  }
   $('adminRecordCount').textContent=String(rows.length);
   $('adminUserCount').textContent=String(new Set(rows.map(r=>r.user_id)).size);
   $('adminTotalAmount').textContent=money(rows.reduce((s,r)=>s+Number(r.send_amount_usd||0),0),'USD');
-  $('adminList').innerHTML=rows.length?rows.map(r=>`<article class="admin-row"><div class="rowline"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span></div><div class="muted">Account ID: ${escapeHtml(r.user_id)}</div><div class="muted">${money(r.send_amount_usd,'USD')} test amount · ${escapeHtml(safeDate(r.created_at))}</div></article>`).join(''):'<p class="muted">No test records found.</p>';
-  adminMessage('Loaded test-only records. No real payment data is connected.','ok');
+  $('adminList').innerHTML=rows.length?rows.map(r=>`<article class="admin-row"><div class="rowline"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span></div><div class="muted">Account ID: ${escapeHtml(r.user_id)}</div><div class="muted">${money(r.send_amount_usd,'USD')} test amount · ${escapeHtml(safeDate(r.created_at))}</div><label class="field">Admin: change test payment status<select data-admin-track-id="${escapeHtml(r.id)}"><option value="saved" ${(r.tracking_status||'saved')==='saved'?'selected':''}>Saved</option><option value="under_review" ${r.tracking_status==='under_review'?'selected':''}>Under review</option><option value="simulated_complete" ${r.tracking_status==='simulated_complete'?'selected':''}>Simulated complete</option><option value="cancelled" ${r.tracking_status==='cancelled'?'selected':''}>Cancelled test</option></select></label></article>`).join(''):'<p class="muted">No test records found.</p>';
+  if(!$('adminNewAlert').textContent) adminMessage('Admin alerts are active. New test records are checked every 20 seconds. No real payment data is connected.','ok');
 }
+$('adminList').addEventListener('change',async e=>{
+  const select=e.target.closest('[data-admin-track-id]');if(!select)return;
+  if(!supabase)return;
+  const {data:{session}}=await supabase.auth.getSession();
+  if(session?.user?.app_metadata?.role!=='admin'){adminMessage('Administrator access is required.');await loadAdminOverview();return;}
+  const allowed=['saved','under_review','simulated_complete','cancelled'];
+  if(!allowed.includes(select.value))return;
+  select.disabled=true;
+  const {error}=await supabase.from('transfer_history').update({tracking_status:select.value}).eq('id',select.dataset.adminTrackId);
+  if(error){adminMessage('Could not update test status: '+error.message);select.disabled=false;}
+  else{
+    const {data:notice,error:noticeError}=await supabase.functions.invoke('notify-transfer-status',{body:{transfer_id:select.dataset.adminTrackId}});
+    if(noticeError||!notice?.ok)adminMessage('Test status updated, but the sender email could not be sent.','err');
+    else adminMessage('Test status updated and sender email notification sent. No real money was moved.','ok');
+    await loadAdminOverview();
+  }
+});
 $('goAdmin').addEventListener('click',()=>{loadAdminOverview();$('adminSection').scrollIntoView({behavior:'smooth',block:'start'});});
+
+async function rfSandboxAdminRequest(path, method='GET', body=null){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.access_token) throw new Error('Please sign in again as an administrator.');
+  const response=await fetch('https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox'+path,{
+    method,headers:{'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'},
+    body:body?JSON.stringify(body):undefined
+  });
+  const data=await response.json().catch(()=>({error:'Invalid API response'}));
+  if(!response.ok) throw new Error(data.error||'Sandbox API request failed.');
+  return data;
+}
+async function rfLoadApiKeys(){
+  const box=$('rfApiKeyList');if(!box)return;
+  box.innerHTML='<p class="muted">Loading API keys…</p>';
+  try{
+    const data=await rfSandboxAdminRequest('/v1/keys');
+    const keys=data.keys||[];
+    box.innerHTML=keys.length?keys.map(k=>'<article class="transfer-summary" style="margin:10px 0"><strong>'+escapeHtml(k.label)+'</strong><p class="muted" style="margin:6px 0">Prefix: <code>'+escapeHtml(k.key_prefix)+'</code> · '+escapeHtml(k.status)+'</p><small class="muted">Created: '+new Date(k.created_at).toLocaleString()+(k.last_used_at?' · Last used: '+new Date(k.last_used_at).toLocaleString():' · Not used yet')+'</small>'+(k.status==='active'?'<p><button type="button" class="secondary" data-rf-revoke-key="'+escapeHtml(k.id)+'">Revoke key</button></p>':'')+'</article>').join(''):'<p class="muted">No API keys created yet.</p>';
+  }catch(e){box.innerHTML='<p class="muted">'+escapeHtml(e.message)+'</p>';}
+}
+$('rfCreateApiKey')?.addEventListener('click',async()=>{
+  const btn=$('rfCreateApiKey'),result=$('rfApiKeyResult');btn.disabled=true;result.classList.remove('hidden');result.textContent='Creating secure test key…';
+  try{
+    const data=await rfSandboxAdminRequest('/v1/keys','POST',{label:$('rfApiKeyLabel').value.trim()});
+    result.innerHTML='<strong>Copy this key now — it will not be shown again:</strong><br><code style="overflow-wrap:anywhere">'+escapeHtml(data.api_key)+'</code><br><button type="button" class="secondary" id="rfCopyApiKey" style="margin-top:8px">Copy API key</button>';
+    $('rfCopyApiKey')?.addEventListener('click',()=>{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(data.api_key).then(()=>{$('rfCopyApiKey').textContent='Copied';}).catch(()=>{});});
+    await rfLoadApiKeys();
+  }catch(e){result.textContent=e.message;}
+  finally{btn.disabled=false;}
+});
+$('rfRefreshApiKeys')?.addEventListener('click',rfLoadApiKeys);
+$('rfApiKeyList')?.addEventListener('click',async e=>{
+  const btn=e.target.closest('[data-rf-revoke-key]');if(!btn)return;
+  if(!confirm('Revoke this test API key? Apps using it will no longer authenticate.'))return;
+  btn.disabled=true;
+  try{await rfSandboxAdminRequest('/v1/keys/'+encodeURIComponent(btn.dataset.rfRevokeKey)+'/revoke','POST');await rfLoadApiKeys();}
+  catch(err){alert(err.message);btn.disabled=false;}
+});
+
 $('refreshAdmin').addEventListener('click',loadAdminOverview);
+$('adminAccountList').addEventListener('click',async e=>{
+  const button=e.target.closest('[data-account-action]');if(!button)return;
+  const {data:{session}}=await supabase.auth.getSession();
+  if(session?.user?.app_metadata?.role!=='admin'){adminMessage('Administrator access is required.');return;}
+  const action=button.dataset.accountAction;
+  if(!['approved','rejected','restricted','restored'].includes(action))return;
+  const userId=button.dataset.accountId;
+  let reason='';
+  if(action==='restricted'||action==='rejected'){
+    reason=window.prompt(action==='rejected'?'Enter the reason for rejecting this registration (required):':'Enter the reason for restricting this account (required):',action==='rejected'?'Registration could not be approved at this time.':'Violation of RemitlyFly Terms and Conditions');
+    if(reason===null)return;
+    reason=reason.trim();
+    if(!reason){adminMessage('A reason is required for this action.');return;}
+  }
+  button.disabled=true;
+  const nextStatus=action==='restored'?'approved':action;
+  const update={status:nextStatus,reviewed_at:new Date().toISOString(),reviewed_by:session.user.id,restriction_reason:action==='restricted'?reason:(action==='restored'?null:undefined),rejection_reason:action==='rejected'?reason:(action==='approved'?null:undefined)};
+  if(update.restriction_reason===undefined)delete update.restriction_reason;
+  if(update.rejection_reason===undefined)delete update.rejection_reason;
+  const {error}=await supabase.from('account_approvals').update(update).eq('user_id',userId).in('status',action==='approved'?['pending','rejected']:(action==='restored'?['restricted']:(action==='restricted'?['approved']:['pending'])));
+  if(error){adminMessage('Could not update account status: '+error.message);button.disabled=false;return;}
+  if(['restricted','restored'].includes(action)){
+    const {data:notice,error:noticeError}=await supabase.functions.invoke('notify-account-status',{body:{user_id:userId,action,reason}});
+    if(noticeError||!notice?.ok){
+      console.error('Account status email failed:',noticeError?.message||notice?.error||'Unknown error');
+      adminMessage('Account status updated, but the user email could not be sent. Check the notification function logs.','err');
+    }else{
+      adminMessage(action==='restricted'?'Account restricted and the user has been emailed.':'Account restored and the user has been emailed.','ok');
+    }
+  }else if(action==='approved'){
+    const {data:notice,error:noticeError}=await supabase.functions.invoke('notify-user-approved',{body:{user_id:userId}});
+    if(noticeError||!notice?.ok)adminMessage('Account approved, but the approval email could not be sent. Check notification logs.','err');
+    else adminMessage('Account approved. An approval email has been sent to the user.','ok');
+  }else if(action==='rejected'){
+    const {data:notice,error:noticeError}=await supabase.functions.invoke('notify-user-rejected',{body:{user_id:userId,reason}});
+    if(noticeError||!notice?.ok){console.error('Account rejection email failed:',noticeError?.message||notice?.error||'Unknown error');adminMessage('Registration rejected, but the user email could not be sent. Check notification logs.','err');}
+    else adminMessage('Registration rejected. A notification email has been sent to the user.','ok');
+  }
+  await loadAccountApprovals();
+});
 $('goHistory').addEventListener('click',()=>{ $('historySection').scrollIntoView({behavior:'smooth',block:'start'}); loadTransferHistory(); $('trackingSection').classList.remove('hidden');});
 $('goHistory').addEventListener('click',()=>setTimeout(()=>$('trackingSection').scrollIntoView({behavior:'smooth',block:'start'}),350));
 $('finishReview').textContent='Confirm and save test record';
+function showCardPaymentDemo(result){
+ const status=$('cardPaymentDemoStatus');
+ if(!status)return;
+ if(result==='approved'){
+  status.textContent='SIMULATED APPROVED — demo only. No card was charged, no OTP was requested, and no money moved.';
+  status.className='profile-status show ok';
+ }else{
+  status.textContent='SIMULATED DECLINED — demo only. No card was charged and no money moved.';
+  status.className='profile-status show err';
+ }
+}
+$('simulateCardApproved')?.addEventListener('click',()=>showCardPaymentDemo('approved'));
+$('simulateCardDeclined')?.addEventListener('click',()=>showCardPaymentDemo('declined'));
 $('confirmTestOnly').addEventListener('change', () => {
   $('finishReview').disabled = !$('confirmTestOnly').checked;
   const status=$('confirmationStatus');
@@ -1599,19 +2318,86 @@ $('finishReview').addEventListener('click', async () => {
   if(!supabase) { historyMessage('Database is unavailable. No test record was saved.'); return; }
   const {data:{session},error:sessionError}=await supabase.auth.getSession();
   if(sessionError || !session?.user) { historyMessage('Please sign in again. No test record was saved.'); return; }
-  if(!pendingTestPreview) { historyMessage('Please review a test transfer first.'); return; }
-  const button=$('finishReview'); button.disabled=true; button.textContent='Saving test record…';
-  let {error}=await supabase.from('transfer_history').insert({...pendingTestPreview,user_id:session.user.id});
-  // Older existing tables may not yet have optional payout destination columns; retry without them so saved test previews keep working.
-  if(error && /payout_method|payout_wallet|payout_bank|column/i.test(error.message||'')){
-   const {payout_method,payout_wallet,payout_bank,...legacyPreview}=pendingTestPreview;
-   const retry=await supabase.from('transfer_history').insert({...legacyPreview,user_id:session.user.id});error=retry.error;
-   if(!error){const status=$('transferStatus');if(status){status.textContent='Test preview saved. Your current history table does not store payout method yet; add the optional columns to retain it.';status.className='profile-status show ok';}}
+  if(!pendingTestPreview || !pendingSandboxQuote) { historyMessage('Please request and review a fresh sandbox quote first.'); return; }
+  const button=$('finishReview');
+  button.disabled=true;
+  button.textContent='Creating sandbox test transfer…';
+
+  const senderCodeByName = {
+    "United States":"US","United Kingdom":"GB","Austria":"AT","Belgium":"BE","Croatia":"HR",
+    "Cyprus":"CY","Estonia":"EE","Finland":"FI","France":"FR","Germany":"DE","Greece":"GR",
+    "Ireland":"IE","Italy":"IT","Latvia":"LV","Lithuania":"LT","Luxembourg":"LU","Malta":"MT",
+    "Netherlands":"NL","Portugal":"PT","Slovakia":"SK","Slovenia":"SI","Spain":"ES"
+  };
+  let sandboxTransfer = pendingTestPreview.sandbox_reference ? {
+    reference: pendingTestPreview.sandbox_reference,
+    status: pendingTestPreview.sandbox_status,
+    receive_currency: pendingTestPreview.payout_currency,
+    payout_amount: pendingTestPreview.payout_amount_etb,
+    exchange_rate: pendingTestPreview.exchange_rate,
+    test_only: true
+  } : null;
+  try {
+    if (!sandboxTransfer) {
+      const result = await rfDashboardSandboxRequest('/v1/app/transfers', {
+        recipient_id: pendingTestPreview.recipient_id,
+        sender_country: senderCodeByName[pendingTestPreview.sender_country],
+        send_currency: pendingTestPreview.send_currency,
+        send_amount: pendingTestPreview.send_amount_original,
+        expected_exchange_rate: pendingTestPreview.exchange_rate,
+        expected_fee_amount: pendingTestPreview.fee_amount_original
+      });
+      sandboxTransfer = result.transfer;
+    }
+    if (!sandboxTransfer?.reference || sandboxTransfer.test_only !== true) {
+      throw new Error('The sandbox did not confirm a test-only transfer reference.');
+    }
+  } catch (err) {
+    button.disabled=false;
+    button.textContent='Confirm and save test record';
+    $('confirmationStatus').textContent=err.message || 'The sandbox transfer was not created. No history record was saved.';
+    $('confirmationStatus').className='profile-status show err';
+    return;
   }
-  button.disabled=!$('confirmTestOnly').checked; button.textContent='Confirm and save test record';
-  if(error) { $('confirmationStatus').textContent='The test record was not saved. Please check the error below.'; $('confirmationStatus').className='profile-status show err'; historyMessage('Could not save test record: '+error.message+' Make sure you ran the Transfer History SQL setup.'); return; }
-  $('transferReview').classList.add('hidden'); $('confirmTestOnly').checked=false; $('finishReview').disabled=true; $('confirmationStatus').textContent=''; $('transferStatus').textContent='Test record saved to your private history. No money was sent and no payment was collected.'; $('transferStatus').className='profile-status show ok';
-  pendingTestPreview=null; historyMessage('Test preview saved. No transfer or payment occurred.','ok'); await loadTransferHistory();
+
+  pendingTestPreview.sandbox_reference = sandboxTransfer.reference;
+  pendingTestPreview.sandbox_status = sandboxTransfer.status;
+  pendingTestPreview.payout_currency = sandboxTransfer.receive_currency;
+  pendingTestPreview.payout_amount_etb = Number(sandboxTransfer.payout_amount);
+  pendingTestPreview.exchange_rate = Number(sandboxTransfer.exchange_rate);
+  button.textContent='Saving test history…';
+
+  let {data:savedRecord,error}=await supabase.from('transfer_history')
+    .insert({...pendingTestPreview,user_id:session.user.id})
+    .select('id').single();
+
+  if(error) {
+    button.disabled=!$('confirmTestOnly').checked;
+    button.textContent='Confirm and save test record';
+    $('confirmationStatus').textContent='The sandbox test transfer was created ('+sandboxTransfer.reference+'), but the website history could not be saved: '+error.message;
+    $('confirmationStatus').className='profile-status show err';
+    historyMessage('Sandbox test transfer '+sandboxTransfer.reference+' exists. Website history save failed; contact support before retrying.','err');
+    return;
+  }
+
+  $('transferReview').classList.add('hidden');
+  $('confirmTestOnly').checked=false;
+  $('finishReview').disabled=true;
+  $('finishReview').textContent='Confirm and save test record';
+  $('confirmationStatus').textContent='';
+  $('transferStatus').textContent='Sandbox test transfer created and saved to your private history. Reference: '+sandboxTransfer.reference+'. No money was sent.';
+  $('transferStatus').className='profile-status show ok';
+  pendingTestPreview=null;
+  pendingSandboxQuote=null;
+  historyMessage('Sandbox test transfer saved. Reference: '+sandboxTransfer.reference+'. No money moved.','ok');
+
+  if(savedRecord?.id){
+    const {error:alertError}=await supabase.functions.invoke('notify-admin',{body:{transfer_id:savedRecord.id}});
+    if(alertError){console.warn('Admin email alert was not sent:',alertError.message);historyMessage('Test transfer saved. Admin email notification could not be sent.','ok');}
+    const {data:userNotice,error:userNoticeError}=await supabase.functions.invoke('notify-transfer-status',{body:{transfer_id:savedRecord.id}});
+    if(userNoticeError||!userNotice?.ok){console.warn('Sender status email was not sent:',userNoticeError?.message||userNotice?.error);historyMessage('Test transfer saved, but the sender confirmation email could not be sent.','err');}
+  }
+  await loadTransferHistory();
 });
 $('refreshHistory').addEventListener('click',loadTransferHistory);
 $('goHistory').addEventListener('click',()=>{ $('historySection').scrollIntoView({behavior:'smooth',block:'start'}); loadTransferHistory(); });
@@ -1707,7 +2493,7 @@ refreshTransferSummary();
   const first=document.querySelector('[data-page="'+page+'"]');
   if(first)first.scrollIntoView({behavior:'smooth',block:'start'});
  }
- function pageForTarget(id){return ({dashboardTop:'home',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile',ethiopiaRates:'rates',walletDashboard:'rates'})[id]||'home';}
+ function pageForTarget(id){return ({dashboardTop:'home',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile'})[id]||'home';}
  menu.addEventListener('click',event=>{
   const button=event.target.closest('[data-menu-target]');
   if(!button)return;
@@ -1760,7 +2546,6 @@ if (button && message) {
   {key:'history',label:'History',target:'historySection'},
   {key:'tracking',label:'Tracking',target:'trackingSection'},
   {key:'profile',label:'Profile',target:'profileCard'},
-  {key:'rates',label:'Rates',target:'ethiopiaRates'}
  ];
  const stepper=document.createElement('nav');stepper.className='rf-stepper';stepper.setAttribute('aria-label','Next and previous app pages');
  stepper.innerHTML='<button type="button" class="rf-prev">← Back</button><div class="rf-step-info"><small class="rf-step-count"></small><strong class="rf-step-name"></strong><div class="rf-progress"><span></span></div></div><button type="button" class="rf-next">Next →</button>';
@@ -1769,7 +2554,7 @@ if (button && message) {
  function infer(){
   const active=menu.querySelector('.app-menu-item.active');
   const target=active&&active.dataset.menuTarget;
-  const map={dashboardTop:0,transferSection:1,recipientsSection:2,historySection:3,trackingSection:4,profileCard:5,ethiopiaRates:6};
+  const map={dashboardTop:0,transferSection:1,recipientsSection:2,historySection:3,trackingSection:4,profileCard:5};
   if(target in map)current=map[target];
   update();
  }
@@ -1848,12 +2633,12 @@ body .shell.dashboard-mode #dashboard{display:block!important}
 })();
 </script>
 <footer style="background:#123b70;color:white;text-align:center;padding:20px;margin-top:30px;font-family:Arial,sans-serif;">
-  <p>© 2026 RemitlyFly. All rights reserved.</p>
-  <p>
-    <a href="https://remitlyfly.org/privacy.html" style="color:white;margin:0 10px;">Privacy Policy</a>
-    <a href="https://remitlyfly.org/terms.html" style="color:white;margin:0 10px;">Terms of Service</a>
+  <p style="margin:5px 0;">© 2026 RemitlyFly. All rights reserved.</p>
+  <p style="margin:5px 0;">
+    <a href="/privacy.html" style="color:white;margin:0 10px;">Privacy Policy</a>
+    <a href="/terms.html" style="color:white;margin:0 10px;">Terms of Service</a>
   </p>
-  <p>
+  <p style="margin:5px 0;">
     <a href="mailto:support@remitlyfly.com" style="color:white;">Contact Support</a>
   </p>
 </footer>
