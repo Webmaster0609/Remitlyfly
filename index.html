@@ -1121,24 +1121,31 @@ function clearMessage(){$('notice').className='notice'}
 function setMode(next){mode=next;clearMessage();$('loginTab').classList.toggle('active',mode==='login');$('signupTab').classList.toggle('active',mode==='signup');$('nameField').classList.toggle('hidden',mode!=='signup');$('confirmField').classList.toggle('hidden',mode!=='signup');$('loginOptions').classList.toggle('hidden',mode!=='login');$('formTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('formIntro').textContent=mode==='login'?'Log in to your RemitlyFly account.':'Create your RemitlyFly account.';$('submitButton').textContent=mode==='login'?'Log in':'Create account';$('switchLine').innerHTML=mode==='login'?'New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button>':'Already registered? <button class="link" id="switchMode" type="button">Log in</button>'; }
 async function showDashboard(user){
   const {data:approval,error:approvalError}=await supabase.from('account_approvals').select('status').eq('user_id',user.id).maybeSingle();
-  if(approvalError || !approval){
+  const shell=document.querySelector('.shell');
+  function showApprovalGate(title,statusText){
     $('dashboard').classList.add('account-pending');
     $('accountApprovalGate').classList.remove('hidden');
-    $('pendingApprovalStatus').textContent='We could not verify your approval status. Access is paused for your protection. Please try again or contact support.';
-    $('authCard').style.display='none';$('dashboard').style.display='block';
+    $('accountApprovalGate').querySelector('h2').textContent=title;
+    $('pendingApprovalStatus').textContent=statusText;
+    $('welcome').textContent='Account status';
+    if(shell) shell.classList.remove('intro-mode','login-mode');
+    if(shell) shell.classList.add('dashboard-mode');
+    $('authCard').style.display='none';
+    $('dashboard').style.display='block';
+  }
+  if(approvalError || !approval){
+    showApprovalGate('Account status','We could not verify your approval status. Access is paused for your protection. Please try again or contact support@remitlyfly.com.');
     return;
   }
   if(approval.status!=='approved'){
-    $('dashboard').classList.add('account-pending');
-    $('accountApprovalGate').classList.remove('hidden');
-    $('pendingApprovalStatus').textContent=approval.status==='restricted'?'Your account has been restricted following an administrator review. Please check your email for the reason or contact support@remitlyfly.com.':(approval.status==='rejected'?'Your registration was not approved. Please contact support@remitlyfly.com.':'Your account is awaiting administrator approval.');
-    $('authCard').style.display='none';$('dashboard').style.display='block';
+    const title=approval.status==='restricted'?'Account restricted':(approval.status==='rejected'?'Registration not approved':'Account awaiting approval');
+    const statusText=approval.status==='restricted'?'Your account has been restricted following an administrator review. Please check your email for the reason or contact support@remitlyfly.com.':(approval.status==='rejected'?'Your registration was not approved. Please contact support@remitlyfly.com.':'Your account is pending admin approval. You can log in, but dashboard features will remain unavailable until an administrator approves your account.');
+    showApprovalGate(title,statusText);
     if(approval.status==='pending') supabase.functions.invoke('notify-admin-signup').catch(()=>{});
     return;
   }
   $('dashboard').classList.remove('account-pending');
   $('accountApprovalGate').classList.add('hidden');
-  const shell=document.querySelector('.shell');
   if(shell) shell.classList.remove('intro-mode','login-mode');
   if(shell) shell.classList.add('dashboard-mode');
   $('authCard').style.display='none';$('dashboard').style.display='block';
