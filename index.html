@@ -903,6 +903,16 @@ body { margin:0; }
    <h3 style="margin-top:18px">Review your test transfer</h3>
    <div id="reviewDetails" class="transfer-summary"></div>
    <div class="warning"><strong>TEST ONLY — NO MONEY MOVES.</strong> This is an estimate using illustrative/reference values. It does not collect payment, contact a payout provider, or send money to the recipient.</div>
+   <div class="profile-card" id="cardPaymentDemo" style="margin:16px 0;background:#f7fbff">
+    <h3 style="margin-top:0">Card payment demo</h3>
+    <p class="muted">Choose a simulated result to preview a card checkout. No card number, expiry date, CVV or OTP is collected. No payment is attempted.</p>
+    <div class="warning">DEMO ONLY — an approved result here is not a real card authorization or proof of payment.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px">
+     <button type="button" class="primary" id="simulateCardApproved">Simulate approval</button>
+     <button type="button" class="secondary" id="simulateCardDeclined">Simulate decline</button>
+    </div>
+    <p id="cardPaymentDemoStatus" class="profile-status" role="status" aria-live="polite">No card payment has been simulated.</p>
+   </div>
    <div class="field" style="margin:14px 0">
     <label for="confirmTestOnly" style="display:flex;align-items:flex-start;gap:10px;font-weight:600">
      <input id="confirmTestOnly" type="checkbox" style="width:20px;height:20px;flex:0 0 auto;margin-top:1px">
@@ -2207,6 +2217,19 @@ $('adminAccountList').addEventListener('click',async e=>{
 $('goHistory').addEventListener('click',()=>{ $('historySection').scrollIntoView({behavior:'smooth',block:'start'}); loadTransferHistory(); $('trackingSection').classList.remove('hidden');});
 $('goHistory').addEventListener('click',()=>setTimeout(()=>$('trackingSection').scrollIntoView({behavior:'smooth',block:'start'}),350));
 $('finishReview').textContent='Confirm and save test record';
+function showCardPaymentDemo(result){
+ const status=$('cardPaymentDemoStatus');
+ if(!status)return;
+ if(result==='approved'){
+  status.textContent='SIMULATED APPROVED — demo only. No card was charged, no OTP was requested, and no money moved.';
+  status.className='profile-status show ok';
+ }else{
+  status.textContent='SIMULATED DECLINED — demo only. No card was charged and no money moved.';
+  status.className='profile-status show err';
+ }
+}
+$('simulateCardApproved')?.addEventListener('click',()=>showCardPaymentDemo('approved'));
+$('simulateCardDeclined')?.addEventListener('click',()=>showCardPaymentDemo('declined'));
 $('confirmTestOnly').addEventListener('change', () => {
   $('finishReview').disabled = !$('confirmTestOnly').checked;
   const status=$('confirmationStatus');
