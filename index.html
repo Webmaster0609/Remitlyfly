@@ -1195,7 +1195,7 @@ if (configured) {
   }
 }
 const $=id=>document.getElementById(id); let mode='login';
-const phoneIti = window.intlTelInput ? window.intlTelInput($('profilePhone'), {initialCountry:'et', preferredCountries:['et','us','gb'], separateDialCode:true, nationalMode:true, countrySearch:true, loadUtils:()=>import('https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js')}) : null;
+const phoneIti = window.intlTelInput ? window.intlTelInput($('profilePhone'), {initialCountry:'us', preferredCountries:['et','us','gb'], separateDialCode:true, nationalMode:true, countrySearch:true, loadUtils:()=>import('https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js')}) : null;
 $('introNext').addEventListener('click',()=>{const shell=document.querySelector('.shell');shell.classList.remove('intro-mode');shell.classList.add('login-mode');window.scrollTo({top:0,behavior:'smooth'});$('email').focus({preventScroll:true})});
 $('backToIntro').addEventListener('click',()=>{const shell=document.querySelector('.shell');shell.classList.remove('login-mode');shell.classList.add('intro-mode');window.scrollTo({top:0,behavior:'smooth'})});
 function message(text,type='err'){const n=$('notice');n.textContent=text;n.className='notice show '+type}
@@ -1238,7 +1238,7 @@ async function showDashboard(user){
   $('profileName').value=meta.full_name||'';
   $('profileDateOfBirth').value=meta.date_of_birth||'';
   $('profileAddress').value=meta.address||'';
-  if(phoneIti){if(meta.phone)phoneIti.setNumber(meta.phone);else phoneIti.setCountry('et');}else{$('profilePhone').value=meta.phone||'';}
+  if(phoneIti){if(meta.phone)phoneIti.setNumber(meta.phone);else phoneIti.setCountry('us');}else{$('profilePhone').value=meta.phone||'';}
   $('profileEmailInput').value=user.email||'';
   const isAdmin = user.app_metadata?.role === 'admin';
   $('goAdmin').classList.toggle('hidden', !isAdmin);
