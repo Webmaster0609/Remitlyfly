@@ -1278,7 +1278,7 @@ async function rfVerifyDeviceOtp(){
     if(!rfOtpSessionVerified){
       const otp=$('otpCode').value.trim();
       if(!/^\d{6}$/.test(otp))throw new Error('Enter the 6-digit code from your email.');
-      const {data,error}=await supabase.auth.verifyOtp({email:rfOtpEmail,token:otp,type:'email'});
+      const {data,error}=await supabase.auth.verifyOtp({email:rfOtpEmail,token:otp,type:rfOtpPurpose==='signup_email'?'signup':'email'});
       if(error)throw error;
       user=data?.user||null;rfOtpSessionVerified=true;
     }else{
