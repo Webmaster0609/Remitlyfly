@@ -859,12 +859,11 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  <div class="switch" id="switchLine">New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button></div>
 </section>
 <section class="card hidden" id="otpCard" aria-live="polite">
- <h2 id="otpTitle">Verify your phone</h2>
- <p class="intro" id="otpIntro">A one-time SMS code is required to continue.</p>
- <div class="field" id="otpPhoneField"><label for="otpPhone">Phone number with country code</label><input id="otpPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+2519XXXXXXXX" /></div>
+ <h2 id="otpTitle">Verify your email</h2>
+ <p class="intro" id="otpIntro">A one-time email code is required to continue.</p>
  <p class="muted" id="otpSavedPhone"></p>
- <button class="primary" type="button" id="otpSendButton">Send SMS code</button>
- <div class="field hidden" id="otpCodeField"><label for="otpCode">6-digit SMS code</label><input id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="Enter code" /></div>
+ <button class="primary" type="button" id="otpSendButton">Send email code</button>
+ <div class="field hidden" id="otpCodeField"><label for="otpCode">6-digit email code</label><input id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="Enter code" /></div>
  <button class="primary hidden" type="button" id="otpVerifyButton">Verify and continue</button>
  <div id="otpNotice" class="notice" role="status" aria-live="polite"></div>
  <button class="link" type="button" id="otpLogoutButton">Sign out</button>
@@ -1212,7 +1211,7 @@ $('backToIntro').addEventListener('click',()=>{const shell=document.querySelecto
 function message(text,type='err'){const n=$('notice');n.textContent=text;n.className='notice show '+type}
 function clearMessage(){$('notice').className='notice'}
 function setMode(next){mode=next;clearMessage();$('loginTab').classList.toggle('active',mode==='login');$('signupTab').classList.toggle('active',mode==='signup');$('nameField').classList.toggle('hidden',mode!=='signup');$('confirmField').classList.toggle('hidden',mode!=='signup');$('loginOptions').classList.toggle('hidden',mode!=='login');$('formTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('formIntro').textContent=mode==='login'?'Log in to your RemitlyFly account.':'Create your RemitlyFly account.';$('submitButton').textContent=mode==='login'?'Log in':'Create account';$('switchLine').innerHTML=mode==='login'?'New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button>':'Already registered? <button class="link" id="switchMode" type="button">Log in</button>'; }
-let rfOtpUser=null, rfOtpPurpose='signup_phone', rfOtpDeviceToken=null;
+let rfOtpUser=null, rfOtpEmail='', rfOtpPurpose='signup_email', rfOtpDeviceToken=null, rfOtpSessionVerified=false, rfOtpVerificationInProgress=false;
 function rfGetDeviceToken(){
   let token=localStorage.getItem('rf_trusted_device_token');
   if(!token){token=crypto.randomUUID()+crypto.randomUUID();localStorage.setItem('rf_trusted_device_token',token);}
@@ -1221,35 +1220,34 @@ function rfGetDeviceToken(){
 function rfOtpMessage(text,type='err'){
   const el=$('otpNotice');el.textContent=text;el.className='notice show '+type;
 }
-function rfShowOtpGate(user, deviceInfo){
+function rfShowEmailOtpGate(user,email,purpose,codeAlreadySent=false){
   const shell=document.querySelector('.shell');
   if(shell){shell.classList.remove('intro-mode','dashboard-mode');shell.classList.add('login-mode','otp-mode');}
-  rfOtpUser=user;
+  rfOtpUser=user||null;rfOtpEmail=email||user?.email||'';rfOtpPurpose=purpose;rfOtpSessionVerified=false;
   rfOtpDeviceToken=rfGetDeviceToken();
-  rfOtpPurpose=deviceInfo?.hasPhone?'new_device':'signup_phone';
   $('authCard').style.display='none';$('dashboard').style.display='none';
   $('otpCard').classList.remove('hidden');
-  $('otpTitle').textContent=deviceInfo?.hasPhone?'Verify this new device':'Verify your phone number';
-  $('otpIntro').textContent=deviceInfo?.hasPhone
-    ? 'This browser or app installation has not been trusted yet. Enter the SMS code sent to your saved phone.'
-    : 'Verify a phone number before continuing. This is required once for this account.';
-  $('otpPhoneField').classList.toggle('hidden',rfOtpPurpose==='new_device');
-  $('otpSavedPhone').textContent=deviceInfo?.maskedPhone?'Code will be sent to '+deviceInfo.maskedPhone+'.':'';
-  $('otpCodeField').classList.add('hidden');$('otpVerifyButton').classList.add('hidden');
-  $('otpSendButton').classList.remove('hidden');$('otpSendButton').disabled=false;
+  $('otpTitle').textContent=purpose==='signup_email'?'Verify your email address':'Verify this new device';
+  $('otpIntro').textContent=purpose==='signup_email'
+    ? 'Enter the six-digit code sent to your email to confirm your RemitlyFly registration.'
+    : 'This browser or app installation is not trusted yet. Enter the email code to verify it once.';
+  $('otpSavedPhone').textContent='Verification code destination: '+rfOtpEmail;
+  $('otpCodeField').classList.toggle('hidden',!codeAlreadySent);
+  $('otpVerifyButton').classList.toggle('hidden',!codeAlreadySent);
+  $('otpSendButton').classList.remove('hidden');
+  $('otpSendButton').textContent=codeAlreadySent?'Resend email code':'Send email code';
+  $('otpSendButton').disabled=false;$('otpCode').value='';
   $('otpNotice').className='notice';
-  if(rfOtpPurpose==='signup_phone'){
-    const existing=user.user_metadata?.phone||'';
-    $('otpPhone').value=existing;
-  }
+  if(codeAlreadySent)rfOtpMessage('A verification code has been sent. Check your inbox and spam folder.','ok');
 }
 async function rfEnsureTrustedDevice(user){
   try{
+    if(rfOtpVerificationInProgress)return false;
     rfOtpDeviceToken=rfGetDeviceToken();
     const {data,error}=await supabase.functions.invoke('remitlyfly-device-otp',{body:{action:'check',deviceToken:rfOtpDeviceToken}});
     if(error)throw error;
     if(data?.trusted){$('otpCard').classList.add('hidden');return true;}
-    rfShowOtpGate(user,data||{hasPhone:false});
+    rfShowEmailOtpGate(user,user.email,'new_device',false);
     return false;
   }catch(err){
     $('authCard').style.display='block';$('dashboard').style.display='none';
@@ -1258,46 +1256,51 @@ async function rfEnsureTrustedDevice(user){
   }
 }
 async function rfSendDeviceOtp(){
-  const btn=$('otpSendButton');btn.disabled=true;rfOtpMessage('Sending your SMS code...','ok');
+  const btn=$('otpSendButton');btn.disabled=true;rfOtpMessage('Sending your email code...','ok');
   try{
-    const payload={action:'send',purpose:rfOtpPurpose,deviceToken:rfOtpDeviceToken};
-    if(rfOtpPurpose==='signup_phone'){
-      const phone=$('otpPhone').value.trim();
-      if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new Error('Enter your full phone number with country code, for example +2519XXXXXXXX.');
-      payload.phone=phone;
+    let result;
+    if(rfOtpPurpose==='signup_email'){
+      result=await supabase.auth.resend({type:'signup',email:rfOtpEmail});
+    }else{
+      result=await supabase.auth.signInWithOtp({email:rfOtpEmail,options:{shouldCreateUser:false}});
     }
-    const {data,error}=await supabase.functions.invoke('remitlyfly-device-otp',{body:payload});
-    if(error){
-      let detail=data?.error;
-      if(!detail && error.context?.json){try{const responseBody=await error.context.json();detail=responseBody?.error;}catch(_){}}
-      throw new Error(detail||error.message||'Could not send the SMS code. Please try again.');
-    }
+    if(result.error)throw result.error;
+    rfOtpSessionVerified=false;
     $('otpCodeField').classList.remove('hidden');$('otpVerifyButton').classList.remove('hidden');
-    $('otpSendButton').textContent='Resend code';$('otpSendButton').disabled=false;$('otpCode').focus();
-    rfOtpMessage('Code sent to '+data.maskedPhone+'. It expires in 5 minutes.','ok');
-  }catch(err){rfOtpMessage(err.message||'Could not send the code. Please try again.');btn.disabled=false;}
+    $('otpSendButton').textContent='Resend email code';$('otpSendButton').disabled=false;$('otpCode').focus();
+    rfOtpMessage('Code sent to '+rfOtpEmail+'. Check your inbox and spam folder.','ok');
+  }catch(err){rfOtpMessage(err.message||'Could not send the email code. Please try again.');btn.disabled=false;}
 }
 async function rfVerifyDeviceOtp(){
-  const btn=$('otpVerifyButton');btn.disabled=true;
+  const btn=$('otpVerifyButton');btn.disabled=true;rfOtpVerificationInProgress=true;
   try{
-    const otp=$('otpCode').value.trim();
-    const {data,error}=await supabase.functions.invoke('remitlyfly-device-otp',{body:{action:'verify',otp,deviceToken:rfOtpDeviceToken}});
-    if(error)throw error;
-    const {data:userData}=await supabase.auth.getUser();
-    let user=userData?.user||rfOtpUser;
-    if(user && data?.phone){
-      const {data:updated}=await supabase.auth.updateUser({data:{...(user.user_metadata||{}),phone:data.phone,phone_verified:true}});
-      if(updated?.user)user=updated.user;
+    let user=rfOtpUser;
+    if(!rfOtpSessionVerified){
+      const otp=$('otpCode').value.trim();
+      if(!/^\d{6}$/.test(otp))throw new Error('Enter the 6-digit code from your email.');
+      const {data,error}=await supabase.auth.verifyOtp({email:rfOtpEmail,token:otp,type:'email'});
+      if(error)throw error;
+      user=data?.user||null;rfOtpSessionVerified=true;
+    }else{
+      const {data,error}=await supabase.auth.getUser();
+      if(error)throw error;
+      user=data?.user||user;
     }
+    if(!user)throw new Error('Email verified, but the account session was not returned. Please sign in again.');
+    rfOtpUser=user;
+    const {data:trustData,error:trustError}=await supabase.functions.invoke('remitlyfly-device-otp',{body:{action:'trust',deviceToken:rfOtpDeviceToken}});
+    if(trustError)throw trustError;
+    if(!trustData?.trusted)throw new Error('Email verified, but this device could not be saved. Please try again.');
+    rfOtpVerificationInProgress=false;rfOtpSessionVerified=false;
     $('otpCard').classList.add('hidden');
     const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');
     await showDashboard(user,true);
-  }catch(err){rfOtpMessage(err.message||'The code could not be verified. Please try again.');}
+  }catch(err){rfOtpVerificationInProgress=false;rfOtpMessage(err.message||'The code could not be verified. Please try again.');}
   finally{btn.disabled=false;}
 }
 $('otpSendButton').addEventListener('click',rfSendDeviceOtp);
 $('otpVerifyButton').addEventListener('click',rfVerifyDeviceOtp);
-$('otpLogoutButton').addEventListener('click',async()=>{await supabase.auth.signOut();$('otpCard').classList.add('hidden');const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');showAuth();setMode('login');});
+$('otpLogoutButton').addEventListener('click',async()=>{rfOtpSessionVerified=false;rfOtpVerificationInProgress=false;await supabase.auth.signOut();$('otpCard').classList.add('hidden');const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');showAuth();setMode('login');});
 async function showDashboard(user,deviceVerified=false){
   if(!user)return;
   if(!deviceVerified && !(await rfEnsureTrustedDevice(user)))return;
@@ -1405,7 +1408,7 @@ $('authForm').addEventListener('submit',async e=>{e.preventDefault();clearMessag
   if(mode==='signup'){
    const name=$('fullName').value.trim();if(!name){message('Enter your full name.');return}if(password!==$('confirmPassword').value){message('The passwords do not match.');return}
    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:window.location.origin}});
-   if(error)message(error.message);else if(data.session && data.user) {await showDashboard(data.user);message('Registration submitted. Your account is awaiting admin approval.','ok')} else message('Registration submitted. Confirm your email, then wait for admin approval before accessing the app.','ok');
+   if(error)message(error.message);else if(data.user){rfShowEmailOtpGate(data.user,email,'signup_email',true)}else message('Could not start email verification. Please check the email address and try again.');
   } else {
    const {data,error}=await supabase.auth.signInWithPassword({email,password});
    if(error)message(error.message);else await showDashboard(data.user);
