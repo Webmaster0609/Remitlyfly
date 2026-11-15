@@ -858,7 +858,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  <p class="fine">Account access is handled by Supabase. No remittance API, payment gateway, or real transfers are connected.</p>
  <div class="switch" id="switchLine">New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button></div>
 </section>
-<section class="card hidden" id="otpCard" aria-live="polite">
+<section class="card hidden" id="otpCard" style="display:none!important" aria-live="polite">
  <h2 id="otpTitle">Verify your email</h2>
  <p class="intro" id="otpIntro">A one-time email code is required to continue.</p>
  <p class="muted" id="otpSavedPhone"></p>
@@ -1226,7 +1226,7 @@ function rfShowEmailOtpGate(user,email,purpose,codeAlreadySent=false){
   rfOtpUser=user||null;rfOtpEmail=email||user?.email||'';rfOtpPurpose=purpose;rfOtpSessionVerified=false;
   rfOtpDeviceToken=rfGetDeviceToken();
   $('authCard').style.display='none';$('dashboard').style.display='none';
-  $('otpCard').classList.remove('hidden');
+  $('otpCard').classList.remove('hidden');$('otpCard').style.removeProperty('display');
   $('otpTitle').textContent=purpose==='signup_email'?'Verify your email address':'Verify this new device';
   $('otpIntro').textContent=purpose==='signup_email'
     ? 'Enter the six-digit code sent to your email to confirm your RemitlyFly registration.'
@@ -1246,7 +1246,7 @@ async function rfEnsureTrustedDevice(user){
     rfOtpDeviceToken=rfGetDeviceToken();
     const {data,error}=await supabase.functions.invoke('remitlyfly-device-otp',{body:{action:'check',deviceToken:rfOtpDeviceToken}});
     if(error)throw error;
-    if(data?.trusted){$('otpCard').classList.add('hidden');return true;}
+    if(data?.trusted){$('otpCard').classList.add('hidden');$('otpCard').style.setProperty('display','none','important');return true;}
     rfShowEmailOtpGate(user,user.email,'new_device',false);
     return false;
   }catch(err){
@@ -2736,6 +2736,8 @@ body .shell.dashboard-mode #dashboard{display:block!important}
 </footer>
 
 <style id="rf-otp-exclusive-screen">
+#otpCard.hidden{display:none!important;}
+
 /* OTP is a separate step after successful credentials; never show login beside it. */
 .shell.login-mode.otp-mode>.panel{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;}
 .shell.login-mode.otp-mode #authCard{display:none!important;}
