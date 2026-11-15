@@ -1408,7 +1408,7 @@ $('authForm').addEventListener('submit',async e=>{e.preventDefault();clearMessag
   if(mode==='signup'){
    const name=$('fullName').value.trim();if(!name){message('Enter your full name.');return}if(password!==$('confirmPassword').value){message('The passwords do not match.');return}
    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:window.location.origin}});
-   if(error)message(error.message);else if(data.user){rfShowEmailOtpGate(data.user,email,'signup_email',true)}else message('Could not start email verification. Please check the email address and try again.');
+   if(error)message(error.message);else if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){message('An account with this email may already exist. Please log in instead.')}else if(data.user){rfShowEmailOtpGate(data.user,email,'signup_email',true)}else message('Could not start email verification. Please check the email address and try again.');
   } else {
    const {data,error}=await supabase.auth.signInWithPassword({email,password});
    if(error)message(error.message);else await showDashboard(data.user);
