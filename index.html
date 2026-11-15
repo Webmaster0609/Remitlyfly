@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#123b67"><meta name="description" content="RemitlyFly — a cleaner customer portal for recipient management, exchange-rate references and test transfer previews.">
 <title>RemitlyFly | Customer Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.css">
+<style>.iti{width:100%}.iti input{width:100%}.iti__country-list{max-width:min(320px,85vw);z-index:20}</style>
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/intlTelInput.min.js"></script>
 <style>
 :root{--navy:#0d3f78;--blue:#1266b3;--green:#25a879;--ink:#163653;--muted:#6b8299;--line:#d8e2ec;--bg:#f4f8fc}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:var(--bg)}
@@ -1111,7 +1114,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <div class="field"><label for="profileName">Full name</label><input id="profileName" autocomplete="name" placeholder="Your full name" required></div>
    <div class="field"><label for="profileDateOfBirth">Date of birth</label><input id="profileDateOfBirth" type="date" autocomplete="bday" required></div>
    <div class="field"><label for="profileAddress">Home address</label><input id="profileAddress" autocomplete="street-address" placeholder="Street, city, country" required></div>
-   <div class="field"><label for="profilePhone">Phone number (for SMS verification)</label><input id="profilePhone" type="tel" autocomplete="tel" placeholder="+251..." required></div>
+   <div class="field"><label for="profilePhone">Phone number (for SMS verification)</label><input id="profilePhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="Select country and enter phone number" required></div>
    <div class="field"><label for="profileEmailInput">Email address</label><input id="profileEmailInput" type="email" readonly></div>
    <div id="profileStatus" class="profile-status" role="status" aria-live="polite"></div>
    <button class="primary" id="saveProfileButton" type="submit">Save profile</button>
@@ -1192,6 +1195,7 @@ if (configured) {
   }
 }
 const $=id=>document.getElementById(id); let mode='login';
+const phoneIti = window.intlTelInput ? window.intlTelInput($('profilePhone'), {initialCountry:'et', preferredCountries:['et','us','gb'], separateDialCode:true, nationalMode:true, countrySearch:true, loadUtils:()=>import('https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js')}) : null;
 $('introNext').addEventListener('click',()=>{const shell=document.querySelector('.shell');shell.classList.remove('intro-mode');shell.classList.add('login-mode');window.scrollTo({top:0,behavior:'smooth'});$('email').focus({preventScroll:true})});
 $('backToIntro').addEventListener('click',()=>{const shell=document.querySelector('.shell');shell.classList.remove('login-mode');shell.classList.add('intro-mode');window.scrollTo({top:0,behavior:'smooth'})});
 function message(text,type='err'){const n=$('notice');n.textContent=text;n.className='notice show '+type}
@@ -1234,7 +1238,7 @@ async function showDashboard(user){
   $('profileName').value=meta.full_name||'';
   $('profileDateOfBirth').value=meta.date_of_birth||'';
   $('profileAddress').value=meta.address||'';
-  $('profilePhone').value=meta.phone||'';
+  if(phoneIti){if(meta.phone)phoneIti.setNumber(meta.phone);else phoneIti.setCountry('et');}else{$('profilePhone').value=meta.phone||'';}
   $('profileEmailInput').value=user.email||'';
   const isAdmin = user.app_metadata?.role === 'admin';
   $('goAdmin').classList.toggle('hidden', !isAdmin);
@@ -1320,6 +1324,7 @@ $('profileForm').addEventListener('submit',async e=>{
   const phone=$('profilePhone').value.trim();
   if(!fullName||!dateOfBirth||!address||!phone){profileMessage('Please complete your name, date of birth, address and phone number.');button.disabled=false;return}
   if(new Date(dateOfBirth)>=new Date(new Date().toDateString())){profileMessage('Please enter a valid date of birth.');button.disabled=false;return}
+   if(phoneIti && !phoneIti.isValidNumber()){profileMessage('Please enter a valid phone number for the selected country.');button.disabled=false;return}
   try{
     const {data,error}=await supabase.auth.updateUser({data:{full_name:fullName,date_of_birth:dateOfBirth,address:address,phone:phone}});
     if(error) profileMessage(error.message);
