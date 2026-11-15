@@ -2290,7 +2290,7 @@ async function loadAdminOverview(){
   await rfLoadPaymentModeSetting();
   await loadAccountApprovals();
   if(typeof rfLoadApiKeys==='function') await rfLoadApiKeys();
-  const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,exchange_rate,payout_amount_etb,tracking_status,created_at').order('created_at',{ascending:false}).limit(200);
+  const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,exchange_rate,payout_amount_etb,tracking_status,created_at,payment_hold_status,payment_hold_reason,payment_held_at,payment_release_reason,payment_released_at').order('created_at',{ascending:false}).limit(200);
   if(error){adminMessage('Admin data could not load: '+error.message+' Check the admin RLS policy in the SQL setup.');return;}
   const rows=data||[];
   const currentIds=new Set(rows.map(r=>String(r.id)));
@@ -2313,9 +2313,30 @@ async function loadAdminOverview(){
   $('adminRecordCount').textContent=String(rows.length);
   $('adminUserCount').textContent=String(new Set(rows.map(r=>r.user_id)).size);
   $('adminTotalAmount').textContent=money(rows.reduce((s,r)=>s+Number(r.send_amount_usd||0),0),'USD');
-  $('adminList').innerHTML=rows.length?rows.map(r=>`<article class="admin-row"><div class="rowline"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span></div><div class="muted">Account ID: ${escapeHtml(r.user_id)}</div><div class="muted">${money(r.send_amount_usd,'USD')} test amount · ${escapeHtml(safeDate(r.created_at))}</div><label class="field">Admin: change test payment status<select data-admin-track-id="${escapeHtml(r.id)}"><option value="saved" ${(r.tracking_status||'saved')==='saved'?'selected':''}>Saved</option><option value="under_review" ${r.tracking_status==='under_review'?'selected':''}>Under review</option><option value="simulated_complete" ${r.tracking_status==='simulated_complete'?'selected':''}>Simulated complete</option><option value="cancelled" ${r.tracking_status==='cancelled'?'selected':''}>Cancelled test</option></select></label></article>`).join(''):'<p class="muted">No test records found.</p>';
+  $('adminList').innerHTML=rows.length?rows.map(r=>`<article class="admin-row"><div class="rowline"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span></div><div class="muted">Account ID: ${escapeHtml(r.user_id)}</div><div class="muted">${money(r.send_amount_usd,'USD')} test amount · ${escapeHtml(safeDate(r.created_at))}</div><div class="warning" style="margin:10px 0">${r.payment_hold_status==='held'?'PAYMENT ON HOLD':'Payment not held'}${r.payment_hold_status==='held'?' · Reason: '+escapeHtml(r.payment_hold_reason||'Not recorded'):''}${r.payment_released_at?' · Last released: '+escapeHtml(safeDate(r.payment_released_at))+(r.payment_release_reason?' · Release reason: '+escapeHtml(r.payment_release_reason):''):''}</div><button type="button" class="${r.payment_hold_status==='held'?'secondary':''}" data-payment-hold-action="${r.payment_hold_status==='held'?'release':'hold'}" data-payment-hold-id="${escapeHtml(r.id)}">${r.payment_hold_status==='held'?'Release payment hold':'Place payment on hold'}</button><label class="field">Admin: change test payment status<select data-admin-track-id="${escapeHtml(r.id)}"><option value="saved" ${(r.tracking_status||'saved')==='saved'?'selected':''}>Saved</option><option value="under_review" ${r.tracking_status==='under_review'?'selected':''}>Under review</option><option value="simulated_complete" ${r.tracking_status==='simulated_complete'?'selected':''}>Simulated complete</option><option value="cancelled" ${r.tracking_status==='cancelled'?'selected':''}>Cancelled test</option></select></label></article>`).join(''):'<p class="muted">No test records found.</p>';
   if(!$('adminNewAlert').textContent) adminMessage('Admin alerts are active. New test records are checked every 20 seconds. No real payment data is connected.','ok');
 }
+$('adminList').addEventListener('click',async e=>{
+  const button=e.target.closest('[data-payment-hold-action]');if(!button)return;
+  const {data:{session}}=await supabase.auth.getSession();
+  if(session?.user?.app_metadata?.role!=='admin'){adminMessage('Administrator access is required.');return;}
+  const action=button.dataset.paymentHoldAction;
+  if(!['hold','release'].includes(action))return;
+  const promptText=action==='hold'?'Enter the reason for placing this test payment on hold (required):':'Enter the reason for releasing this test payment hold (required):';
+  const reason=window.prompt(promptText,action==='hold'?'Possible Terms and Conditions violation — review required.':'Review completed; hold released.');
+  if(reason===null)return;
+  const cleanReason=reason.trim();
+  if(!cleanReason){adminMessage('A reason is required. No change was made.');return;}
+  button.disabled=true;
+  const now=new Date().toISOString();
+  const update=action==='hold'
+    ? {payment_hold_status:'held',payment_hold_reason:cleanReason,payment_held_at:now,payment_held_by:session.user.id,payment_released_at:null,payment_released_by:null,payment_release_reason:null}
+    : {payment_hold_status:'not_held',payment_released_at:now,payment_released_by:session.user.id,payment_release_reason:cleanReason};
+  const {error}=await supabase.from('transfer_history').update(update).eq('id',button.dataset.paymentHoldId).eq('status','test_preview');
+  if(error){adminMessage('Could not '+(action==='hold'?'place':'release')+' payment hold: '+error.message);button.disabled=false;return;}
+  adminMessage(action==='hold'?'Test payment placed on hold. Reason recorded.':'Test payment hold released. Release reason recorded.','ok');
+  await loadAdminOverview();
+});
 $('adminList').addEventListener('change',async e=>{
   const select=e.target.closest('[data-admin-track-id]');if(!select)return;
   if(!supabase)return;
