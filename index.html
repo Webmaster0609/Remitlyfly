@@ -1321,7 +1321,7 @@ $('profileForm').addEventListener('submit',async e=>{
   const fullName=$('profileName').value.trim();
   const dateOfBirth=$('profileDateOfBirth').value;
   const address=$('profileAddress').value.trim();
-  const phone=$('profilePhone').value.trim();
+  const phone=phoneIti ? phoneIti.getNumber() : $('profilePhone').value.trim();
   if(!fullName||!dateOfBirth||!address||!phone){profileMessage('Please complete your name, date of birth, address and phone number.');button.disabled=false;return}
   if(new Date(dateOfBirth)>=new Date(new Date().toDateString())){profileMessage('Please enter a valid date of birth.');button.disabled=false;return}
    if(phoneIti && !phoneIti.isValidNumber()){profileMessage('Please enter a valid phone number for the selected country.');button.disabled=false;return}
@@ -1329,7 +1329,7 @@ $('profileForm').addEventListener('submit',async e=>{
     const {data,error}=await supabase.auth.updateUser({data:{full_name:fullName,date_of_birth:dateOfBirth,address:address,phone:phone}});
     if(error) profileMessage(error.message);
     else {showDashboard(data.user);profileMessage('Your profile was saved successfully.','ok');}
-  }catch(err){profileMessage('Could not save your profile. Please try again.');}
+  }catch(err){profileMessage(err?.message==='Failed to fetch'?'Could not reach Supabase. Check your internet connection, then reload RemitlyFly and try again.':(err?.message||'Could not save your profile. Please try again.'));}
   finally{button.disabled=false}
 });
 $('logout').addEventListener('click',async()=>{if(supabase)await supabase.auth.signOut();showAuth();setMode('login');$('password').value='';});
