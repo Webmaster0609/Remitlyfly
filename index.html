@@ -1222,6 +1222,8 @@ function rfOtpMessage(text,type='err'){
   const el=$('otpNotice');el.textContent=text;el.className='notice show '+type;
 }
 function rfShowOtpGate(user, deviceInfo){
+  const shell=document.querySelector('.shell');
+  if(shell){shell.classList.remove('intro-mode','dashboard-mode');shell.classList.add('login-mode','otp-mode');}
   rfOtpUser=user;
   rfOtpDeviceToken=rfGetDeviceToken();
   rfOtpPurpose=deviceInfo?.hasPhone?'new_device':'signup_phone';
@@ -1265,7 +1267,11 @@ async function rfSendDeviceOtp(){
       payload.phone=phone;
     }
     const {data,error}=await supabase.functions.invoke('remitlyfly-device-otp',{body:payload});
-    if(error)throw error;
+    if(error){
+      let detail=data?.error;
+      if(!detail && error.context?.json){try{const responseBody=await error.context.json();detail=responseBody?.error;}catch(_){}}
+      throw new Error(detail||error.message||'Could not send the SMS code. Please try again.');
+    }
     $('otpCodeField').classList.remove('hidden');$('otpVerifyButton').classList.remove('hidden');
     $('otpSendButton').textContent='Resend code';$('otpSendButton').disabled=false;$('otpCode').focus();
     rfOtpMessage('Code sent to '+data.maskedPhone+'. It expires in 5 minutes.','ok');
@@ -1284,13 +1290,14 @@ async function rfVerifyDeviceOtp(){
       if(updated?.user)user=updated.user;
     }
     $('otpCard').classList.add('hidden');
+    const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');
     await showDashboard(user,true);
   }catch(err){rfOtpMessage(err.message||'The code could not be verified. Please try again.');}
   finally{btn.disabled=false;}
 }
 $('otpSendButton').addEventListener('click',rfSendDeviceOtp);
 $('otpVerifyButton').addEventListener('click',rfVerifyDeviceOtp);
-$('otpLogoutButton').addEventListener('click',async()=>{await supabase.auth.signOut();$('otpCard').classList.add('hidden');showAuth();setMode('login');});
+$('otpLogoutButton').addEventListener('click',async()=>{await supabase.auth.signOut();$('otpCard').classList.add('hidden');const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');showAuth();setMode('login');});
 async function showDashboard(user,deviceVerified=false){
   if(!user)return;
   if(!deviceVerified && !(await rfEnsureTrustedDevice(user)))return;
@@ -1388,7 +1395,7 @@ $('rfLivePaymentsSwitch')?.addEventListener('change',async()=>{
 function profileMessage(text,type='err'){
   const el=$('profileStatus');el.textContent=text;el.className='profile-status show '+type;
 }
-function showAuth(){ const shell=document.querySelector('.shell');shell.classList.remove('dashboard-mode','intro-mode');shell.classList.add('login-mode');$('otpCard').classList.add('hidden');$('dashboard').classList.remove('account-pending');$('dashboard').style.display='none';$('authCard').style.display='block' }
+function showAuth(){ const shell=document.querySelector('.shell');shell.classList.remove('dashboard-mode','intro-mode','otp-mode');shell.classList.add('login-mode');$('otpCard').classList.add('hidden');$('dashboard').classList.remove('account-pending');$('dashboard').style.display='none';$('authCard').style.display='block' }
 $('pendingRefresh').addEventListener('click',async()=>{const {data:{user}}=await supabase.auth.getUser();if(user)await showDashboard(user);});
 $('loginTab').addEventListener('click',()=>setMode('login'));$('signupTab').addEventListener('click',()=>setMode('signup'));$('switchLine').addEventListener('click',(e)=>{if(e.target && e.target.id==='switchMode')setMode(mode==='login'?'signup':'login')}); 
 $('forgot').addEventListener('click',async()=>{clearMessage();if(!configured){message('Setup is not finished. Add your Supabase project URL and public key first.');return}if(!supabase){message('Could not load the authentication service. Check your internet connection and reload the page.');return}const email=$('email').value.trim();if(!email){message('Enter your email address first.');return}const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});if(error)message(error.message);else message('If this email belongs to an account, password recovery instructions will be sent. Check your inbox.','ok')});
@@ -2722,4 +2729,12 @@ body .shell.dashboard-mode #dashboard{display:block!important}
     <a href="mailto:support@remitlyfly.com" style="color:white;">Contact Support</a>
   </p>
 </footer>
+
+<style id="rf-otp-exclusive-screen">
+/* OTP is a separate step after successful credentials; never show login beside it. */
+.shell.login-mode.otp-mode>.panel{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;}
+.shell.login-mode.otp-mode #authCard{display:none!important;}
+.shell.login-mode.otp-mode #otpCard{display:block!important;visibility:visible!important;opacity:1!important;width:min(100%,470px)!important;margin:0 auto!important;}
+.shell.login-mode.otp-mode .dashboard{display:none!important;}
+</style>
 </body></html>
