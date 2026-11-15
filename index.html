@@ -1303,7 +1303,9 @@ $('otpVerifyButton').addEventListener('click',rfVerifyDeviceOtp);
 $('otpLogoutButton').addEventListener('click',async()=>{rfOtpSessionVerified=false;rfOtpVerificationInProgress=false;await supabase.auth.signOut();$('otpCard').classList.add('hidden');const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');showAuth();setMode('login');});
 async function showDashboard(user,deviceVerified=false){
   if(!user)return;
-  if(!deviceVerified && !(await rfEnsureTrustedDevice(user)))return;
+  let recoveryAllowed=false;
+  try{const recovery=JSON.parse(localStorage.getItem('rf_temp_email_recovery')||'null');recoveryAllowed=!!(recovery&&recovery.userId===user.id&&recovery.expiresAt>Date.now());if(!recoveryAllowed&&recovery)localStorage.removeItem('rf_temp_email_recovery');}catch(e){localStorage.removeItem('rf_temp_email_recovery');}
+  if(!deviceVerified && !recoveryAllowed && !(await rfEnsureTrustedDevice(user)))return;
   const {data:approval,error:approvalError}=await supabase.from('account_approvals').select('status').eq('user_id',user.id).maybeSingle();
   const shell=document.querySelector('.shell');
   function showApprovalGate(title,statusText){
@@ -1411,7 +1413,7 @@ $('authForm').addEventListener('submit',async e=>{e.preventDefault();clearMessag
    if(error)message(error.message);else if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){message('An account with this email may already exist. Please log in instead.')}else if(data.user){rfShowEmailOtpGate(data.user,email,'signup_email',true)}else message('Could not start email verification. Please check the email address and try again.');
   } else {
    const {data,error}=await supabase.auth.signInWithPassword({email,password});
-   if(error)message(error.message);else await showDashboard(data.user);
+   if(error)message(error.message);else {localStorage.setItem('rf_temp_email_recovery',JSON.stringify({userId:data.user.id,expiresAt:Date.now()+7*24*60*60*1000}));await showDashboard(data.user,true);}
   }
  } catch(err){message('Something went wrong. Please try again.')} finally {btn.disabled=false}
 });
@@ -1434,7 +1436,7 @@ $('profileForm').addEventListener('submit',async e=>{
   }catch(err){profileMessage(err?.message==='Failed to fetch'?'Could not reach Supabase. Check your internet connection, then reload RemitlyFly and try again.':(err?.message||'Could not save your profile. Please try again.'));}
   finally{button.disabled=false}
 });
-$('logout').addEventListener('click',async()=>{if(supabase)await supabase.auth.signOut();showAuth();setMode('login');$('password').value='';});
+$('logout').addEventListener('click',async()=>{localStorage.removeItem('rf_temp_email_recovery');if(supabase)await supabase.auth.signOut();showAuth();setMode('login');$('password').value='';});
 if(configured && supabase){supabase.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(session?.user){showDashboard(session.user);}else if(event==='SIGNED_OUT'){showAuth();setMode('login');}},0)});const {data:{session},error:sessionError}=await supabase.auth.getSession();if(session?.user)await showDashboard(session.user);else if(sessionError)message('Could not restore your sign-in session. Please try logging in again.');} else if (supabaseLoadError) { message('The login form is ready, but the authentication library did not load. Check your internet connection and reload.'); }
 
 // Recipient manager: all records are stored in public.recipients under the signed-in user's ID.
