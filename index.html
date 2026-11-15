@@ -2774,4 +2774,38 @@ body .shell.dashboard-mode #dashboard{display:block!important}
 .shell.login-mode.otp-mode #otpCard{display:block!important;visibility:visible!important;opacity:1!important;width:min(100%,470px)!important;margin:0 auto!important;}
 .shell.login-mode.otp-mode .dashboard{display:none!important;}
 </style>
+
+<style id="rf-admin-status-button-uniform">
+/* Keep all four admin status choices visually identical and equally sized. */
+.admin-status-actions{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+  align-items:stretch!important;
+}
+.admin-status-actions button{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-width:0!important;
+  height:64px!important;
+  min-height:64px!important;
+  margin:0!important;
+  padding:8px 10px!important;
+  border:1px solid var(--line)!important;
+  border-radius:14px!important;
+  background:#f6f9fd!important;
+  color:var(--navy)!important;
+  font:700 15px/1.2 inherit!important;
+  text-align:center!important;
+  white-space:normal!important;
+  box-shadow:none!important;
+}
+.admin-status-actions button:disabled{
+  opacity:.65;
+  cursor:default;
+}
+</style>
+
 </body></html>
