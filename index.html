@@ -1261,13 +1261,13 @@ async function rfSendDeviceOtp(){
     const payload={action:'send',purpose:rfOtpPurpose,deviceToken:rfOtpDeviceToken};
     if(rfOtpPurpose==='signup_phone'){
       const phone=$('otpPhone').value.trim();
-      if(!/^\\+[1-9]\\d{7,14}$/.test(phone))throw new Error('Enter your full phone number with country code, for example +2519XXXXXXXX.');
+      if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new Error('Enter your full phone number with country code, for example +2519XXXXXXXX.');
       payload.phone=phone;
     }
     const {data,error}=await supabase.functions.invoke('remitlyfly-device-otp',{body:payload});
     if(error)throw error;
     $('otpCodeField').classList.remove('hidden');$('otpVerifyButton').classList.remove('hidden');
-    $('otpSendButton').classList.add('hidden');$('otpCode').focus();
+    $('otpSendButton').textContent='Resend code';$('otpSendButton').disabled=false;$('otpCode').focus();
     rfOtpMessage('Code sent to '+data.maskedPhone+'. It expires in 5 minutes.','ok');
   }catch(err){rfOtpMessage(err.message||'Could not send the code. Please try again.');btn.disabled=false;}
 }
