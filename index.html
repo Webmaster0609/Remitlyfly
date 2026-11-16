@@ -913,22 +913,22 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
     <h4>Top up test wallet</h4><p class="muted">Add simulated funds to the selected currency wallet. Maximum 5,000 per top-up.</p>
     <form id="walletTopupForm"><div class="field"> <label for="walletTopupAmount">Wallet amount to add</label><input id="walletTopupAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="100.00" required></div><div id="walletTopupFeePreview" class="muted" style="padding:10px 12px;border:1px solid var(--border,#ddd);border-radius:10px;margin:10px 0" aria-live="polite">3% card fee: 0.00 · Total card charge: 0.00 · Wallet receives: 0.00</div><p class="fine">A 3% simulated card fee is recorded as admin fee revenue. This test screen does not charge a real card.</p><button class="primary" type="submit" id="walletTopupButton">Add test funds</button></form>
    </div>
-   <div class="wallet-panel">
+   <div class="wallet-panel hidden">
     <h4>Receive money</h4><p class="muted">Share your full name or RemitlyFly username so another user can find you.</p>
     <div class="wallet-share-row"><small>Your RemitlyFly username</small><strong id="walletOwnUsername">@not-set</strong></div>
     <p class="fine" style="text-align:left">Only your display name and username are shown in wallet search. Your email, phone number and balance stay private.</p>
    </div>
   </div>
   <div class="wallet-panel" style="margin-top:14px">
-   <h4>Withdraw to your account or someone else's — test request</h4>
-   <p class="muted">Send a test withdrawal request to your own bank/mobile wallet or another person's account. You can save beneficiaries and select them next time.</p>
+   <h4>Withdraw to your own account — test request</h4>
+   <p class="muted">Submit a test withdrawal request to a bank account or mobile wallet that belongs to you. You can save your own accounts and select them next time.</p>
    <div class="warning"><strong>TEST DATA ONLY.</strong> Never enter a real bank account number or real mobile-money number, PIN or password. Use invented test details only. No payout is made and your wallet balance is not deducted. RemitlyFly is not connected to these providers.</div>
    <form id="walletWithdrawForm">
     <div class="field"><label for="walletWithdrawAmount" id="walletWithdrawAmountLabel">Amount (USD test wallet)</label><input id="walletWithdrawAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div>
     <div class="field"><label for="walletWithdrawCountry">Destination country</label><select id="walletWithdrawCountry" required><option value="ET">Ethiopia</option><option value="KE">Kenya</option><option value="NG">Nigeria</option><option value="UG">Uganda</option><option value="TZ">Tanzania</option><option value="ZA">South Africa</option></select></div>
     <div class="field"><label for="walletWithdrawType">Payout method</label><select id="walletWithdrawType" required><option value="bank">Bank account</option><option value="mobile_wallet">Mobile money</option></select></div>
     <div class="field"><label for="walletWithdrawProvider">Bank or mobile money provider</label><select id="walletWithdrawProvider" required></select></div>
-    <div class="field"><label for="walletWithdrawLabel">Account holder / recipient full name</label><input id="walletWithdrawLabel" type="text" minlength="3" maxlength="80" placeholder="Enter recipient name" required></div>
+    <div class="field"><label for="walletWithdrawLabel">Your full name (account holder)</label><input id="walletWithdrawLabel" type="text" minlength="3" maxlength="80" placeholder="Enter recipient name" required></div>
     <div class="field"><label for="walletWithdrawIdentifier" id="walletWithdrawIdentifierLabel">Test bank account number</label><input id="walletWithdrawIdentifier" type="text" minlength="3" maxlength="100" autocomplete="off" placeholder="Invented test number only" required></div>
     <label class="wallet-check"><input id="walletWithdrawSave" type="checkbox"> Save this beneficiary for next time</label>
     <button class="primary" type="submit" id="walletWithdrawButton">Submit test withdrawal request</button>
@@ -936,7 +936,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <div id="walletBeneficiariesList" style="margin-top:12px"><p class="muted">Your saved beneficiaries will appear here.</p></div>
    <div id="walletWithdrawalList" style="margin-top:12px"><p class="muted">Your test withdrawal requests will appear here.</p></div>
   </div>
-  <div class="wallet-panel" style="margin-top:14px">
+  <div class="wallet-panel hidden" style="margin-top:14px">
    <h4>Find a RemitlyFly user</h4><p class="muted">Search by a person's full name or RemitlyFly username. Select a result to view and save them.</p>
    <div class="field"><label for="walletSearch">Full name or @username</label><input id="walletSearch" type="search" autocomplete="off" placeholder="Search name or @username..."></div>
    <div id="walletSearchResults" aria-live="polite"></div>
@@ -946,8 +946,8 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
     <form id="walletSendForm"><div class="field"> <label for="walletSendAmount">Amount</label><input id="walletSendAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div><button class="primary" type="submit" id="walletSendButton">Review and send test money</button></form>
    </div>
   </div>
-  <div class="wallet-panel" style="margin-top:14px"><h4>Saved wallet contacts</h4><p class="muted">People you save here are ready to select for future wallet transfers.</p><div id="walletContactsList"><p class="muted">Loading saved contacts…</p></div></div>
-  <div class="wallet-panel" style="margin-top:14px">
+  <div class="wallet-panel hidden" style="margin-top:14px"><h4>Saved wallet contacts</h4><p class="muted">People you save here are ready to select for future wallet transfers.</p><div id="walletContactsList"><p class="muted">Loading saved contacts…</p></div></div>
+  <div class="wallet-panel hidden" style="margin-top:14px">
    <h4>Your wallet discovery settings</h4><p class="muted">Choose whether other signed-in users can find you by your full name and username.</p>
    <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me by name and username</label><button class="secondary" type="submit" id="walletProfileSave">Save wallet profile</button></form>
   </div>
@@ -983,6 +983,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <input type="hidden" id="payoutMethod" value="bank">
    <select id="transferWallet" hidden aria-hidden="true"><option value="">Choose a wallet</option><option value="Telebirr">Telebirr</option><option value="M-PESA Ethiopia">M-PESA Ethiopia</option><option value="Kacha">Kacha</option><option value="Yaya Wallet">Yaya Wallet</option></select>
    <div class="field"><label for="sendAmount">You send (<span id="sendCurrencyLabel">USD</span>)</label><input id="sendAmount" type="number" min="1" max="10000" step="0.01" inputmode="decimal" placeholder="100.00" required></div>
+   <div class="field"><label for="transferPaymentSource">How would you like to pay?</label><select id="transferPaymentSource"><option value="sandbox_card_demo">Card payment (sandbox demo)</option><option value="wallet_test_preview">My RemitlyFly wallet balance (test)</option></select><small class="muted">Wallet option is a test preview only. It checks your selected wallet balance but does not deduct funds or make a real payment.</small><p id="transferPaymentSourceStatus" class="fine" aria-live="polite">Card sandbox demo selected. No card is charged.</p></div>
    <select id="receivingBank" hidden aria-hidden="true"><option value="">Loading banks…</option></select>
    <div class="field"><label for="demoRate">Reference exchange rate (<span id="destinationCurrencyLabel">ETB</span> per <span id="rateCurrencyLabel">USD</span>)</label><input id="demoRate" type="number" min="0.01" max="100000" step="any" inputmode="decimal" value="150.00" required><small class="muted">Live published bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.</small></div>
    <div class="field"><label for="demoFee">Illustrative fee (<span id="feeCurrencyLabel">USD</span>)</label><input id="demoFee" type="number" min="0" max="1000" step="0.01" value="2.99" required><small class="muted">Demo fee only — actual fees are not available.</small></div>
@@ -2405,6 +2406,7 @@ $('transferForm').addEventListener('submit', async e => {
   let rate = Number($('demoRate').value), fee = Number($('demoFee').value);
   if (!recipient) { $('transferStatus').textContent = 'Choose a saved recipient first.'; $('transferStatus').className='profile-status show err'; return; }
   if (!Number.isFinite(amount) || amount <= 0) { $('transferStatus').textContent = 'Enter a valid send amount.'; $('transferStatus').className='profile-status show err'; return; }
+  if($('transferPaymentSource').value==='wallet_test_preview' && $('walletCurrencySelect').value!==currency){$('transferStatus').textContent='Your selected wallet is '+$('walletCurrencySelect').value+'. Please select the '+currency+' wallet to match the sending currency.';$('transferStatus').className='profile-status show err';return;}
   const payoutMethod=recipient.payout_method||$('payoutMethod')?.value||'bank';
   const payoutLabel=(payoutMethod==='wallet'?'Mobile wallet — ':'Bank account — ')+(recipient.payout_provider||'saved payout destination');
   if(!recipient.payout_provider){$('transferStatus').textContent='This recipient is missing saved bank or wallet details. Edit the recipient and add the payout destination first.';$('transferStatus').className='profile-status show err';return;}
@@ -2445,6 +2447,7 @@ $('transferForm').addEventListener('submit', async e => {
     return;
   }
 
+  if($('transferPaymentSource').value==='wallet_test_preview' && (Number(walletBalances[currency])||0)<Number(quote.total_amount)){ $('transferStatus').textContent='Insufficient '+currency+' test wallet balance for the send amount plus fee. Top up your wallet or choose the card sandbox demo.'; $('transferStatus').className='profile-status show err'; return; }
   const destinationCurrency = quote.receive_currency;
   const total = Number(quote.total_amount);
   const receive = Number(quote.payout_amount);
@@ -2469,7 +2472,8 @@ $('transferForm').addEventListener('submit', async e => {
     payout_method: recipient.payout_method,
     payout_wallet: recipient.payout_method==='wallet'?recipient.payout_provider:null,
     payout_bank: recipient.payout_method==='bank'?recipient.payout_provider:null,
-    status: 'test_preview'
+    status: 'test_preview',
+    payment_source: $('transferPaymentSource').value
   };
 
   $('transferStatus').textContent = 'Sandbox quote received. Review the test transfer below. No money has been sent.';
@@ -2484,7 +2488,8 @@ $('transferForm').addEventListener('submit', async e => {
     <div><span>Total (test example)</span><strong>${money(total,currency)}</strong></div>
     <div><span>Sandbox indicative rate</span><strong>1 ${currency} = ${rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${escapeHtml(destinationCurrency)}</strong></div>
     <div><span>Estimated payout (test example)</span><strong>${escapeHtml(destinationCurrency)} ${receive.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>
-    <div><span>Rate source</span><strong>${escapeHtml(quote.rate_source||'RemitlyFly sandbox rate')}</strong></div>`;
+    <div><span>Rate source</span><strong>${escapeHtml(quote.rate_source||'RemitlyFly sandbox rate')}</strong></div>
+    <div><span>Payment source</span><strong>${$('transferPaymentSource').value==='wallet_test_preview'?'RemitlyFly wallet balance (test preview; no deduction)':'Card payment sandbox demo'}</strong></div>`;
   $('confirmTestOnly').checked=false;
   $('finishReview').disabled=true;
   $('confirmationStatus').textContent='';
