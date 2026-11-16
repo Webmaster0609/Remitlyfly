@@ -920,18 +920,20 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    </div>
   </div>
   <div class="wallet-panel" style="margin-top:14px">
-   <h4>Withdraw to your own account — test request</h4>
-   <p class="muted">Choose the African destination country, payout method and bank or mobile money provider. This is a test request only—never enter a real account number, PIN or password.</p>
-   <div class="warning">TEST REQUEST ONLY — no payout is made and your wallet balance is not deducted. Provider names are for selection/testing only; RemitlyFly is not yet connected to these banks or wallets.</div>
+   <h4>Withdraw to your account or someone else's — test request</h4>
+   <p class="muted">Send a test withdrawal request to your own bank/mobile wallet or another person's account. You can save beneficiaries and select them next time.</p>
+   <div class="warning"><strong>TEST DATA ONLY.</strong> Never enter a real bank account number or real mobile-money number, PIN or password. Use invented test details only. No payout is made and your wallet balance is not deducted. RemitlyFly is not connected to these providers.</div>
    <form id="walletWithdrawForm">
     <div class="field"><label for="walletWithdrawAmount">Amount (USD test balance)</label><input id="walletWithdrawAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div>
     <div class="field"><label for="walletWithdrawCountry">Destination country</label><select id="walletWithdrawCountry" required><option value="ET">Ethiopia</option><option value="KE">Kenya</option><option value="NG">Nigeria</option><option value="UG">Uganda</option><option value="TZ">Tanzania</option><option value="ZA">South Africa</option></select></div>
     <div class="field"><label for="walletWithdrawType">Payout method</label><select id="walletWithdrawType" required><option value="bank">Bank account</option><option value="mobile_wallet">Mobile money</option></select></div>
     <div class="field"><label for="walletWithdrawProvider">Bank or mobile money provider</label><select id="walletWithdrawProvider" required></select></div>
-    <div class="field"><label for="walletWithdrawLabel">Account holder name or test label (no account number)</label><input id="walletWithdrawLabel" type="text" minlength="3" maxlength="80" placeholder="e.g. My own account" required></div>
-    <label class="wallet-check"><input id="walletWithdrawOwn" type="checkbox" required> I confirm this account belongs to me.</label>
+    <div class="field"><label for="walletWithdrawLabel">Account holder / recipient full name</label><input id="walletWithdrawLabel" type="text" minlength="3" maxlength="80" placeholder="Enter recipient name" required></div>
+    <div class="field"><label for="walletWithdrawIdentifier" id="walletWithdrawIdentifierLabel">Test bank account number</label><input id="walletWithdrawIdentifier" type="text" minlength="3" maxlength="100" autocomplete="off" placeholder="Invented test number only" required></div>
+    <label class="wallet-check"><input id="walletWithdrawSave" type="checkbox"> Save this beneficiary for next time</label>
     <button class="primary" type="submit" id="walletWithdrawButton">Submit test withdrawal request</button>
    </form>
+   <div id="walletBeneficiariesList" style="margin-top:12px"><p class="muted">Your saved beneficiaries will appear here.</p></div>
    <div id="walletWithdrawalList" style="margin-top:12px"><p class="muted">Your test withdrawal requests will appear here.</p></div>
   </div>
   <div class="wallet-panel" style="margin-top:14px">
@@ -1519,6 +1521,7 @@ async function loadWallet(){
  if(profileResult.error){walletStatus('Could not load wallet profile: '+profileResult.error.message);return;}
  $('walletUsername').value=profileResult.data?.username||'';
  await loadWalletContacts();
+ await loadWalletBeneficiaries();
  $('walletOwnUsername').textContent=profileResult.data?.username?'@'+profileResult.data.username:'Not set — choose a username below';
  $('walletAllowLookup').checked=profileResult.data?.allow_lookup!==false;
  if(txResult.error){$('walletTransactions').innerHTML='<p class="muted">Could not load wallet activity.</p>';return;}
@@ -1536,6 +1539,30 @@ async function loadWallet(){
  else if(!withdrawals?.length){$('walletWithdrawalList').innerHTML='<p class="muted">No test withdrawal requests yet.</p>';}
  else{$('walletWithdrawalList').innerHTML='<h5>Recent test withdrawal requests</h5>'+withdrawals.map(w=>'<div class="wallet-tx"><div><strong>'+escapeHtml(walletFormat(w.amount))+' · '+escapeHtml(w.destination_type==='bank'?'Bank account':'Mobile money')+' · '+escapeHtml(({ET:'Ethiopia',KE:'Kenya',NG:'Nigeria',UG:'Uganda',TZ:'Tanzania',ZA:'South Africa'})[w.destination_country]||w.destination_country)+'</strong><small>'+escapeHtml(w.destination_provider)+' · '+escapeHtml(w.destination_label)+' · '+escapeHtml(new Date(w.created_at).toLocaleString())+'</small></div><span class="status-pill">'+escapeHtml(w.status.replaceAll('_',' '))+'</span></div>').join('');}
 }
+async function loadWalletBeneficiaries(){
+ const box=$('walletBeneficiariesList');if(!box||!supabase)return;
+ const {data,error}=await supabase.from('wallet_beneficiaries').select('id,beneficiary_name,account_holder,destination_type,destination_country,destination_provider,destination_identifier').order('created_at',{ascending:false});
+ if(error){box.innerHTML='<p class="muted">Could not load saved beneficiaries.</p>';return;}
+ if(!data?.length){box.innerHTML='<h5>Saved beneficiaries</h5><p class="muted">No saved beneficiaries yet.</p>';return;}
+ const countries={ET:'Ethiopia',KE:'Kenya',NG:'Nigeria',UG:'Uganda',TZ:'Tanzania',ZA:'South Africa'};
+ box.innerHTML='<h5>Saved beneficiaries</h5>'+data.map(b=>'<div class="wallet-tx"><div><strong>'+escapeHtml(b.beneficiary_name)+'</strong><small>'+escapeHtml(countries[b.destination_country]||b.destination_country)+' · '+escapeHtml(b.destination_provider)+' · '+escapeHtml(b.destination_type==='bank'?'Bank':'Mobile money')+'</small></div><button type="button" class="secondary" data-wallet-beneficiary-use="'+escapeHtml(b.id)+'">Use</button><button type="button" class="secondary" data-wallet-beneficiary-remove="'+escapeHtml(b.id)+'">Delete</button></div>').join('');
+}
+$('walletBeneficiariesList').addEventListener('click',async e=>{
+ const use=e.target.closest('[data-wallet-beneficiary-use]'),remove=e.target.closest('[data-wallet-beneficiary-remove]');
+ if(use){
+  const {data,error}=await supabase.from('wallet_beneficiaries').select('account_holder,destination_type,destination_country,destination_provider,destination_identifier').eq('id',use.dataset.walletBeneficiaryUse).single();
+  if(error||!data){walletStatus('Could not load that saved beneficiary.');return;}
+  $('walletWithdrawCountry').value=data.destination_country;$('walletWithdrawType').value=data.destination_type;updateWalletWithdrawProviders();
+  $('walletWithdrawProvider').value=data.destination_provider;$('walletWithdrawLabel').value=data.account_holder;$('walletWithdrawIdentifier').value=data.destination_identifier;
+  $('walletWithdrawSave').checked=false;walletStatus('Saved beneficiary selected. Check the details before submitting.','ok');
+  $('walletWithdrawAmount').focus();
+ }
+ if(remove&&confirm('Delete this saved beneficiary?')){
+  const {error}=await supabase.from('wallet_beneficiaries').delete().eq('id',remove.dataset.walletBeneficiaryRemove);
+  if(error){walletStatus('Could not delete saved beneficiary: '+error.message);return;}
+  await loadWalletBeneficiaries();walletStatus('Saved beneficiary deleted.','ok');
+ }
+});
 async function loadWalletContacts(){
  const box=$('walletContactsList');if(!box||!supabase)return;
  const {data,error}=await supabase.rpc('rf_wallet_saved_contacts');
@@ -1660,22 +1687,29 @@ function updateWalletWithdrawProviders(){
  $('walletWithdrawProvider').innerHTML=providers.map(name=>'<option value="'+escapeHtml(name)+'">'+escapeHtml(name)+'</option>').join('');
 }
 $('walletWithdrawCountry').addEventListener('change',updateWalletWithdrawProviders);
-$('walletWithdrawType').addEventListener('change',updateWalletWithdrawProviders);
+$('walletWithdrawType').addEventListener('change',()=>{
+ updateWalletWithdrawProviders();
+ $('walletWithdrawIdentifierLabel').textContent=$('walletWithdrawType').value==='bank'?'Test bank account number':'Test mobile-money phone number';
+ $('walletWithdrawIdentifier').placeholder=$('walletWithdrawType').value==='bank'?'Invented test account number only':'Invented test phone number only';
+});
+$('walletWithdrawCountry').addEventListener('change',updateWalletWithdrawProviders);
 updateWalletWithdrawProviders();
+$('walletWithdrawIdentifierLabel').textContent='Test bank account number';
 $('walletWithdrawForm').addEventListener('submit',async e=>{
  e.preventDefault();
- const amount=Number($('walletWithdrawAmount').value),type=$('walletWithdrawType').value,country=$('walletWithdrawCountry').value,provider=$('walletWithdrawProvider').value,label=$('walletWithdrawLabel').value.trim();
+ const amount=Number($('walletWithdrawAmount').value),type=$('walletWithdrawType').value,country=$('walletWithdrawCountry').value,provider=$('walletWithdrawProvider').value,label=$('walletWithdrawLabel').value.trim(),identifier=$('walletWithdrawIdentifier').value.trim(),saveBeneficiary=$('walletWithdrawSave').checked;
  if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter a test withdrawal request between USD 0.01 and USD 5,000.');return;}
- if(!$('walletWithdrawOwn').checked){walletStatus('Confirm that the destination belongs to you.');return;}
- if(!confirm('Submit a TEST withdrawal request for '+walletFormat(amount)+' to '+provider+', '+({ET:'Ethiopia',KE:'Kenya',NG:'Nigeria',UG:'Uganda',TZ:'Tanzania',ZA:'South Africa'})[country]+'? No money will be paid out or deducted.'))return;
+ if(identifier.length<3||identifier.length>100){walletStatus('Enter an invented test account or mobile-money number (3–100 characters).');return;}
+ if(!confirm('Submit a TEST withdrawal request for '+walletFormat(amount)+' to '+label+' at '+provider+', '+({ET:'Ethiopia',KE:'Kenya',NG:'Nigeria',UG:'Uganda',TZ:'Tanzania',ZA:'South Africa'})[country]+'? No money will be paid out or deducted.'))return;
  const button=$('walletWithdrawButton');button.disabled=true;
  try{
-  const {data,error}=await supabase.rpc('rf_wallet_request_withdrawal',{p_amount:amount,p_destination_type:type,p_destination_country:country,p_destination_provider:provider,p_destination_label:label,p_confirm_ownership:$('walletWithdrawOwn').checked});
+  const {data,error}=await supabase.rpc('rf_wallet_request_withdrawal',{p_amount:amount,p_destination_type:type,p_destination_country:country,p_destination_provider:provider,p_destination_label:label,p_destination_identifier:identifier,p_save_beneficiary:saveBeneficiary});
   if(error)throw error;
   if(data?.request_id)await rfWalletNotifyAdmin('withdrawal',data.request_id);
   $('walletWithdrawForm').reset();
-  updateWalletWithdrawProviders();
-  walletStatus('Test withdrawal request saved. No payout occurred and your wallet balance is unchanged.','ok');
+  updateWalletWithdrawProviders();$('walletWithdrawIdentifierLabel').textContent='Test bank account number';
+  await loadWalletBeneficiaries();
+  walletStatus('Test withdrawal request saved. '+(saveBeneficiary?'Beneficiary saved for next time. ':'')+'No payout occurred and your wallet balance is unchanged.','ok');
   await loadWallet();
  }catch(err){walletStatus(err.message||'Could not submit the test withdrawal request.');}
  finally{button.disabled=false;}
