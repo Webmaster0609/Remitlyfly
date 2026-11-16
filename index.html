@@ -1486,11 +1486,26 @@ async function loadWallet(){
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return;
  if(!walletRealtimeChannel){
-  walletRealtimeChannel=supabase.channel('rf-wallet-'+user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_transactions',filter:'receiver_user_id=eq.'+user.id},payload=>{
-   const incoming=payload.new?.transaction_type==='wallet_transfer';
-   walletStatus(incoming?'You received new test money in your wallet.':'A test wallet top-up was recorded.','ok');
-   loadWallet();
-  }).subscribe();
+  walletRealtimeChannel=supabase.channel('rf-wallet-'+user.id)
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_transactions',filter:'receiver_user_id=eq.'+user.id},payload=>{
+    const incoming=payload.new?.transaction_type==='wallet_transfer';
+    walletStatus(incoming?'Wallet alert: you received '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' from another RemitlyFly user. TEST ONLY.':'Wallet alert: your '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' test top-up was recorded. TEST ONLY.','ok');
+    loadWallet();
+   })
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_transactions',filter:'sender_user_id=eq.'+user.id},payload=>{
+    if(payload.new?.transaction_type==='wallet_transfer'){
+     walletStatus('Wallet alert: your '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' test transfer was sent. TEST ONLY.','ok');
+     loadWallet();
+    }
+   })
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_withdrawal_requests',filter:'user_id=eq.'+user.id},payload=>{
+    walletStatus('Wallet alert: your test withdrawal request was submitted. No payout occurred.','ok');
+    loadWallet();
+   })
+   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'wallet_withdrawal_requests',filter:'user_id=eq.'+user.id},payload=>{
+    walletStatus('Wallet alert: your test withdrawal request status changed to '+String(payload.new?.status||'updated').replaceAll('_',' ')+'. No payout occurred.','ok');
+    loadWallet();
+   }).subscribe();
  }
  $('walletOwnEmail').textContent=user.email||'Not available';
  const [walletResult,profileResult,txResult]=await Promise.all([
