@@ -973,7 +973,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <p id="savedRecipientPayoutCountry">Destination: —</p>
   <p id="savedRecipientPayoutMethod">Payout method: —</p>
   <p id="savedRecipientPayoutProvider">Bank or wallet: —</p>
-  <small class="muted">TEST ONLY — no money will be sent.</small>
+  <small class="muted"> — no money will be sent.</small>
    </div>
    <input type="hidden" id="payoutMethod" value="bank">
    <select id="transferWallet" hidden aria-hidden="true"><option value="">Choose a wallet</option><option value="Telebirr">Telebirr</option><option value="M-PESA Ethiopia">M-PESA Ethiopia</option><option value="Kacha">Kacha</option><option value="Yaya Wallet">Yaya Wallet</option></select>
@@ -989,7 +989,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <div id="transferReview" class="hidden" aria-live="polite">
    <h3 style="margin-top:18px">Review your test transfer</h3>
    <div id="reviewDetails" class="transfer-summary"></div>
-   <div class="warning"><strong>TEST ONLY — NO MONEY MOVES.</strong> This is an estimate using illustrative/reference values. It does not collect payment, contact a payout provider, or send money to the recipient.</div>
+   <div class="warning"><strong> — NO MONEY MOVES.</strong> This is an estimate using illustrative/reference values. It does not collect payment, contact a payout provider, or send money to the recipient.</div>
    <div class="profile-card hidden" id="cardPaymentDemo" style="margin:16px 0;background:#f7fbff">
     <h3 style="margin-top:0">Card payment demo</h3>
     <p class="muted">Choose a simulated result to preview a card checkout. No card number, expiry date, CVV or OTP is collected. No payment is attempted.</p>
@@ -1031,9 +1031,9 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <div class="warning">Never make a user an admin by editing browser code or user-editable metadata. Set the role securely in Supabase Auth user app_metadata.</div>
   <section class="profile-card" id="rfLivePaymentsAdmin" aria-labelledby="rfLivePaymentsHeading" style="margin:18px 0;background:#fff8ed;border:1px solid #f0d6a8">
    <h3 id="rfLivePaymentsHeading">Future real-payment controls</h3>
-   <p><strong id="rfPaymentModeBadge">TEST ONLY — LIVE LOCKED</strong></p>
+   <p><strong id="rfPaymentModeBadge"> — LIVE LOCKED</strong></p>
    <p class="muted">This control is available only to accounts with the administrator role in Supabase Auth app_metadata.</p>
-   <div class="warning">The switch saves the administrator's requested mode. The backend still enforces TEST ONLY because no production payment provider or required approvals are configured. No money can be moved.</div>
+   <div class="warning">The switch saves the administrator's requested mode. The backend still enforces  because no production payment provider or required approvals are configured. No money can be moved.</div>
    <div class="rf-live-toggle-row" style="margin:16px 0">
     <div class="rf-live-toggle-copy"><strong>Request LIVE mode</strong><p id="rfLivePaymentsLock" class="muted">Loading the secure backend setting…</p></div>
     <label class="rf-switch-control" aria-label="Request live mode">
@@ -1041,7 +1041,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
      <span class="rf-switch-track" aria-hidden="true"></span>
     </label>
    </div>
-   <p class="fine" style="text-align:left">ON means “LIVE requested by admin”, not live payments. The server's effective mode remains TEST ONLY until the required provider, approvals and secure payment integration are verified.</p>
+   <p class="fine" style="text-align:left">ON means “LIVE requested by admin”, not live payments. The server's effective mode remains  until the required provider, approvals and secure payment integration are verified.</p>
   </section>
   <div id="adminNewAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
   <h3>New user registrations</h3>
@@ -1064,7 +1064,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <section class="profile-card" id="rfSandboxApiDocs" aria-labelledby="rfSandboxApiDocsHeading" style="margin:18px 0">
    <h3 id="rfSandboxApiDocsHeading">Sandbox API documentation</h3>
    <p class="muted">Use these endpoints to connect your own test application to RemitlyFly. All examples are simulations only.</p>
-   <div class="warning"><strong>TEST ONLY:</strong> This API cannot send, receive, or move real money. Never put your API key in public code, a website page, GitHub repository, or a screenshot. Use a secure server-side environment for your test application.</div>
+   <div class="warning"><strong>:</strong> This API cannot send, receive, or move real money. Never put your API key in public code, a website page, GitHub repository, or a screenshot. Use a secure server-side environment for your test application.</div>
    <h4>1. Base URL and authentication</h4>
    <p>Base URL:</p>
    <pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#f3f6fa;border-radius:8px"><code>https://yzjktqrmgdatdyvcpapa.supabase.co/functions/v1/remitlyfly-sandbox</code></pre>
@@ -1430,8 +1430,8 @@ async function rfLoadPaymentModeSetting(){
   toggle.checked=data.setting?.requested_mode==='LIVE';
   toggle.disabled=false;
   lock.textContent=toggle.checked
-   ? 'LIVE has been requested by the administrator. Effective mode is still TEST ONLY; no production provider is configured.'
-   : 'Admin request is TEST ONLY. The backend blocks real payments until a verified production provider and required approvals are configured.';
+   ? 'LIVE has been requested by the administrator. Effective mode is still ; no production provider is configured.'
+   : 'Admin request is . The backend blocks real payments until a verified production provider and required approvals are configured.';
   if(badge)badge.textContent='EFFECTIVE MODE: '+(data.setting?.effective_mode||'TEST_ONLY')+' — LIVE LOCKED';
  }catch(err){
   toggle.disabled=true;
@@ -1453,10 +1453,10 @@ $('rfLivePaymentsSwitch')?.addEventListener('change',async()=>{
   if(!response.ok)throw new Error(data.error||'The backend rejected the setting change.');
   toggle.checked=data.setting?.requested_mode==='LIVE';
   lock.textContent=toggle.checked
-   ? 'LIVE request saved by admin, but effective mode remains TEST ONLY. Real payments are blocked until the provider and required approvals are verified.'
-   : 'TEST ONLY request saved. The backend continues to block all real payments.';
+   ? 'LIVE request saved by admin, but effective mode remains . Real payments are blocked until the provider and required approvals are verified.'
+   : ' request saved. The backend continues to block all real payments.';
   if(badge)badge.textContent='EFFECTIVE MODE: '+(data.setting?.effective_mode||'TEST_ONLY')+' — LIVE LOCKED';
-  adminMessage(data.message||'Payment mode request saved. Effective mode remains TEST ONLY.','ok');
+  adminMessage(data.message||'Payment mode request saved. Effective mode remains .','ok');
  }catch(err){
   toggle.checked=!toggle.checked;
   lock.textContent=err.message||'Could not save the setting.';
@@ -1487,12 +1487,12 @@ async function loadWallet(){
   walletRealtimeChannel=supabase.channel('rf-wallet-'+user.id)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_transactions',filter:'receiver_user_id=eq.'+user.id},payload=>{
     const incoming=payload.new?.transaction_type==='wallet_transfer';
-    walletStatus(incoming?'Wallet alert: you received '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' from another RemitlyFly user. TEST ONLY.':'Wallet alert: your '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' test top-up was recorded. TEST ONLY.','ok');
+    walletStatus(incoming?'Wallet alert: you received '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' from another RemitlyFly user. .':'Wallet alert: your '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' test top-up was recorded. .','ok');
     loadWallet();
    })
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_transactions',filter:'sender_user_id=eq.'+user.id},payload=>{
     if(payload.new?.transaction_type==='wallet_transfer'){
-     walletStatus('Wallet alert: your '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' test transfer was sent. TEST ONLY.','ok');
+     walletStatus('Wallet alert: your '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' test transfer was sent. .','ok');
      loadWallet();
     }
    })
@@ -2109,7 +2109,7 @@ function refreshTransferSummary() {
       return;
     }
     $('summaryReceive').textContent = destinationCurrency + ' ' + (amount * live.rate).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-    $('summaryRate').textContent = '1 ' + currency + ' = ' + live.rate.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:4}) + ' ' + destinationCurrency + ' · AfriRate central-bank reference' + (live.stale?' · source marked stale':'') + ' · TEST ONLY';
+    $('summaryRate').textContent = '1 ' + currency + ' = ' + live.rate.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:4}) + ' ' + destinationCurrency + ' · AfriRate central-bank reference' + (live.stale?' · source marked stale':'') + ' · ';
     return;
   }
   $('summaryReceive').textContent = destinationCurrency + ' ' + (amount * rate).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -2365,7 +2365,7 @@ function syncTransferPayoutMethod(){
    const dashboardSelect=$('receivingWallet');if(dashboardSelect)dashboardSelect.value=wallet;
    const result=findCbeReferenceRate();
    if(result?.rate>0){$('demoRate').value=String(result.rate);$('demoRate').dataset.userEdited='1';$('demoRate').dataset.liveApplied='1';if(status)status.textContent=`${wallet} selected. Using ${result.sourceName} as an indicative reference rate only; this is not a wallet-specific quote.`;}
-   else if(status)status.textContent=`${wallet} selected. The CBE transfer-buying rate is unavailable. The separate sandbox quote may show its own TEST ONLY rate; it is not a CBE rate.`;
+   else if(status)status.textContent=`${wallet} selected. The CBE transfer-buying rate is unavailable. The separate sandbox quote may show its own  rate; it is not a CBE rate.`;
   } else if(status) status.textContent='Choose the recipient’s mobile wallet for this test preview.';
  } else if(method==='bank'){
   const chosen=selectedBankCurrencyRate?.();if(chosen?.rate){$('demoRate').value=String(chosen.rate);$('demoRate').dataset.userEdited='1';$('demoRate').dataset.liveApplied='1';}
@@ -2420,7 +2420,7 @@ $('transferForm').addEventListener('submit', async e => {
   const senderCode = senderCodeByName[senderCountry];
   if (!senderCode) { $('transferStatus').textContent='This sending country is not connected to the sandbox yet.'; $('transferStatus').className='profile-status show err'; return; }
 
-  $('transferStatus').textContent='Requesting a current TEST ONLY quote…';
+  $('transferStatus').textContent='Requesting a current  quote…';
   $('transferStatus').className='profile-status show';
   let quote;
   try {
@@ -2521,7 +2521,7 @@ function renderRecentTransfers(rows) {
     const b=$('recentStartTest'); if(b)b.addEventListener('click',()=> $('transferSection').scrollIntoView({behavior:'smooth',block:'start'}));
     return;
   }
-  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span> · TEST ONLY · Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')}</small><small>Reference: ${escapeHtml(r.sandbox_reference||'—')}</small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}<small>test preview</small></div></article>`).join('');
+  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span> ·  · Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')}</small><small>Reference: ${escapeHtml(r.sandbox_reference||'—')}</small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}<small>test preview</small></div></article>`).join('');
 }
 async function loadTransferHistory() {
   const list=$('historyList'); if(!list || !supabase)return;
@@ -2537,7 +2537,7 @@ async function loadTransferHistory() {
   updateDashboardStats(data);
   renderRecentTransfers(data.slice(0,4));
   const isAdmin = session.user.app_metadata?.role === 'admin';
-  $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note">TEST ONLY · This is a saved preview, not a real transfer. ${isAdmin?'Admin status controls are available in Admin overview.':'Only an administrator can change this test status.'}<br>Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')} · Reference: ${escapeHtml(r.sandbox_reference||'—')}</div></article>`).join('');
+  $('trackingList').innerHTML=data.map(r=>`<article class="tracking-card"><div class="tracking-card-head"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="tracking-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</span></div><div class="muted" style="margin-top:5px">${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</div>${trackingTimeline(r.tracking_status||'saved')}<div class="tracking-test-note"> · This is a saved preview, not a real transfer. ${isAdmin?'Admin status controls are available in Admin overview.':'Only an administrator can change this test status.'}<br>Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')} · Reference: ${escapeHtml(r.sandbox_reference||'—')}</div></article>`).join('');
   list.innerHTML=data.map(r=>`<article class="transfer-summary" style="margin:12px 0"><div><span>Recipient</span><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong></div><div><span>Sending from</span><strong>${escapeHtml(r.sender_country||'United States')}</strong></div><div><span>Test send amount</span><strong>${money(r.send_amount_original ?? r.send_amount_usd, r.send_currency||'USD')}</strong></div><div><span>Sandbox fee</span><strong>${money(r.fee_amount_original ?? r.fee_usd,r.send_currency||'USD')}</strong></div><div><span>Total (USD equivalent)</span><strong>${money(r.total_usd,'USD')}</strong></div><div><span>Example rate</span><strong>1 ${escapeHtml(r.send_currency||'USD')} = ${Number(r.exchange_rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${destinationCurrencyForCountry(r.recipient_country)}</strong></div><div><span>Estimated payout (test example)</span><strong>${escapeHtml(r.payout_currency||destinationCurrencyForCountry(r.recipient_country))} ${Number(r.payout_amount_etb).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div><div><span>Test status</span><strong>${escapeHtml((r.tracking_status||'saved').replaceAll('_',' ').toUpperCase())}</strong></div><div><span>Sandbox API status</span><strong>${escapeHtml(r.sandbox_status||'Not connected')}</strong></div><div><span>Sandbox reference</span><strong>${escapeHtml(r.sandbox_reference||'—')}</strong></div><div><span>Record type</span><strong>TEST PREVIEW ONLY</strong></div><div><span>Created</span><strong>${escapeHtml(safeDate(r.created_at))}</strong></div></article>`).join('');
   } catch (err) {
     const detail = escapeHtml(err?.message || 'Unknown error');
@@ -2631,7 +2631,7 @@ async function loadAdminOverview(){
       const detail=latestWd
        ? 'Withdrawal request: '+money(latestWd.amount,latestWd.currency||'USD')+' to '+(latestWd.destination_country||'destination')+' ('+(latestWd.destination_provider||'provider')+').'
        : (latestTx.transaction_type==='test_topup'?'Test wallet top-up: ':'Test wallet transfer: ')+money(latestTx.amount,latestTx.currency||'USD')+'.';
-      $('adminWalletAlert').textContent='New wallet activity alert: '+(newTx.length+newWithdrawals.length)+' new record(s). '+detail+' TEST ONLY — no real money moved.';
+      $('adminWalletAlert').textContent='New wallet activity alert: '+(newTx.length+newWithdrawals.length)+' new record(s). '+detail+'  — no real money moved.';
       $('adminWalletAlert').classList.remove('hidden');
       adminMessage('New wallet activity received. Review wallet activity.','ok');
     }
