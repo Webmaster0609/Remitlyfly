@@ -1509,7 +1509,7 @@ async function loadWallet(){
  const [walletResult,profileResult,txResult]=await Promise.all([
   supabase.from('wallets').select('balance,currency').eq('user_id',user.id),
   supabase.from('wallet_profiles').select('username,allow_lookup').eq('user_id',user.id).maybeSingle(),
-  supabase.from('wallet_transactions').select('id,sender_user_id,receiver_user_id,transaction_type,amount,currency,description,created_at').order('created_at',{ascending:false}).limit(20)
+  supabase.from('wallet_transactions').select('id,sender_user_id,receiver_user_id,transaction_type,amount,currency,created_at').order('created_at',{ascending:false}).limit(20)
  ]);
  if(walletResult.error){walletStatus('Could not load wallet balance: '+walletResult.error.message);return;}
  walletBalances={USD:0,GBP:0,EUR:0,...Object.fromEntries((walletResult.data||[]).map(w=>[w.currency,Number(w.balance)||0]))};
