@@ -1266,6 +1266,7 @@ if (configured) {
     supabaseLoadError = true;
   }
 }
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const $=id=>document.getElementById(id); let mode='login';
 const phoneIti = window.intlTelInput ? window.intlTelInput($('profilePhone'), {initialCountry:'us', preferredCountries:['et','us','gb'], separateDialCode:true, nationalMode:true, countrySearch:true, loadUtils:()=>import('https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js')}) : null;
 $('introNext').addEventListener('click',()=>{const shell=document.querySelector('.shell');shell.classList.remove('intro-mode');shell.classList.add('login-mode');window.scrollTo({top:0,behavior:'smooth'});$('email').focus({preventScroll:true})});
@@ -1790,7 +1791,6 @@ function updateRecipientPayoutProviders() {
 $('recipientCountry').addEventListener('change', updateRecipientPayoutFields);
 $('recipientPayoutMethod').addEventListener('change', updateRecipientPayoutProviders);
 updateRecipientPayoutFields();
-const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 function recipientStatus(text, type='err') {
   const el = $('recipientStatus'); if (!el) return;
   el.textContent = text; el.className = 'profile-status show ' + type;
