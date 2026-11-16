@@ -906,12 +906,12 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <h3 id="walletHeading">My RemitlyFly Wallet</h3>
   <p class="muted">Top up a simulated test balance and send or receive test funds between RemitlyFly users.</p>
   <div class="warning"><strong>TEST WALLET ONLY — NO REAL MONEY.</strong> Top-ups and wallet transfers are simulated. Test withdrawal requests can be submitted, but no payout or real payment is made.</div>
-  <div class="wallet-balance-card"><span>Available test balance</span><strong id="walletBalance">USD 0.00</strong><small id="walletBalanceNote">Test wallet · USD</small></div>
+  <div class="wallet-balance-card"><span>Available test balances</span><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px"><div><strong id="walletBalanceUSD">USD 0.00</strong><small>US Dollar</small></div><div><strong id="walletBalanceGBP">GBP 0.00</strong><small>British Pound</small></div><div><strong id="walletBalanceEUR">EUR 0.00</strong><small>Euro</small></div></div><small id="walletBalanceNote">Three separate test wallets · no real funds</small></div>
   <div id="walletStatus" class="profile-status" role="status" aria-live="polite"></div>
   <div class="wallet-columns">
    <div class="wallet-panel">
     <h4>Top up test wallet</h4><p class="muted">Add simulated funds for testing. Maximum USD 5,000 per top-up.</p>
-    <form id="walletTopupForm"><div class="field"><label for="walletTopupAmount">Amount (USD)</label><input id="walletTopupAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="100.00" required></div><button class="primary" type="submit" id="walletTopupButton">Add test funds</button></form>
+    <form id="walletTopupForm"><div class="field"><label for="walletTopupCurrency">Wallet currency</label><select id="walletTopupCurrency"><option value="USD">USD — US Dollar</option><option value="GBP">GBP — British Pound</option><option value="EUR">EUR — Euro</option></select><label for="walletTopupAmount">Amount</label><input id="walletTopupAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="100.00" required></div><button class="primary" type="submit" id="walletTopupButton">Add test funds</button></form>
    </div>
    <div class="wallet-panel">
     <h4>Receive money</h4><p class="muted">Share one of these details so another RemitlyFly user can find you.</p>
@@ -942,7 +942,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <div id="walletProfileModal" class="wallet-profile-modal hidden" role="dialog" aria-modal="true" aria-labelledby="walletModalName"><div class="wallet-profile-modal-card"><button type="button" class="secondary" id="walletModalClose" style="float:right">Close</button><div class="wallet-avatar" style="width:58px;height:58px;font-size:23px;margin:8px 0 14px" id="walletModalAvatar">R</div><h4 id="walletModalName">RemitlyFly user</h4><p class="muted" id="walletModalHandle">@username</p><span class="status-pill">RemitlyFly account found</span><p class="muted" style="margin-top:14px">Check this profile before sending. Email, phone number and wallet balance are kept private.</p><button type="button" class="primary" id="walletModalContinue" style="margin-top:12px">Continue to send money</button></div></div>
    <div id="walletSendPanel" class="wallet-panel hidden" style="margin-top:12px;background:#f7fbff">
     <h4>Send test money</h4><div id="walletSelectedProfile"></div>
-    <form id="walletSendForm"><div class="field"><label for="walletSendAmount">Amount (USD)</label><input id="walletSendAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div><button class="primary" type="submit" id="walletSendButton">Review and send test money</button></form>
+    <form id="walletSendForm"><div class="field"><label for="walletSendCurrency">Wallet currency</label><select id="walletSendCurrency"><option value="USD">USD — US Dollar</option><option value="GBP">GBP — British Pound</option><option value="EUR">EUR — Euro</option></select><label for="walletSendAmount">Amount</label><input id="walletSendAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div><button class="primary" type="submit" id="walletSendButton">Review and send test money</button></form>
    </div>
   </div>
   <div class="wallet-panel" style="margin-top:14px">
@@ -1471,7 +1471,7 @@ function profileMessage(text,type='err'){
 /* RemitlyFly test wallet: balances and peer transfers are enforced by Supabase RPCs. */
 let walletSelectedRecipient=null, walletModalRecipient=null, walletLookupTimer=null, walletLookupSequence=0, walletRealtimeChannel=null;
 function walletStatus(text,type='err'){const el=$('walletStatus');if(el){el.textContent=text;el.className='profile-status show '+type;}}
-function walletFormat(value){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);}
+function walletFormat(value,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);}
 async function loadWallet(){
  if(!supabase)return;
  const {data:{user}}=await supabase.auth.getUser();
@@ -1485,13 +1485,14 @@ async function loadWallet(){
  }
  $('walletOwnEmail').textContent=user.email||'Not available';
  const [walletResult,profileResult,txResult]=await Promise.all([
-  supabase.from('wallets').select('balance,currency').eq('user_id',user.id).maybeSingle(),
+  supabase.from('wallets').select('balance,currency').eq('user_id',user.id),
   supabase.from('wallet_profiles').select('username,allow_lookup').eq('user_id',user.id).maybeSingle(),
   supabase.from('wallet_transactions').select('id,sender_user_id,receiver_user_id,transaction_type,amount,currency,description,created_at').order('created_at',{ascending:false}).limit(20)
  ]);
  if(walletResult.error){walletStatus('Could not load wallet balance: '+walletResult.error.message);return;}
- $('walletBalance').textContent=walletFormat(walletResult.data?.balance||0);
- $('walletBalanceNote').textContent='Test wallet · '+(walletResult.data?.currency||'USD')+' · no real funds';
+ const balances=Object.fromEntries((walletResult.data||[]).map(w=>[w.currency,Number(w.balance)||0]));
+ ['USD','GBP','EUR'].forEach(code=>{const el=$('walletBalance'+code);if(el)el.textContent=walletFormat(balances[code]||0,code);});
+ $('walletBalanceNote').textContent='USD, GBP and EUR are separate simulated balances · no real funds';
  if(profileResult.error){walletStatus('Could not load wallet profile: '+profileResult.error.message);return;}
  $('walletUsername').value=profileResult.data?.username||'';
  $('walletOwnUsername').textContent=profileResult.data?.username?'@'+profileResult.data.username:'Not set — choose a username below';
@@ -1504,7 +1505,7 @@ async function loadWallet(){
   const label=t.transaction_type==='test_topup'?'Test top-up':(incoming?'Received test money':'Sent test money');
   const sign=t.transaction_type==='test_topup'||incoming?'+':'−';
   const cls=sign==='+'?'wallet-in':'wallet-out';
-  return '<div class="wallet-tx"><div><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(new Date(t.created_at).toLocaleString())+' · '+escapeHtml(t.description||'Test wallet transaction')+'</small></div><strong class="'+cls+'">'+sign+walletFormat(t.amount)+'</strong></div>';
+  return '<div class="wallet-tx"><div><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(new Date(t.created_at).toLocaleString())+' · '+escapeHtml(t.description||'Test wallet transaction')+'</small></div><strong class="'+cls+'">'+sign+walletFormat(t.amount,t.currency||'USD')+'</strong></div>';
  }).join('');
  const {data:withdrawals,error:withdrawalError}=await supabase.from('wallet_withdrawal_requests').select('id,amount,currency,destination_type,destination_country,destination_provider,destination_label,status,created_at').order('created_at',{ascending:false}).limit(10);
  if(withdrawalError){$('walletWithdrawalList').innerHTML='<p class="muted">Could not load test withdrawal requests.</p>';}
@@ -1568,20 +1569,20 @@ $('walletSearchResults').addEventListener('click',async e=>{
 });
 
 $('walletTopupForm').addEventListener('submit',async e=>{
- e.preventDefault();const amount=Number($('walletTopupAmount').value);const button=$('walletTopupButton');
+ e.preventDefault();const amount=Number($('walletTopupAmount').value),currency=$('walletTopupCurrency').value;const button=$('walletTopupButton');
  if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter a test top-up between USD 0.01 and USD 5,000.');return;}
  button.disabled=true;
- try{const {data,error}=await supabase.rpc('rf_wallet_test_topup',{p_amount:amount});if(error)throw error;
-  $('walletTopupAmount').value='';walletStatus('Test top-up added. No real money was deposited. New balance: '+walletFormat(data.balance),'ok');await loadWallet();
+ try{const {data,error}=await supabase.rpc('rf_wallet_test_topup',{p_amount:amount,p_currency:currency});if(error)throw error;
+  $('walletTopupAmount').value='';walletStatus('Test top-up added. No real money was deposited. New balance: '+walletFormat(data.balance,currency),'ok');await loadWallet();
  }catch(err){walletStatus(err.message||'Could not add test funds.');}finally{button.disabled=false;}
 });
 $('walletSendForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!walletSelectedRecipient){walletStatus('Find and select a RemitlyFly user first.');return;}
- const amount=Number($('walletSendAmount').value);if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter an amount between USD 0.01 and USD 5,000.');return;}
- if(!confirm('Send '+walletFormat(amount)+' in TEST funds to '+(walletSelectedRecipient.display_name||'this user')+'? No real money will move.'))return;
+ const amount=Number($('walletSendAmount').value),currency=$('walletSendCurrency').value;if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter an amount between USD 0.01 and USD 5,000.');return;}
+ if(!confirm('Send '+walletFormat(amount,currency)+' in TEST funds to '+(walletSelectedRecipient.display_name||'this user')+'? No real money will move.'))return;
  const button=$('walletSendButton');button.disabled=true;
- try{const {data,error}=await supabase.rpc('rf_wallet_send',{p_recipient_user_id:walletSelectedRecipient.user_id,p_amount:amount});if(error)throw error;
-  $('walletSendAmount').value='';walletStatus('Test wallet transfer recorded. The recipient wallet has been credited. Your new balance is '+walletFormat(data.sender_balance)+'. No real money moved.','ok');
+ try{const {data,error}=await supabase.rpc('rf_wallet_send',{p_recipient_user_id:walletSelectedRecipient.user_id,p_amount:amount,p_currency:currency});if(error)throw error;
+  $('walletSendAmount').value='';walletStatus('Test wallet transfer recorded. The recipient wallet has been credited. Your new balance is '+walletFormat(data.sender_balance,currency)+'. No real money moved.','ok');
   $('walletSendPanel').classList.add('hidden');$('walletSearch').value='';$('walletSearchResults').innerHTML='';walletSelectedRecipient=null;await loadWallet();
  }catch(err){walletStatus(err.message||'Could not send test money.');}finally{button.disabled=false;}
 });
