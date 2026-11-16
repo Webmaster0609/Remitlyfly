@@ -2524,7 +2524,7 @@ function renderRecentTransfers(rows) {
     const b=$('recentStartTest'); if(b)b.addEventListener('click',()=> $('transferSection').scrollIntoView({behavior:'smooth',block:'start'}));
     return;
   }
-  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span> ·  · Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')}</small><small>Reference: ${escapeHtml(r.sandbox_reference||'—')}</small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}<small>test preview</small></div></article>`).join('');
+  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span> ·  · Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')}</small><small>Reference: ${escapeHtml(r.sandbox_reference||'—')}</small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</div></article>`).join('');
 }
 async function loadTransferHistory() {
   const list=$('historyList'); if(!list || !supabase)return;
