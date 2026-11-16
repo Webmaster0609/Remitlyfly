@@ -851,7 +851,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  <div id="notice" class="notice" role="status" aria-live="polite"></div>
  <form id="authForm">
   <div class="field hidden" id="nameField"><label for="fullName">Full name</label><input id="fullName" autocomplete="name" placeholder="Your full name"></div>
-  <div class="field hidden" id="registrationCountryField"><label for="registrationCountry">Country of registration</label><input id="registrationCountry" autocomplete="country-name" placeholder="Enter your country"></div>
+  <div class="field hidden" id="registrationCountryField"><label for="registrationCountry">Country of registration (self-reported)</label><input id="registrationCountry" autocomplete="country-name" placeholder="Enter your country"></div>
   <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
   <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="At least 8 characters"></div>
   <div class="field hidden" id="confirmField"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Enter password again"></div>
@@ -2598,7 +2598,7 @@ async function loadAccountApprovals(){
     if(added.length){$('adminAccountAlert').textContent='New registration alert: '+added.length+' account'+(added.length===1?'':'s')+' awaiting approval. Latest: '+(added[0].email||'New user');$('adminAccountAlert').classList.remove('hidden');}
   }
   adminSeenAccountIds=ids;
-  $('adminAccountList').innerHTML=rows.length?rows.map(r=>'<article class="admin-row"><div class="rowline"><strong>'+escapeHtml(r.full_name||'New user')+'</strong><span class="status-pill">'+escapeHtml(r.status.toUpperCase())+'</span></div><div class="muted">'+escapeHtml(r.email||'No email')+'</div><div class="muted">Registered: '+escapeHtml(safeDate(r.created_at))+'</div><div class="muted">Registration country: '+escapeHtml(r.registration_country||'Not provided')+'</div>'+(r.status==='restricted'?'<p class="muted">Restriction reason: '+escapeHtml(r.restriction_reason||'Not recorded')+'</p>':r.status==='rejected'?'<p class="muted">Rejection reason: '+escapeHtml(r.rejection_reason||'Not recorded')+'</p>':'')+(r.status==='pending'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve</button><button type="button" class="secondary" data-account-action="rejected" data-account-id="'+escapeHtml(r.user_id)+'">Reject</button></div>':r.status==='approved'?'<div class="rowline" style="margin-top:10px"><button type="button" class="secondary" data-account-action="restricted" data-account-id="'+escapeHtml(r.user_id)+'">Restrict account</button></div>':r.status==='restricted'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="restored" data-account-id="'+escapeHtml(r.user_id)+'">Restore account</button></div>':r.status==='rejected'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve again</button></div>':'')+'</article>').join(''):'<p class="muted">No registrations found.</p>'; return rows;
+  $('adminAccountList').innerHTML=rows.length?rows.map(r=>'<article class="admin-row"><div class="rowline"><strong>'+escapeHtml(r.full_name||'New user')+'</strong><span class="status-pill">'+escapeHtml(r.status.toUpperCase())+'</span></div><div class="muted">'+escapeHtml(r.email||'No email')+'</div><div class="muted">Registered: '+escapeHtml(safeDate(r.created_at))+'</div><div class="muted">Registration country (self-reported): '+escapeHtml(r.registration_country||'Not provided')+'</div>'+(r.status==='restricted'?'<p class="muted">Restriction reason: '+escapeHtml(r.restriction_reason||'Not recorded')+'</p>':r.status==='rejected'?'<p class="muted">Rejection reason: '+escapeHtml(r.rejection_reason||'Not recorded')+'</p>':'')+(r.status==='pending'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve</button><button type="button" class="secondary" data-account-action="rejected" data-account-id="'+escapeHtml(r.user_id)+'">Reject</button></div>':r.status==='approved'?'<div class="rowline" style="margin-top:10px"><button type="button" class="secondary" data-account-action="restricted" data-account-id="'+escapeHtml(r.user_id)+'">Restrict account</button></div>':r.status==='restricted'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="restored" data-account-id="'+escapeHtml(r.user_id)+'">Restore account</button></div>':r.status==='rejected'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve again</button></div>':'')+'</article>').join(''):'<p class="muted">No registrations found.</p>'; return rows;
 }
 function adminMessage(text,type='err'){const el=$('adminStatus');el.textContent=text;el.className='profile-status show '+type;}
 async function loadAdminOverview(){
@@ -2624,15 +2624,22 @@ async function loadAdminOverview(){
   ]);
 
   const walletTxRows=walletTxResult.data||[], walletWithdrawalRows=walletWithdrawalResult.data||[];
-  const registrationByUser=new Map((approvalRows||[]).map(a=>[String(a.user_id),a]));
   const walletTransferRows=walletTxRows.filter(t=>t.transaction_type==='wallet_transfer');
+  const transferUserIds=[...new Set(walletTransferRows.flatMap(t=>[t.sender_user_id,t.receiver_user_id]).filter(Boolean))];
+  let transferAccounts=[];
+  if(transferUserIds.length){
+    const {data:accountRows,error:accountRowsError}=await supabase.from('account_approvals').select('user_id,email,full_name,registration_country').in('user_id',transferUserIds);
+    if(accountRowsError)adminMessage('Could not load registration countries: '+accountRowsError.message);
+    transferAccounts=accountRows||[];
+  }
+  const registrationByUser=new Map(transferAccounts.map(a=>[String(a.user_id),a]));
   $('adminWalletTransferList').innerHTML=walletTransferRows.length?walletTransferRows.map(t=>{
     const sender=registrationByUser.get(String(t.sender_user_id))||{};
     const receiver=registrationByUser.get(String(t.receiver_user_id))||{};
     const status=String(t.status||'pending');
     return '<article class="admin-row"><div class="rowline"><strong>'+escapeHtml(money(t.amount,t.currency||'USD'))+' wallet transfer</strong><span class="status-pill">'+escapeHtml(status.toUpperCase())+'</span></div>'+
-      '<div>From: '+escapeHtml(sender.full_name||sender.email||'Account')+' · '+escapeHtml(sender.email||'')+'</div><div class="muted">Sender registration country: '+escapeHtml(sender.registration_country||'Not provided')+'</div>'+
-      '<div>To: '+escapeHtml(receiver.full_name||receiver.email||'Account')+' · '+escapeHtml(receiver.email||'')+'</div><div class="muted">Recipient registration country: '+escapeHtml(receiver.registration_country||'Not provided')+'</div>'+
+      '<div>From: '+escapeHtml(sender.full_name||sender.email||'Account')+' · '+escapeHtml(sender.email||'')+'</div><div class="muted">Sender registration country (self-reported): '+escapeHtml(sender.registration_country||'Not provided')+'</div>'+
+      '<div>To: '+escapeHtml(receiver.full_name||receiver.email||'Account')+' · '+escapeHtml(receiver.email||'')+'</div><div class="muted">Recipient registration country (self-reported): '+escapeHtml(receiver.registration_country||'Not provided')+'</div>'+
       '<div class="muted">'+escapeHtml(safeDate(t.created_at))+' · '+escapeHtml(t.currency||'USD')+'</div>'+
       (t.review_note?'<div class="muted">Admin note: '+escapeHtml(t.review_note)+'</div>':'')+
       (status==='pending'?'<div class="rowline" style="margin-top:10px"><button type="button" data-wallet-review="approved" data-wallet-transaction-id="'+escapeHtml(t.id)+'">Approve</button><button type="button" class="secondary" data-wallet-review="rejected" data-wallet-transaction-id="'+escapeHtml(t.id)+'">Reject</button></div>':'')+
