@@ -1443,13 +1443,20 @@ function profileMessage(text,type='err'){
 }
 
 /* RemitlyFly test wallet: balances and peer transfers are enforced by Supabase RPCs. */
-let walletSelectedRecipient=null, walletLookupTimer=null, walletLookupSequence=0;
+let walletSelectedRecipient=null, walletLookupTimer=null, walletLookupSequence=0, walletRealtimeChannel=null;
 function walletStatus(text,type='err'){const el=$('walletStatus');if(el){el.textContent=text;el.className='profile-status show '+type;}}
 function walletFormat(value){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);}
 async function loadWallet(){
  if(!supabase)return;
  const {data:{user}}=await supabase.auth.getUser();
  if(!user)return;
+ if(!walletRealtimeChannel){
+  walletRealtimeChannel=supabase.channel('rf-wallet-'+user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_transactions',filter:'receiver_user_id=eq.'+user.id},payload=>{
+   const incoming=payload.new?.transaction_type==='wallet_transfer';
+   walletStatus(incoming?'You received new test money in your wallet.':'A test wallet top-up was recorded.','ok');
+   loadWallet();
+  }).subscribe();
+ }
  $('walletOwnEmail').textContent=user.email||'Not available';
  const [walletResult,profileResult,txResult]=await Promise.all([
   supabase.from('wallets').select('balance,currency').eq('user_id',user.id).maybeSingle(),
@@ -1816,7 +1823,7 @@ if (supabase) {
   supabase.auth.onAuthStateChange((event, session) => {
     setTimeout(() => {
       if (event === 'SIGNED_IN' && session?.user) { loadRecipients(); loadTransferHistory(); }
-      if (event === 'SIGNED_OUT') { recipientState.items = []; renderRecipients(); $('historyList').innerHTML='<p class="muted">Sign in to view your test history.</p>'; $('trackingList').innerHTML='<p class="muted">Load your history to view test records.</p>'; }
+      if (event === 'SIGNED_OUT') { if(walletRealtimeChannel){supabase.removeChannel(walletRealtimeChannel);walletRealtimeChannel=null;} recipientState.items = []; renderRecipients(); $('historyList').innerHTML='<p class="muted">Sign in to view your test history.</p>'; $('trackingList').innerHTML='<p class="muted">Load your history to view test records.</p>'; }
       if (session?.user && event !== 'SIGNED_OUT') loadTransferHistory();
     }, 0);
   });
