@@ -948,7 +948,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <h4>Your wallet discovery settings</h4><p class="muted">Choose whether other signed-in users can find you by your full name and username.</p>
    <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me by name and username</label><button class="secondary" type="submit" id="walletProfileSave">Save wallet profile</button></form>
   </div>
-  <div class="wallet-panel" style="margin-top:14px"><h4>Wallet activity</h4><div id="walletTransactions"><p class="muted">Your wallet transactions will appear here.</p></div><button class="secondary" type="button" id="walletRefresh">Refresh wallet</button></div>
+  <div class="wallet-panel" style="margin-top:14px"><h4>Wallet activity</h4><div id="walletTransactions"><p class="muted">Your wallet transactions will appear here.</p></div></div>
  </section>
  <div class="quick-heading" data-page="home"><div><h3>Quick actions</h3><p class="muted">Your most-used tools, in one place.</p></div></div>
  <div class="tile-grid" data-page="home">
@@ -1714,7 +1714,6 @@ $('walletWithdrawForm').addEventListener('submit',async e=>{
  }catch(err){walletStatus(err.message||'Could not submit the test withdrawal request.');}
  finally{button.disabled=false;}
 });
-$('walletRefresh').addEventListener('click',loadWallet);
 
 function showAuth(){ const shell=document.querySelector('.shell');shell.classList.remove('dashboard-mode','intro-mode','otp-mode');shell.classList.add('login-mode');$('otpCard').classList.add('hidden');$('otpCard').style.setProperty('display','none','important');$('authCard').style.removeProperty('display');$('authCard').style.display='block';$('dashboard').classList.remove('account-pending');$('dashboard').style.display='none' }
 $('pendingRefresh').addEventListener('click',async()=>{const {data:{user}}=await supabase.auth.getUser();if(user)await showDashboard(user);});
@@ -2971,9 +2970,12 @@ refreshTransferSummary();
 // Main dashboard menu: display one page at a time while keeping the existing sections and handlers.
 (function installMainMenu(){
  const menu=document.getElementById('appMenu');
+  let walletAutoRefreshTimer=null;
  if(!menu)return;
  const labels={home:'Home',wallet:'Wallet',send:'Send',recipients:'Recipients',history:'History',tracking:'Tracking',profile:'Profile',rates:'Rates'};
  function showPage(page,button){
+   if(walletAutoRefreshTimer){clearInterval(walletAutoRefreshTimer);walletAutoRefreshTimer=null;}
+   if(page==='wallet')walletAutoRefreshTimer=setInterval(()=>{if(!document.hidden&&typeof loadWallet==='function')loadWallet();},30000);
   const pageSections=['walletSection','transferSection','historySection','trackingSection','recipientsSection','profileCard'];
   document.querySelectorAll('[data-page]').forEach(el=>{
    const visible=el.dataset.page===page;
