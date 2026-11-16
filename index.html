@@ -914,10 +914,9 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
     <form id="walletTopupForm"><div class="field"> <label for="walletTopupAmount">Amount</label><input id="walletTopupAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="100.00" required></div><button class="primary" type="submit" id="walletTopupButton">Add test funds</button></form>
    </div>
    <div class="wallet-panel">
-    <h4>Receive money</h4><p class="muted">Share one of these details so another RemitlyFly user can find you.</p>
-    <div class="wallet-share-row"><small>Your registered email</small><strong id="walletOwnEmail">—</strong></div>
+    <h4>Receive money</h4><p class="muted">Share your full name or RemitlyFly username so another user can find you.</p>
     <div class="wallet-share-row"><small>Your RemitlyFly username</small><strong id="walletOwnUsername">@not-set</strong></div>
-    <p class="fine" style="text-align:left">You can also be found by your verified phone number when one is on your account and lookup is enabled.</p>
+    <p class="fine" style="text-align:left">Only your display name and username are shown in wallet search. Your email, phone number and balance stay private.</p>
    </div>
   </div>
   <div class="wallet-panel" style="margin-top:14px">
@@ -936,18 +935,19 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <div id="walletWithdrawalList" style="margin-top:12px"><p class="muted">Your test withdrawal requests will appear here.</p></div>
   </div>
   <div class="wallet-panel" style="margin-top:14px">
-   <h4>Find a RemitlyFly user</h4><p class="muted">Enter an email address, @username, or phone number. A matching profile appears automatically.</p>
-   <div class="field"><label for="walletSearch">Email, @username or phone number</label><input id="walletSearch" type="search" autocomplete="off" placeholder="name@example.com, @username or +1..."></div>
+   <h4>Find a RemitlyFly user</h4><p class="muted">Search by a person's full name or RemitlyFly username. Select a result to view and save them.</p>
+   <div class="field"><label for="walletSearch">Full name or @username</label><input id="walletSearch" type="search" autocomplete="off" placeholder="Search name or @username..."></div>
    <div id="walletSearchResults" aria-live="polite"></div>
-   <div id="walletProfileModal" class="wallet-profile-modal hidden" role="dialog" aria-modal="true" aria-labelledby="walletModalName"><div class="wallet-profile-modal-card"><button type="button" class="secondary" id="walletModalClose" style="float:right">Close</button><div class="wallet-avatar" style="width:58px;height:58px;font-size:23px;margin:8px 0 14px" id="walletModalAvatar">R</div><h4 id="walletModalName">RemitlyFly user</h4><p class="muted" id="walletModalHandle">@username</p><span class="status-pill">RemitlyFly account found</span><p class="muted" style="margin-top:14px">Check this profile before sending. Email, phone number and wallet balance are kept private.</p><button type="button" class="primary" id="walletModalContinue" style="margin-top:12px">Continue to send money</button></div></div>
+   <div id="walletProfileModal" class="wallet-profile-modal hidden" role="dialog" aria-modal="true" aria-labelledby="walletModalName"><div class="wallet-profile-modal-card"><button type="button" class="secondary" id="walletModalClose" style="float:right">Close</button><div class="wallet-avatar" style="width:58px;height:58px;font-size:23px;margin:8px 0 14px" id="walletModalAvatar">R</div><h4 id="walletModalName">RemitlyFly user</h4><p class="muted" id="walletModalHandle">@username</p><span class="status-pill">RemitlyFly account found</span><p class="muted" style="margin-top:14px">Email, phone number and wallet balance are kept private.</p><button type="button" class="secondary" id="walletSaveContact" style="margin-top:12px">Save contact</button><button type="button" class="primary" id="walletModalContinue" style="margin-top:12px">Continue to send money</button></div></div>
    <div id="walletSendPanel" class="wallet-panel hidden" style="margin-top:12px;background:#f7fbff">
     <h4>Send test money</h4><div id="walletSelectedProfile"></div>
     <form id="walletSendForm"><div class="field"> <label for="walletSendAmount">Amount</label><input id="walletSendAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div><button class="primary" type="submit" id="walletSendButton">Review and send test money</button></form>
    </div>
   </div>
+  <div class="wallet-panel" style="margin-top:14px"><h4>Saved wallet contacts</h4><p class="muted">People you save here are ready to select for future wallet transfers.</p><div id="walletContactsList"><p class="muted">Loading saved contacts…</p></div></div>
   <div class="wallet-panel" style="margin-top:14px">
-   <h4>Your wallet discovery settings</h4><p class="muted">Choose whether other signed-in users can find you by your registered email, username or verified phone.</p>
-   <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me</label><button class="secondary" type="submit" id="walletProfileSave">Save wallet profile</button></form>
+   <h4>Your wallet discovery settings</h4><p class="muted">Choose whether other signed-in users can find you by your full name and username.</p>
+   <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me by name and username</label><button class="secondary" type="submit" id="walletProfileSave">Save wallet profile</button></form>
   </div>
   <div class="wallet-panel" style="margin-top:14px"><h4>Wallet activity</h4><div id="walletTransactions"><p class="muted">Your wallet transactions will appear here.</p></div><button class="secondary" type="button" id="walletRefresh">Refresh wallet</button></div>
  </section>
@@ -1507,7 +1507,7 @@ async function loadWallet(){
     loadWallet();
    }).subscribe();
  }
- $('walletOwnEmail').textContent=user.email||'Not available';
+
  const [walletResult,profileResult,txResult]=await Promise.all([
   supabase.from('wallets').select('balance,currency').eq('user_id',user.id),
   supabase.from('wallet_profiles').select('username,allow_lookup').eq('user_id',user.id).maybeSingle(),
@@ -1518,6 +1518,7 @@ async function loadWallet(){
   renderSelectedWalletBalance();
  if(profileResult.error){walletStatus('Could not load wallet profile: '+profileResult.error.message);return;}
  $('walletUsername').value=profileResult.data?.username||'';
+ await loadWalletContacts();
  $('walletOwnUsername').textContent=profileResult.data?.username?'@'+profileResult.data.username:'Not set — choose a username below';
  $('walletAllowLookup').checked=profileResult.data?.allow_lookup!==false;
  if(txResult.error){$('walletTransactions').innerHTML='<p class="muted">Could not load wallet activity.</p>';return;}
@@ -1535,11 +1536,19 @@ async function loadWallet(){
  else if(!withdrawals?.length){$('walletWithdrawalList').innerHTML='<p class="muted">No test withdrawal requests yet.</p>';}
  else{$('walletWithdrawalList').innerHTML='<h5>Recent test withdrawal requests</h5>'+withdrawals.map(w=>'<div class="wallet-tx"><div><strong>'+escapeHtml(walletFormat(w.amount))+' · '+escapeHtml(w.destination_type==='bank'?'Bank account':'Mobile money')+' · '+escapeHtml(({ET:'Ethiopia',KE:'Kenya',NG:'Nigeria',UG:'Uganda',TZ:'Tanzania',ZA:'South Africa'})[w.destination_country]||w.destination_country)+'</strong><small>'+escapeHtml(w.destination_provider)+' · '+escapeHtml(w.destination_label)+' · '+escapeHtml(new Date(w.created_at).toLocaleString())+'</small></div><span class="status-pill">'+escapeHtml(w.status.replaceAll('_',' '))+'</span></div>').join('');}
 }
+async function loadWalletContacts(){
+ const box=$('walletContactsList');if(!box||!supabase)return;
+ const {data,error}=await supabase.rpc('rf_wallet_saved_contacts');
+ if(error){box.innerHTML='<p class="profile-status show err">Could not load saved contacts: '+escapeHtml(error.message)+'</p>';return;}
+ if(!data||!data.length){box.innerHTML='<p class="muted">No saved contacts yet. Search for someone by name or username and tap Save contact.</p>';return;}
+ box.innerHTML=data.map(p=>'<div class="wallet-profile-result"><div class="wallet-avatar">'+escapeHtml((p.display_name||'R').trim().charAt(0).toUpperCase())+'</div><div class="wallet-person"><strong>'+escapeHtml(p.display_name||'RemitlyFly user')+'</strong><small class="muted">'+(p.username?'@'+escapeHtml(p.username):'RemitlyFly user')+'</small></div><button type="button" class="secondary" data-wallet-contact-view="'+escapeHtml(p.user_id)+'">Select</button><button type="button" class="secondary" data-wallet-contact-remove="'+escapeHtml(p.user_id)+'">Remove</button></div>').join('');
+}
 function walletShowProfile(person){
  walletModalRecipient=person;
  $('walletModalAvatar').textContent=(person.display_name||'R').trim().charAt(0).toUpperCase();
  $('walletModalName').textContent=person.display_name||'RemitlyFly user';
  $('walletModalHandle').textContent=person.username?'@'+person.username:'RemitlyFly user';
+ $('walletSaveContact').textContent='Save contact';$('walletSaveContact').disabled=false;
  $('walletProfileModal').classList.remove('hidden');
 }
 function walletRenderMatches(matches,query){
@@ -1557,6 +1566,19 @@ function walletRenderMatches(matches,query){
   return '<div class="wallet-profile-result"><div class="wallet-avatar">'+initial+'</div><div class="wallet-person"><strong>'+name+'</strong><small class="muted">'+handle+' · RemitlyFly user</small></div><button type="button" class="secondary" data-wallet-recipient="'+escapeHtml(p.user_id)+'">View profile</button></div>';
  }).join('');
 }
+$('walletSaveContact').addEventListener('click',async()=>{
+ if(!walletModalRecipient)return;
+ const {data:{user}}=await supabase.auth.getUser();if(!user){walletStatus('Please sign in again to save contacts.');return;}
+ const button=$('walletSaveContact');button.disabled=true;
+ const {error}=await supabase.from('wallet_contacts').insert({user_id:user.id,contact_user_id:walletModalRecipient.user_id});
+ if(error&&error.code!=='23505'){walletStatus('Could not save contact: '+error.message);button.disabled=false;return;}
+ button.textContent='Contact saved';walletStatus('Contact saved to your wallet contacts.','ok');await loadWalletContacts();
+});
+$('walletContactsList').addEventListener('click',async e=>{
+ const view=e.target.closest('[data-wallet-contact-view]');const remove=e.target.closest('[data-wallet-contact-remove]');
+ if(view){const {data,error}=await supabase.rpc('rf_wallet_saved_contacts');if(error){walletStatus(error.message);return;}const person=(data||[]).find(p=>p.user_id===view.dataset.walletContactView);if(person)walletShowProfile(person);}
+ if(remove){const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from('wallet_contacts').delete().eq('user_id',user.id).eq('contact_user_id',remove.dataset.walletContactRemove);if(error)walletStatus('Could not remove contact: '+error.message);else{walletStatus('Contact removed.','ok');loadWalletContacts();}}
+});
 $('walletModalClose').addEventListener('click',()=>{$('walletProfileModal').classList.add('hidden');walletModalRecipient=null;});
 $('walletProfileModal').addEventListener('click',e=>{if(e.target===$('walletProfileModal')){$('walletProfileModal').classList.add('hidden');walletModalRecipient=null;}});
 $('walletModalContinue').addEventListener('click',()=>{
@@ -1570,7 +1592,7 @@ $('walletSearch').addEventListener('input',()=>{
  const query=$('walletSearch').value.trim();
  const sequence=++walletLookupSequence;
  walletSelectedRecipient=null;walletModalRecipient=null;$('walletProfileModal').classList.add('hidden');$('walletSendPanel').classList.add('hidden');
- if(query.length<3){$('walletSearchResults').innerHTML=query?'<p class="muted">Enter at least 3 characters to search.</p>':'';return;}
+ if(query.replace(/^@/,'').length<3){$('walletSearchResults').innerHTML=query?'<p class="muted">Enter at least 3 characters of a name or username.</p>':'';return;}
  $('walletSearchResults').innerHTML='<p class="muted">Finding RemitlyFly user…</p>';
  walletLookupTimer=setTimeout(async()=>{
   try{
