@@ -983,7 +983,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <input type="hidden" id="payoutMethod" value="bank">
    <select id="transferWallet" hidden aria-hidden="true"><option value="">Choose a wallet</option><option value="Telebirr">Telebirr</option><option value="M-PESA Ethiopia">M-PESA Ethiopia</option><option value="Kacha">Kacha</option><option value="Yaya Wallet">Yaya Wallet</option></select>
    <div class="field"><label for="sendAmount">You send (<span id="sendCurrencyLabel">USD</span>)</label><input id="sendAmount" type="number" min="1" max="10000" step="0.01" inputmode="decimal" placeholder="100.00" required></div>
-   <div class="field"><label for="transferPaymentSource">How would you like to pay?</label><select id="transferPaymentSource"><option value="sandbox_card_demo">Card payment (sandbox demo)</option><option value="wallet_test_preview">My RemitlyFly wallet balance (test)</option></select><small class="muted">Wallet option is a test preview only. It checks your selected wallet balance but does not deduct funds or make a real payment.</small><p id="transferPaymentSourceStatus" class="fine" aria-live="polite">Card sandbox demo selected. No card is charged.</p></div>
+   <div class="field"><label for="transferPaymentSource">How would you like to pay?</label><select id="transferPaymentSource" required><option value="" selected disabled>Choose payment method</option><option value="sandbox_card_demo">Card payment (sandbox demo)</option><option value="wallet_test_preview">My RemitlyFly wallet balance (test)</option></select><small class="muted">Choose how you want to pay. Wallet test previews check your selected balance without deducting funds.</small><p id="transferPaymentSourceStatus" class="fine" aria-live="polite">Choose a payment method to continue.</p></div>
    <select id="receivingBank" hidden aria-hidden="true"><option value="">Loading banks…</option></select>
    <div class="field"><label for="demoRate">Reference exchange rate (<span id="destinationCurrencyLabel">ETB</span> per <span id="rateCurrencyLabel">USD</span>)</label><input id="demoRate" type="number" min="0.01" max="100000" step="any" inputmode="decimal" value="150.00" required><small class="muted">Live published bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.</small></div>
    <div class="field"><label for="demoFee">Illustrative fee (<span id="feeCurrencyLabel">USD</span>)</label><input id="demoFee" type="number" min="0" max="1000" step="0.01" value="2.99" required><small class="muted">Demo fee only — actual fees are not available.</small></div>
@@ -995,7 +995,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <h3 style="margin-top:18px">Review your test transfer</h3>
    <div id="reviewDetails" class="transfer-summary"></div>
    <div class="warning"><strong>TEST ONLY — NO MONEY MOVES.</strong> This is an estimate using illustrative/reference values. It does not collect payment, contact a payout provider, or send money to the recipient.</div>
-   <div class="profile-card" id="cardPaymentDemo" style="margin:16px 0;background:#f7fbff">
+   <div class="profile-card hidden" id="cardPaymentDemo" style="margin:16px 0;background:#f7fbff">
     <h3 style="margin-top:0">Card payment demo</h3>
     <p class="muted">Choose a simulated result to preview a card checkout. No card number, expiry date, CVV or OTP is collected. No payment is attempted.</p>
     <div class="warning">DEMO ONLY — an approved result here is not a real card authorization or proof of payment.</div>
@@ -2350,7 +2350,7 @@ $('transferRecipient').addEventListener(
 );
 $('demoRate').addEventListener('input',()=>{$('demoRate').dataset.userEdited='1';delete $('demoRate').dataset.liveApplied;refreshTransferSummary();}); ['sendAmount','demoFee'].forEach(id => $(id).addEventListener('input', refreshTransferSummary));
 $('senderCountry').addEventListener('change',refreshCurrencyLabels);
-$('transferPaymentSource')?.addEventListener('change',()=>{const el=$('transferPaymentSourceStatus');if(el)el.textContent=$('transferPaymentSource').value==='wallet_test_preview'?'Wallet selected: balance is checked against the send amount plus fee, but test funds are not deducted.':'Card sandbox demo selected. No card is charged.';});
+$('transferPaymentSource')?.addEventListener('change',()=>{const source=$('transferPaymentSource').value,el=$('transferPaymentSourceStatus'),card=$('cardPaymentDemo');if(card)card.classList.toggle('hidden',source!=='sandbox_card_demo');if(el)el.textContent=source==='wallet_test_preview'?'Wallet selected: balance is checked against the send amount plus fee, but test funds are not deducted.':source==='sandbox_card_demo'?'Card payment selected. The card demo appears after you request a test quote. No card is charged.':'Choose a payment method to continue.';});
 $('walletCurrencySelect')?.addEventListener('change',()=>{const el=$('transferPaymentSourceStatus');if(el&&$('transferPaymentSource')?.value==='wallet_test_preview')el.textContent='Selected wallet: '+$('walletCurrencySelect').value+'. Sending currency: '+currentCurrency()+'. The currencies must match; no test funds are deducted.';});
 function syncTransferPayoutMethod(){
  const method=$('payoutMethod')?.value||'bank';
@@ -2408,6 +2408,7 @@ $('transferForm').addEventListener('submit', async e => {
   let rate = Number($('demoRate').value), fee = Number($('demoFee').value);
   if (!recipient) { $('transferStatus').textContent = 'Choose a saved recipient first.'; $('transferStatus').className='profile-status show err'; return; }
   if (!Number.isFinite(amount) || amount <= 0) { $('transferStatus').textContent = 'Enter a valid send amount.'; $('transferStatus').className='profile-status show err'; return; }
+  if(!$('transferPaymentSource').value){$('transferStatus').textContent='Choose Card payment or RemitlyFly wallet payment to continue.';$('transferStatus').className='profile-status show err';return;}
   if($('transferPaymentSource').value==='wallet_test_preview' && $('walletCurrencySelect').value!==currency){$('transferStatus').textContent='Your selected wallet is '+$('walletCurrencySelect').value+'. Please select the '+currency+' wallet to match the sending currency.';$('transferStatus').className='profile-status show err';return;}
   const payoutMethod=recipient.payout_method||$('payoutMethod')?.value||'bank';
   const payoutLabel=(payoutMethod==='wallet'?'Mobile wallet — ':'Bank account — ')+(recipient.payout_provider||'saved payout destination');
@@ -2497,6 +2498,7 @@ $('transferForm').addEventListener('submit', async e => {
   $('confirmationStatus').textContent='';
   $('confirmationStatus').className='profile-status';
   $('transferReview').classList.remove('hidden');
+  $('cardPaymentDemo').classList.toggle('hidden',$('transferPaymentSource').value!=='sandbox_card_demo');
   $('transferReview').scrollIntoView({behavior:'smooth',block:'start'});
 });
 function trackingTimeline(status='saved') {
