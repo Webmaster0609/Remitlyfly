@@ -1028,20 +1028,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <h3 id="adminHeading">Admin overview</h3>
   <p class="muted">Restricted to accounts whose Supabase app metadata role is set to <code>admin</code>. This panel shows test records only.</p>
   <div class="warning">Never make a user an admin by editing browser code or user-editable metadata. Set the role securely in Supabase Auth user app_metadata.</div>
-  <section class="profile-card" id="rfLivePaymentsAdmin" aria-labelledby="rfLivePaymentsHeading" style="margin:18px 0;background:#fff8ed;border:1px solid #f0d6a8">
-   <h3 id="rfLivePaymentsHeading">Future real-payment controls</h3>
-   <p><strong id="rfPaymentModeBadge"> — LIVE LOCKED</strong></p>
-   <p class="muted">This control is available only to accounts with the administrator role in Supabase Auth app_metadata.</p>
-   <div class="warning">The switch saves the administrator's requested mode. The backend still enforces  because no production payment provider or required approvals are configured. No money can be moved.</div>
-   <div class="rf-live-toggle-row" style="margin:16px 0">
-    <div class="rf-live-toggle-copy"><strong>Request LIVE mode</strong><p id="rfLivePaymentsLock" class="muted">Loading the secure backend setting…</p></div>
-    <label class="rf-switch-control" aria-label="Request live mode">
-     <input id="rfLivePaymentsSwitch" class="rf-switch-input" type="checkbox" aria-describedby="rfLivePaymentsLock">
-     <span class="rf-switch-track" aria-hidden="true"></span>
-    </label>
-   </div>
-   <p class="fine" style="text-align:left">ON means “LIVE requested by admin”, not live payments. The server's effective mode remains  until the required provider, approvals and secure payment integration are verified.</p>
-  </section>
+  
   <div id="adminNewAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
   <h3>New user registrations</h3>
   <p class="muted">Review new accounts here. Pending users cannot access recipient or transfer features.</p>
