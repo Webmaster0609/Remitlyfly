@@ -850,8 +850,9 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  <div id="notice" class="notice" role="status" aria-live="polite"></div>
  <form id="authForm">
   <div class="field hidden" id="nameField"><label for="fullName">Full name</label><input id="fullName" autocomplete="name" placeholder="Your full name"></div>
-  <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-  <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"></div>
+  <div class="field" id="emailStep"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+  <button class="primary" id="emailContinue" type="button">Continue</button>
+  <div class="field hidden" id="passwordStep"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"><button class="link" id="backToEmail" type="button">← Back to email</button></div>
   <div class="field hidden" id="confirmField"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Enter password again"></div>
   <div class="rowline" id="loginOptions"><label><input type="checkbox" id="remember" checked> Keep me signed in</label><button class="link" id="forgot" type="button">Forgot password?</button></div>
   <button class="primary" id="submitButton" type="submit">Log in</button>
@@ -1208,10 +1209,12 @@ if (configured) {
 const $=id=>document.getElementById(id); let mode='login';
 const phoneIti = window.intlTelInput ? window.intlTelInput($('profilePhone'), {initialCountry:'us', preferredCountries:['et','us','gb'], separateDialCode:true, nationalMode:true, countrySearch:true, loadUtils:()=>import('https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js')}) : null;
 $('introNext').addEventListener('click',()=>{const shell=document.querySelector('.shell');shell.classList.remove('intro-mode');shell.classList.add('login-mode');window.scrollTo({top:0,behavior:'smooth'});$('email').focus({preventScroll:true})});
+$('emailContinue').addEventListener('click',()=>{const email=$('email');if(!email.checkValidity()){email.reportValidity();return}$('emailStep').classList.add('hidden');$('emailContinue').classList.add('hidden');$('passwordStep').classList.remove('hidden');$('loginOptions').classList.remove('hidden');$('submitButton').classList.remove('hidden');$('formTitle').textContent='Enter your password';$('formIntro').textContent='Password for '+email.value.trim();$('password').required=true;$('password').focus()});
+$('backToEmail').addEventListener('click',()=>{ $('passwordStep').classList.add('hidden');$('loginOptions').classList.add('hidden');$('submitButton').classList.add('hidden');$('emailStep').classList.remove('hidden');$('emailContinue').classList.remove('hidden');$('formTitle').textContent='Log in';$('formIntro').textContent='Enter your email address to continue.';$('password').required=false; });
 $('backToIntro').addEventListener('click',()=>{const shell=document.querySelector('.shell');shell.classList.remove('login-mode');shell.classList.add('intro-mode');window.scrollTo({top:0,behavior:'smooth'})});
 function message(text,type='err'){const n=$('notice');n.textContent=text;n.className='notice show '+type}
 function clearMessage(){$('notice').className='notice'}
-function setMode(next){mode=next;clearMessage();$('loginTab').classList.toggle('active',mode==='login');$('signupTab').classList.toggle('active',mode==='signup');$('nameField').classList.toggle('hidden',mode!=='signup');$('confirmField').classList.toggle('hidden',mode!=='signup');$('loginOptions').classList.toggle('hidden',mode!=='login');$('formTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('formIntro').textContent=mode==='login'?'Log in to your RemitlyFly account.':'Create your RemitlyFly account.';$('submitButton').textContent=mode==='login'?'Log in':'Create account';$('switchLine').innerHTML=mode==='login'?'New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button>':'Already registered? <button class="link" id="switchMode" type="button">Log in</button>'; }
+function setMode(next){mode=next;clearMessage();$('loginTab').classList.toggle('active',mode==='login');$('signupTab').classList.toggle('active',mode==='signup');$('nameField').classList.toggle('hidden',mode!=='signup');$('confirmField').classList.toggle('hidden',mode!=='signup');$('loginOptions').classList.add('hidden');$('emailStep').classList.remove('hidden');$('passwordStep').classList.toggle('hidden',mode==='login');$('emailContinue').classList.toggle('hidden',mode!=='login');$('submitButton').classList.toggle('hidden',mode==='login');$('formTitle').textContent=mode==='login'?'Log in':'Create your account';$('formIntro').textContent=mode==='login'?'Enter your email address to continue.':'Create your RemitlyFly account.';$('submitButton').textContent=mode==='login'?'Log in':'Create account';$('switchLine').innerHTML=mode==='login'?'New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button>':'Already registered? <button class="link" id="switchMode" type="button">Log in</button>';$('password').required=mode==='signup';$('confirmPassword').required=false;}
 let rfOtpUser=null, rfOtpEmail='', rfOtpPurpose='signup_email', rfOtpDeviceToken=null, rfOtpSessionVerified=false, rfOtpVerificationInProgress=false;
 function rfGetDeviceToken(){
   let token=localStorage.getItem('rf_trusted_device_token');
@@ -1222,6 +1225,7 @@ function rfOtpMessage(text,type='err'){
   const el=$('otpNotice');el.textContent=text;el.className='notice show '+type;
 }
 function rfShowEmailOtpGate(user,email,purpose,codeAlreadySent=false){
+  try{sessionStorage.setItem('rf_pending_email_otp',JSON.stringify({email:email||user?.email||'',purpose,codeAlreadySent}));}catch(e){}
   const shell=document.querySelector('.shell');
   if(shell){shell.classList.remove('intro-mode','dashboard-mode');shell.classList.add('login-mode','otp-mode');}
   rfOtpUser=user||null;rfOtpEmail=email||user?.email||'';rfOtpPurpose=purpose;rfOtpSessionVerified=false;
@@ -1267,6 +1271,7 @@ async function rfSendDeviceOtp(){
     }
     if(result.error)throw result.error;
     rfOtpSessionVerified=false;
+    try{sessionStorage.setItem('rf_pending_email_otp',JSON.stringify({email:rfOtpEmail,purpose:rfOtpPurpose,codeAlreadySent:true}));}catch(e){}
     $('otpCodeField').classList.remove('hidden');$('otpVerifyButton').classList.remove('hidden');
     $('otpSendButton').textContent='Resend email code';$('otpSendButton').disabled=false;$('otpCode').focus();
     rfOtpMessage('Code sent to '+rfOtpEmail+'. Check your inbox and spam folder.','ok');
@@ -1293,6 +1298,7 @@ async function rfVerifyDeviceOtp(){
     if(trustError)throw trustError;
     if(!trustData?.trusted)throw new Error('Email verified, but this device could not be saved. Please try again.');
     rfOtpVerificationInProgress=false;rfOtpSessionVerified=false;
+    try{sessionStorage.removeItem('rf_pending_email_otp');}catch(e){}
     $('otpCard').classList.add('hidden');
     const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');
     await showDashboard(user,true);
@@ -1438,7 +1444,7 @@ $('profileForm').addEventListener('submit',async e=>{
   finally{button.disabled=false}
 });
 $('logout').addEventListener('click',async()=>{localStorage.removeItem('rf_temp_email_recovery');if(supabase)await supabase.auth.signOut();showAuth();setMode('login');$('password').value='';});
-if(configured && supabase){supabase.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{if(session?.user){let recoveryAllowed=false;try{const recovery=JSON.parse(localStorage.getItem('rf_temp_email_recovery')||'null');recoveryAllowed=!!(recovery&&recovery.userId===session.user.id&&recovery.expiresAt>Date.now());}catch(e){}if(recoveryAllowed)showDashboard(session.user);else{showAuth();setMode('login');}}else if(event==='SIGNED_OUT'){showAuth();setMode('login');}},0)});const {data:{session},error:sessionError}=await supabase.auth.getSession();if(session?.user){let recoveryAllowed=false;try{const recovery=JSON.parse(localStorage.getItem('rf_temp_email_recovery')||'null');recoveryAllowed=!!(recovery&&recovery.userId===session.user.id&&recovery.expiresAt>Date.now());}catch(e){}if(recoveryAllowed)await showDashboard(session.user);else{showAuth();setMode('login');}}else if(sessionError)message('Could not restore your sign-in session. Please try logging in again.');} else if (supabaseLoadError) { message('The login form is ready, but the authentication library did not load. Check your internet connection and reload.'); }
+if(configured && supabase){supabase.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){setTimeout(()=>{showAuth();setMode('login');},0);}});const {data:{session},error:sessionError}=await supabase.auth.getSession();if(session?.user){let pendingOtp=null;try{pendingOtp=JSON.parse(sessionStorage.getItem('rf_pending_email_otp')||'null');}catch(e){}if(pendingOtp?.email){rfShowEmailOtpGate(session.user,pendingOtp.email,pendingOtp.purpose||'new_device',!!pendingOtp.codeAlreadySent);}else{let recoveryAllowed=false;try{const recovery=JSON.parse(localStorage.getItem('rf_temp_email_recovery')||'null');recoveryAllowed=!!(recovery&&recovery.userId===session.user.id&&recovery.expiresAt>Date.now());}catch(e){}if(recoveryAllowed)await showDashboard(session.user);else if(await rfEnsureTrustedDevice(session.user))await showDashboard(session.user,true);}}else if(sessionError)message('Could not restore your sign-in session. Please try logging in again.');} else if (supabaseLoadError) { message('The login form is ready, but the authentication library did not load. Check your internet connection and reload.'); }
 
 // Recipient manager: all records are stored in public.recipients under the signed-in user's ID.
 const recipientState = { items: [], view: 'all', busy: false };
