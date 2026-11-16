@@ -1214,14 +1214,12 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
     if(intro) intro.addEventListener('click',showLogin);
     if(back) back.addEventListener('click',showIntro);
     if(form) form.addEventListener('submit',function(e){
-      // The module handles authentication when available. This message prevents a silent no-op
-      // when the HTML is opened directly from Android storage.
+      // Prevent native form navigation even if the module script fails.
+      e.preventDefault();
       if(location.protocol==='file:' || location.protocol==='content:'){
-        e.preventDefault();
-        if(notice){
-          notice.textContent='This downloaded file is only a preview. To sign in securely, open your published RemitlyFly website using its https:// Netlify address.';
-          notice.className='notice show err';
-        }
+        if(notice){notice.textContent='This downloaded file is only a preview. Open the published RemitlyFly website using its https:// address.';notice.className='notice show err';}
+      }else if(!window.rfAuthHandlerReady){
+        if(notice){notice.textContent='The login service did not finish loading. Refresh this page. If the problem continues, the login script needs repair.';notice.className='notice show err';}
       }
     },true);
     var loginTab=document.getElementById('loginTab');
@@ -1634,7 +1632,8 @@ $('authForm').addEventListener('submit',async e=>{e.preventDefault();const authS
   }
  } catch(err){message('Something went wrong. Please try again.')} finally {btn.disabled=false}
 });
-$('profileForm').addEventListener('submit',async e=>{
+window.rfAuthHandlerReady=true;
+ $('profileForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const button=$('saveProfileButton');button.disabled=true;
   $('profileStatus').className='profile-status';
