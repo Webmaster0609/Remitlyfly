@@ -986,7 +986,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <div class="field"><label for="transferPaymentSource">How would you like to pay?</label><select id="transferPaymentSource" required><option value="" selected disabled>Choose payment method</option><option value="sandbox_card_demo">Card payment (sandbox demo)</option><option value="wallet_test_preview">My RemitlyFly wallet balance (test)</option></select><small class="muted">Choose how you want to pay. Wallet test previews check your selected balance without deducting funds.</small><p id="transferPaymentSourceStatus" class="fine" aria-live="polite">Choose a payment method to continue.</p></div>
    <select id="receivingBank" hidden aria-hidden="true"><option value="">Loading banks…</option></select>
    <div class="field"><label for="demoRate">Reference exchange rate (<span id="destinationCurrencyLabel">ETB</span> per <span id="rateCurrencyLabel">USD</span>)</label><input id="demoRate" type="number" min="0.01" max="100000" step="any" inputmode="decimal" value="150.00" required><small class="muted">Live published bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.</small></div>
-   <div class="field"><label for="demoFee">Illustrative fee (<span id="feeCurrencyLabel">USD</span>)</label><input id="demoFee" type="number" min="0" max="1000" step="0.01" value="2.99" required><small class="muted">Demo fee only — actual fees are not available.</small></div>
+   <div class="field"><label for="demoFee">Admin fee (3%) (<span id="feeCurrencyLabel">USD</span>)</label><input id="demoFee" type="number" min="0" max="1000" step="0.01" value="2.99" required><small class="muted">3% simulated international sending fee. The server calculates this fee from the amount sent.</small></div>
    <div class="transfer-summary" aria-live="polite"><div><span>Transfer amount</span><strong id="summarySend">$0.00 USD</strong></div><div><span>Illustrative fee</span><strong id="summaryFee">$2.99 USD</strong></div><div><span>Total paid (example)</span><strong id="summaryTotal">$2.99 USD</strong></div><div><span>Recipient receives (example)</span><strong id="summaryReceive">ETB 0.00</strong></div><div><span>Example rate</span><strong id="summaryRate">1 USD = 150.00 ETB</strong></div></div>
    <button class="primary" type="submit" id="reviewTransferButton">Review test transfer</button>
    <div id="transferStatus" class="profile-status" role="status" aria-live="polite"></div>
@@ -2487,7 +2487,7 @@ $('transferForm').addEventListener('submit', async e => {
     <div><span>Payout method</span><strong>${escapeHtml(payoutLabel)}</strong></div>
     <div><span>Sending from</span><strong>${escapeHtml(senderCountry)}</strong></div>
     <div><span>Send amount</span><strong>${money(amount,currency)}</strong></div>
-    <div><span>Sandbox fee</span><strong>${money(fee,currency)}</strong></div>
+    <div><span>Admin fee (3%)</span><strong>${money(fee,currency)}</strong></div>
     <div><span>Total (test example)</span><strong>${money(total,currency)}</strong></div>
     <div><span>Sandbox indicative rate</span><strong>1 ${currency} = ${rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4})} ${escapeHtml(destinationCurrency)}</strong></div>
     <div><span>Estimated payout (test example)</span><strong>${escapeHtml(destinationCurrency)} ${receive.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>
