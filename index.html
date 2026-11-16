@@ -911,7 +911,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <div class="wallet-columns">
    <div class="wallet-panel">
     <h4>Top up test wallet</h4><p class="muted">Add simulated funds to the selected currency wallet. Maximum 5,000 per top-up.</p>
-    <form id="walletTopupForm"><div class="field"> <label for="walletTopupAmount">Amount</label><input id="walletTopupAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="100.00" required></div><button class="primary" type="submit" id="walletTopupButton">Add test funds</button></form>
+    <form id="walletTopupForm"><div class="field"> <label for="walletTopupAmount">Wallet amount to add</label><input id="walletTopupAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="100.00" required></div><div id="walletTopupFeePreview" class="muted" style="padding:10px 12px;border:1px solid var(--border,#ddd);border-radius:10px;margin:10px 0" aria-live="polite">3% card fee: 0.00 · Total card charge: 0.00 · Wallet receives: 0.00</div><p class="fine">A 3% simulated card fee is recorded as admin fee revenue. This test screen does not charge a real card.</p><button class="primary" type="submit" id="walletTopupButton">Add test funds</button></form>
    </div>
    <div class="wallet-panel">
     <h4>Receive money</h4><p class="muted">Share your full name or RemitlyFly username so another user can find you.</p>
@@ -1640,7 +1640,7 @@ $('walletSearchResults').addEventListener('click',async e=>{
  walletShowProfile(person);
 });
 
-$('walletTopupForm').addEventListener('submit',async e=>{
+function rfUpdateTopupFeePreview(){const amount=Math.max(0,Number($('walletTopupAmount').value)||0),currency=$('walletCurrencySelect').value,fee=Math.round((amount*0.03+Number.EPSILON)*100)/100,total=Math.round((amount+fee+Number.EPSILON)*100)/100;const fmt=n=>walletFormat(n,currency);$('walletTopupFeePreview').textContent='3% card fee: '+fmt(fee)+' · Total card charge: '+fmt(total)+' · Wallet receives: '+fmt(amount);}\n$('walletTopupAmount').addEventListener('input',rfUpdateTopupFeePreview);$('walletCurrencySelect').addEventListener('change',rfUpdateTopupFeePreview);rfUpdateTopupFeePreview();\n$('walletTopupForm').addEventListener('submit',async e=>{
  e.preventDefault();const amount=Number($('walletTopupAmount').value),currency=$('walletCurrencySelect').value;const button=$('walletTopupButton');
  if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter a test top-up between USD 0.01 and USD 5,000.');return;}
  button.disabled=true;
@@ -1648,7 +1648,7 @@ $('walletTopupForm').addEventListener('submit',async e=>{
   const {data:{user}}=await supabase.auth.getUser();
   const {data:tx}=await supabase.from('wallet_transactions').select('id').eq('receiver_user_id',user.id).eq('transaction_type','test_topup').eq('amount',amount).eq('currency',currency).order('created_at',{ascending:false}).limit(1).maybeSingle();
   if(tx?.id)await rfWalletNotifyAdmin('topup',tx.id);
-  $('walletTopupAmount').value='';walletStatus('Test top-up added. No real money was deposited. New balance: '+walletFormat(data.balance,currency),'ok');await loadWallet();
+  $('walletTopupAmount').value='';walletStatus('Test top-up recorded. 3% admin fee: '+walletFormat(data.fee_amount,currency)+'. Simulated card total: '+walletFormat(data.total_card_charge,currency)+'. No real card was charged. New wallet balance: '+walletFormat(data.balance,currency),'ok');await loadWallet();
  }catch(err){walletStatus(err.message||'Could not add test funds.');}finally{button.disabled=false;}
 });
 $('walletSendForm').addEventListener('submit',async e=>{
