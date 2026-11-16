@@ -1640,7 +1640,9 @@ $('walletSearchResults').addEventListener('click',async e=>{
  walletShowProfile(person);
 });
 
-function rfUpdateTopupFeePreview(){const amount=Math.max(0,Number($('walletTopupAmount').value)||0),currency=$('walletCurrencySelect').value,fee=Math.round((amount*0.03+Number.EPSILON)*100)/100,total=Math.round((amount+fee+Number.EPSILON)*100)/100;const fmt=n=>walletFormat(n,currency);$('walletTopupFeePreview').textContent='3% card fee: '+fmt(fee)+' · Total card charge: '+fmt(total)+' · Wallet receives: '+fmt(amount);}\n$('walletTopupAmount').addEventListener('input',rfUpdateTopupFeePreview);$('walletCurrencySelect').addEventListener('change',rfUpdateTopupFeePreview);rfUpdateTopupFeePreview();\n$('walletTopupForm').addEventListener('submit',async e=>{
+function rfUpdateTopupFeePreview(){const amount=Math.max(0,Number($('walletTopupAmount').value)||0),currency=$('walletCurrencySelect').value,fee=Math.round((amount*0.03+Number.EPSILON)*100)/100,total=Math.round((amount+fee+Number.EPSILON)*100)/100;const fmt=n=>walletFormat(n,currency);$('walletTopupFeePreview').textContent='3% card fee: '+fmt(fee)+' · Total card charge: '+fmt(total)+' · Wallet receives: '+fmt(amount);}
+$('walletTopupAmount').addEventListener('input',rfUpdateTopupFeePreview);$('walletCurrencySelect').addEventListener('change',rfUpdateTopupFeePreview);rfUpdateTopupFeePreview();
+$('walletTopupForm').addEventListener('submit',async e=>{
  e.preventDefault();const amount=Number($('walletTopupAmount').value),currency=$('walletCurrencySelect').value;const button=$('walletTopupButton');
  if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter a test top-up between USD 0.01 and USD 5,000.');return;}
  button.disabled=true;
