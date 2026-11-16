@@ -1125,7 +1125,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  </section>
  <section class="profile-card" data-page="recipients" id="recipientsSection" aria-labelledby="recipientsHeading">
   <h3 id="recipientsHeading">Manage recipients</h3>
-  <p class="muted">Save recipient details for test-only transfer previews. No real payments or payouts are available.</p>
+  
   <form id="recipientForm">
    <input id="recipientEditId" type="hidden" value="">
    <div class="field"><label for="recipientName">Recipient full name</label><input id="recipientName" autocomplete="name" placeholder="Full name" required></div>
@@ -2950,11 +2950,10 @@ refreshTransferSummary();
       const heading = document.querySelector('.quick-heading');
       if (heading && heading.parentNode) heading.parentNode.insertBefore(feedback, heading.nextSibling);
     }
-    feedback.textContent = 'Opening ' + ({
+    if(id!=='recipientsSection') feedback.textContent = 'Opening ' + ({
       transferSection:'Send money (test preview)',
       trackingSection:'Transfer tracking (test records)',
       historySection:'Transfer history (test previews)',
-      recipientsSection:'Saved recipients',
       profileCard:'Your profile'
     }[id] || 'section') + '…';
   }
@@ -2992,7 +2991,7 @@ refreshTransferSummary();
    if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
   });
   const feedback=document.getElementById('menuNavigationStatus');
-  if(feedback){feedback.textContent='Opened '+(labels[page]||'page')+'.';feedback.style.display='block';}
+  if(feedback && page!=='recipients'){feedback.textContent='Opened '+(labels[page]||'page')+'.';feedback.style.display='block';}
   if(page==='history'||page==='tracking'){if(typeof loadTransferHistory==='function')loadTransferHistory();}
   if(page==='recipients'&&typeof loadRecipients==='function')loadRecipients();
    if(page==='wallet'&&typeof loadWallet==='function')loadWallet();
