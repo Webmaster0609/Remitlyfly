@@ -851,6 +851,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  <div id="notice" class="notice" role="status" aria-live="polite"></div>
  <form id="authForm">
   <div class="field hidden" id="nameField"><label for="fullName">Full name</label><input id="fullName" autocomplete="name" placeholder="Your full name"></div>
+  <div class="field hidden" id="registrationCountryField"><label for="registrationCountry">Country of registration</label><input id="registrationCountry" autocomplete="country-name" placeholder="Enter your country"></div>
   <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
   <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="At least 8 characters"></div>
   <div class="field hidden" id="confirmField"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Enter password again"></div>
@@ -1044,6 +1045,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <p class="muted">Review new accounts here. Pending users cannot access recipient or transfer features.</p>
   <div id="adminAccountAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
   <div id="adminWalletAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
+  <section class="profile-card" id="adminWalletTransfers" style="margin:18px 0"><h3>Wallet transfer requests</h3><div id="adminWalletTransferList"><p class="muted">Loading wallet transfers…</p></div></section>
   <div id="adminAccountList"><p class="muted">Loading account registrations…</p></div>
   <div id="adminStatus" class="profile-status" role="status" aria-live="polite"></div>
   <div class="profile-card" style="margin:18px 0;background:#f5f9fd">
@@ -1268,7 +1270,7 @@ $('introNext').addEventListener('click',()=>{const shell=document.querySelector(
 $('backToIntro').addEventListener('click',()=>{const shell=document.querySelector('.shell');shell.classList.remove('login-mode');shell.classList.add('intro-mode');window.scrollTo({top:0,behavior:'smooth'})});
 function message(text,type='err'){const n=$('notice');n.textContent=text;n.className='notice show '+type}
 function clearMessage(){$('notice').className='notice'}
-function setMode(next){mode=next;clearMessage();$('loginTab').classList.toggle('active',mode==='login');$('signupTab').classList.toggle('active',mode==='signup');$('nameField').classList.toggle('hidden',mode!=='signup');$('confirmField').classList.toggle('hidden',mode!=='signup');$('loginOptions').classList.toggle('hidden',mode!=='login');$('submitButton').classList.remove('hidden');$('formTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('formIntro').textContent=mode==='login'?'Log in to your RemitlyFly account.':'Create your RemitlyFly account.';$('submitButton').textContent=mode==='login'?'Log in':'Create account';$('switchLine').innerHTML=mode==='login'?'New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button>':'Already registered? <button class="link" id="switchMode" type="button">Log in</button>';$('password').required=true;$('confirmPassword').required=mode==='signup';}
+function setMode(next){mode=next;clearMessage();$('loginTab').classList.toggle('active',mode==='login');$('signupTab').classList.toggle('active',mode==='signup');$('nameField').classList.toggle('hidden',mode!=='signup');$('registrationCountryField').classList.toggle('hidden',mode!=='signup');$('registrationCountry').required=mode==='signup';$('confirmField').classList.toggle('hidden',mode!=='signup');$('loginOptions').classList.toggle('hidden',mode!=='login');$('submitButton').classList.remove('hidden');$('formTitle').textContent=mode==='login'?'Welcome back':'Create your account';$('formIntro').textContent=mode==='login'?'Log in to your RemitlyFly account.':'Create your RemitlyFly account.';$('submitButton').textContent=mode==='login'?'Log in':'Create account';$('switchLine').innerHTML=mode==='login'?'New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button>':'Already registered? <button class="link" id="switchMode" type="button">Log in</button>';$('password').required=true;$('confirmPassword').required=mode==='signup';}
 let rfOtpUser=null, rfOtpEmail='', rfOtpPurpose='signup_email', rfOtpDeviceToken=null, rfOtpSessionVerified=false, rfOtpVerificationInProgress=false;
 function rfGetDeviceToken(){
   let token=localStorage.getItem('rf_trusted_device_token');
@@ -1476,14 +1478,21 @@ async function loadWallet(){
   walletRealtimeChannel=supabase.channel('rf-wallet-'+user.id)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_transactions',filter:'receiver_user_id=eq.'+user.id},payload=>{
     const incoming=payload.new?.transaction_type==='wallet_transfer';
-    walletStatus(incoming?'Wallet alert: you received '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' from another RemitlyFly user. .':'Wallet alert: your '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' test top-up was recorded. .','ok');
+    walletStatus(incoming?(payload.new?.status==='pending'?'Wallet alert: an incoming wallet transfer is awaiting admin approval.':'Wallet alert: you received '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' from another RemitlyFly user.'):'Wallet alert: your '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' test top-up was recorded.','ok');
     loadWallet();
    })
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_transactions',filter:'sender_user_id=eq.'+user.id},payload=>{
     if(payload.new?.transaction_type==='wallet_transfer'){
-     walletStatus('Wallet alert: your '+walletFormat(payload.new.amount,payload.new.currency||'USD')+' test transfer was sent. .','ok');
+     walletStatus('Wallet alert: your wallet transfer is awaiting admin approval.','ok');
      loadWallet();
     }
+   })
+
+   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'wallet_transactions',filter:'sender_user_id=eq.'+user.id},payload=>{
+    if(payload.new?.transaction_type==='wallet_transfer'){walletStatus(payload.new.status==='completed'?'Wallet transfer approved.':payload.new.status==='rejected'?'Wallet transfer rejected; funds returned to your wallet.':'Wallet transfer status updated.','ok');loadWallet();}
+   })
+   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'wallet_transactions',filter:'receiver_user_id=eq.'+user.id},payload=>{
+    if(payload.new?.transaction_type==='wallet_transfer'){walletStatus(payload.new.status==='completed'?'Incoming wallet transfer approved and credited.':payload.new.status==='rejected'?'Incoming wallet transfer was rejected.':'Wallet transfer status updated.','ok');loadWallet();}
    })
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'wallet_withdrawal_requests',filter:'user_id=eq.'+user.id},payload=>{
     walletStatus('Wallet alert: your test withdrawal request was submitted. No payout occurred.','ok');
@@ -1498,7 +1507,7 @@ async function loadWallet(){
  const [walletResult,profileResult,txResult]=await Promise.all([
   supabase.from('wallets').select('balance,currency').eq('user_id',user.id),
   supabase.from('wallet_profiles').select('username,allow_lookup').eq('user_id',user.id).maybeSingle(),
-  supabase.from('wallet_transactions').select('id,sender_user_id,receiver_user_id,transaction_type,amount,currency,created_at').order('created_at',{ascending:false}).limit(20)
+  supabase.from('wallet_transactions').select('id,sender_user_id,receiver_user_id,transaction_type,amount,currency,status,created_at').order('created_at',{ascending:false}).limit(20)
  ]);
  if(walletResult.error){walletStatus('Could not load wallet balance: '+walletResult.error.message);return;}
  walletBalances={USD:0,GBP:0,EUR:0,...Object.fromEntries((walletResult.data||[]).map(w=>[w.currency,Number(w.balance)||0]))};
@@ -1520,7 +1529,8 @@ async function loadWallet(){
   const cls=sign==='+'?'wallet-in':'wallet-out';
   const currency=t.currency||'USD';
   const feeLine=isTopup?' · 3% fee: '+walletFormat(Math.round(Number(t.amount)*0.03*100)/100,currency):'';
-  return '<div class="wallet-tx"><div><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(new Date(t.created_at).toLocaleString())+feeLine+'</small></div><strong class="'+cls+'">'+sign+walletFormat(t.amount,currency)+'</strong></div>';
+  const statusLine=!isTopup?' · '+(t.status==='pending'?'Awaiting admin approval':t.status==='rejected'?'Rejected — funds returned':'Approved'):'';
+  return '<div class="wallet-tx"><div><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(new Date(t.created_at).toLocaleString())+feeLine+statusLine+'</small></div><strong class="'+cls+'">'+sign+walletFormat(t.amount,currency)+'</strong></div>';
  }).join('');
  const {data:withdrawals,error:withdrawalError}=await supabase.from('wallet_withdrawal_requests').select('id,amount,currency,destination_type,destination_country,destination_provider,destination_label,status,created_at').order('created_at',{ascending:false}).limit(10);
  if(withdrawalError){$('walletWithdrawalList').innerHTML='<p class="muted">Could not load test withdrawal requests.</p>';}
@@ -1648,9 +1658,8 @@ $('walletSendForm').addEventListener('submit',async e=>{
  const button=$('walletSendButton');button.disabled=true;
  try{const {data,error}=await supabase.rpc('rf_wallet_send',{p_recipient_user_id:walletSelectedRecipient.user_id,p_amount:amount,p_currency:currency});if(error)throw error;
   const {data:{user}}=await supabase.auth.getUser();
-  const {data:tx}=await supabase.from('wallet_transactions').select('id').eq('sender_user_id',user.id).eq('transaction_type','wallet_transfer').eq('amount',amount).eq('currency',currency).order('created_at',{ascending:false}).limit(1).maybeSingle();
-  if(tx?.id)await rfWalletNotifyAdmin('wallet_transfer',tx.id);
-  $('walletSendAmount').value='';walletStatus('Test wallet transfer recorded. The recipient wallet has been credited. Your new balance is '+walletFormat(data.sender_balance,currency)+'. No real money moved.','ok');
+  if(data?.transaction_id)await rfWalletNotifyAdmin('wallet_transfer',data.transaction_id);
+  $('walletSendAmount').value='';walletStatus('Wallet transfer submitted for admin approval. The amount is reserved until approval; if rejected, it will be returned to your wallet. New balance: '+walletFormat(data.sender_balance,currency)+'.','ok');
   $('walletSendPanel').classList.add('hidden');$('walletSearch').value='';$('walletSearchResults').innerHTML='';walletSelectedRecipient=null;await loadWallet();
  }catch(err){walletStatus(err.message||'Could not send test money.');}finally{button.disabled=false;}
 });
@@ -1713,8 +1722,8 @@ $('authForm').addEventListener('submit',async e=>{e.preventDefault();const authS
  const email=$('email').value.trim(), password=$('password').value;const btn=$('submitButton');btn.disabled=true;
  try {
   if(mode==='signup'){
-   const name=$('fullName').value.trim();if(!name){message('Enter your full name.');return}if(password!==$('confirmPassword').value){message('The passwords do not match.');return}
-   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:window.location.origin}});
+   const name=$('fullName').value.trim();if(!name){message('Enter your full name.');return}const registrationCountry=$('registrationCountry').value.trim();if(!registrationCountry){message('Enter your country of registration.');return}if(password!==$('confirmPassword').value){message('The passwords do not match.');return}
+   const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name,registration_country:registrationCountry},emailRedirectTo:window.location.origin}});
    if(error)message(error.message);else if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){message('An account with this email may already exist. Please log in instead.')}else if(data.user){rfShowEmailOtpGate(data.user,email,'signup_email',true)}else message('Could not start email verification. Please check the email address and try again.');
   } else {
    const {data,error}=await supabase.auth.signInWithPassword({email,password});
@@ -2579,8 +2588,8 @@ let adminSeenAccountIds = null;
 let adminSeenWalletActivityIds = null;
 let adminAlertPoll = null;
 async function loadAccountApprovals(){
-  const {data,error}=await supabase.from('account_approvals').select('user_id,email,full_name,status,created_at,restriction_reason,rejection_reason').order('created_at',{ascending:false}).limit(100);
-  if(error){$('adminAccountList').innerHTML='<p class="muted">Could not load account registrations: '+escapeHtml(error.message)+'</p>';return;}
+  const {data,error}=await supabase.from('account_approvals').select('user_id,email,full_name,status,created_at,registration_country,restriction_reason,rejection_reason').order('created_at',{ascending:false}).limit(100);
+  if(error){$('adminAccountList').innerHTML='<p class="muted">Could not load account registrations: '+escapeHtml(error.message)+'</p>';return [];}
   const rows=data||[];
   const pending=rows.filter(r=>r.status==='pending');
   const ids=new Set(pending.map(r=>String(r.user_id)));
@@ -2589,7 +2598,7 @@ async function loadAccountApprovals(){
     if(added.length){$('adminAccountAlert').textContent='New registration alert: '+added.length+' account'+(added.length===1?'':'s')+' awaiting approval. Latest: '+(added[0].email||'New user');$('adminAccountAlert').classList.remove('hidden');}
   }
   adminSeenAccountIds=ids;
-  $('adminAccountList').innerHTML=rows.length?rows.map(r=>'<article class="admin-row"><div class="rowline"><strong>'+escapeHtml(r.full_name||'New user')+'</strong><span class="status-pill">'+escapeHtml(r.status.toUpperCase())+'</span></div><div class="muted">'+escapeHtml(r.email||'No email')+'</div><div class="muted">Registered: '+escapeHtml(safeDate(r.created_at))+'</div>'+(r.status==='restricted'?'<p class="muted">Restriction reason: '+escapeHtml(r.restriction_reason||'Not recorded')+'</p>':r.status==='rejected'?'<p class="muted">Rejection reason: '+escapeHtml(r.rejection_reason||'Not recorded')+'</p>':'')+(r.status==='pending'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve</button><button type="button" class="secondary" data-account-action="rejected" data-account-id="'+escapeHtml(r.user_id)+'">Reject</button></div>':r.status==='approved'?'<div class="rowline" style="margin-top:10px"><button type="button" class="secondary" data-account-action="restricted" data-account-id="'+escapeHtml(r.user_id)+'">Restrict account</button></div>':r.status==='restricted'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="restored" data-account-id="'+escapeHtml(r.user_id)+'">Restore account</button></div>':r.status==='rejected'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve again</button></div>':'')+'</article>').join(''):'<p class="muted">No registrations found.</p>';
+  $('adminAccountList').innerHTML=rows.length?rows.map(r=>'<article class="admin-row"><div class="rowline"><strong>'+escapeHtml(r.full_name||'New user')+'</strong><span class="status-pill">'+escapeHtml(r.status.toUpperCase())+'</span></div><div class="muted">'+escapeHtml(r.email||'No email')+'</div><div class="muted">Registered: '+escapeHtml(safeDate(r.created_at))+'</div><div class="muted">Registration country: '+escapeHtml(r.registration_country||'Not provided')+'</div>'+(r.status==='restricted'?'<p class="muted">Restriction reason: '+escapeHtml(r.restriction_reason||'Not recorded')+'</p>':r.status==='rejected'?'<p class="muted">Rejection reason: '+escapeHtml(r.rejection_reason||'Not recorded')+'</p>':'')+(r.status==='pending'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve</button><button type="button" class="secondary" data-account-action="rejected" data-account-id="'+escapeHtml(r.user_id)+'">Reject</button></div>':r.status==='approved'?'<div class="rowline" style="margin-top:10px"><button type="button" class="secondary" data-account-action="restricted" data-account-id="'+escapeHtml(r.user_id)+'">Restrict account</button></div>':r.status==='restricted'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="restored" data-account-id="'+escapeHtml(r.user_id)+'">Restore account</button></div>':r.status==='rejected'?'<div class="rowline" style="margin-top:10px"><button type="button" data-account-action="approved" data-account-id="'+escapeHtml(r.user_id)+'">Approve again</button></div>':'')+'</article>').join(''):'<p class="muted">No registrations found.</p>'; return rows;
 }
 function adminMessage(text,type='err'){const el=$('adminStatus');el.textContent=text;el.className='profile-status show '+type;}
 async function loadAdminOverview(){
@@ -2604,16 +2613,31 @@ async function loadAdminOverview(){
   }
   $('adminSection').classList.remove('hidden');
   await rfLoadPaymentModeSetting();
-  await loadAccountApprovals();
+  const approvalRows=await loadAccountApprovals();
   if(typeof rfLoadApiKeys==='function') await rfLoadApiKeys();
   const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,exchange_rate,payout_amount_etb,tracking_status,created_at,payment_hold_status,payment_hold_reason,payment_held_at,payment_release_reason,payment_released_at').order('created_at',{ascending:false}).limit(200);
   if(error){adminMessage('Admin data could not load: '+error.message+' Check the admin RLS policy in the SQL setup.');return;}
   const rows=data||[];
   const [walletTxResult,walletWithdrawalResult]=await Promise.all([
-    supabase.from('wallet_transactions').select('id,transaction_type,amount,currency,created_at').order('created_at',{ascending:false}).limit(50),
+    supabase.from('wallet_transactions').select('id,sender_user_id,receiver_user_id,transaction_type,amount,currency,status,created_at,review_note').order('created_at',{ascending:false}).limit(100),
     supabase.from('wallet_withdrawal_requests').select('id,amount,currency,destination_country,destination_provider,status,created_at').order('created_at',{ascending:false}).limit(50)
   ]);
+
   const walletTxRows=walletTxResult.data||[], walletWithdrawalRows=walletWithdrawalResult.data||[];
+  const registrationByUser=new Map((approvalRows||[]).map(a=>[String(a.user_id),a]));
+  const walletTransferRows=walletTxRows.filter(t=>t.transaction_type==='wallet_transfer');
+  $('adminWalletTransferList').innerHTML=walletTransferRows.length?walletTransferRows.map(t=>{
+    const sender=registrationByUser.get(String(t.sender_user_id))||{};
+    const receiver=registrationByUser.get(String(t.receiver_user_id))||{};
+    const status=String(t.status||'pending');
+    return '<article class="admin-row"><div class="rowline"><strong>'+escapeHtml(money(t.amount,t.currency||'USD'))+' wallet transfer</strong><span class="status-pill">'+escapeHtml(status.toUpperCase())+'</span></div>'+
+      '<div>From: '+escapeHtml(sender.full_name||sender.email||'Account')+' · '+escapeHtml(sender.email||'')+'</div><div class="muted">Sender registration country: '+escapeHtml(sender.registration_country||'Not provided')+'</div>'+
+      '<div>To: '+escapeHtml(receiver.full_name||receiver.email||'Account')+' · '+escapeHtml(receiver.email||'')+'</div><div class="muted">Recipient registration country: '+escapeHtml(receiver.registration_country||'Not provided')+'</div>'+
+      '<div class="muted">'+escapeHtml(safeDate(t.created_at))+' · '+escapeHtml(t.currency||'USD')+'</div>'+
+      (t.review_note?'<div class="muted">Admin note: '+escapeHtml(t.review_note)+'</div>':'')+
+      (status==='pending'?'<div class="rowline" style="margin-top:10px"><button type="button" data-wallet-review="approved" data-wallet-transaction-id="'+escapeHtml(t.id)+'">Approve</button><button type="button" class="secondary" data-wallet-review="rejected" data-wallet-transaction-id="'+escapeHtml(t.id)+'">Reject</button></div>':'')+
+      '</article>';
+  }).join(''):'<p class="muted">No wallet-to-wallet transfers found.</p>';
   const walletIds=new Set([...walletTxRows.map(r=>'tx:'+r.id),...walletWithdrawalRows.map(r=>'wd:'+r.id)]);
   if(adminSeenWalletActivityIds){
     const newTx=walletTxRows.filter(r=>!adminSeenWalletActivityIds.has('tx:'+r.id));
@@ -2652,6 +2676,26 @@ async function loadAdminOverview(){
   $('adminList').innerHTML=rows.length?rows.map(r=>`<article class="admin-row"><div class="rowline"><strong>${escapeHtml(r.recipient_name)} — ${escapeHtml(r.recipient_country)}</strong><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span></div><div class="muted">Account ID: ${escapeHtml(r.user_id)}</div><div class="muted">${money(r.send_amount_usd,'USD')} test amount · ${escapeHtml(safeDate(r.created_at))}</div><div class="admin-status-actions"><select class="admin-status-select" aria-label="Choose test transfer status" data-admin-track-select data-admin-track-id="${escapeHtml(r.id)}"><option value="">Choose status…</option><option value="saved">Save</option><option value="under_review">Under review</option><option value="simulated_complete">Simulated payment</option><option value="cancelled">Cancel</option></select></div></article>`).join(''):'<p class="muted">No test records found.</p>';
   if(!$('adminNewAlert').textContent) adminMessage('Admin alerts are active. New test records are checked every 20 seconds. No real payment data is connected.','ok');
 }
+
+$('adminWalletTransferList').addEventListener('click',async e=>{
+ const button=e.target.closest('[data-wallet-review]');if(!button)return;
+ const {data:{session}}=await supabase.auth.getSession();
+ if(session?.user?.app_metadata?.role!=='admin'){adminMessage('Administrator access is required.');return;}
+ const decision=button.dataset.walletReview, transactionId=button.dataset.walletTransactionId;
+ if(!['approved','rejected'].includes(decision)||!transactionId)return;
+ let note=null;
+ if(decision==='rejected'){
+  note=window.prompt('Enter the reason for rejecting this wallet transfer (required):');
+  if(note===null)return;
+  note=note.trim();if(!note){adminMessage('A rejection reason is required. No change was made.');return;}
+ }else if(!window.confirm('Approve this wallet transfer? The recipient wallet will be credited with the reserved test funds.'))return;
+ button.disabled=true;
+ const {error}=await supabase.rpc('rf_admin_review_wallet_transfer',{p_transaction_id:transactionId,p_decision:decision,p_note:note});
+ if(error){adminMessage('Could not '+decision+' wallet transfer: '+error.message);button.disabled=false;return;}
+ await loadAdminOverview();
+ adminMessage(decision==='approved'?'Wallet transfer approved. The recipient wallet was credited with test funds.':'Wallet transfer rejected. The sender test funds were returned.','ok');
+ await loadWallet();
+});
 $('adminList').addEventListener('click',async e=>{
   const button=e.target.closest('[data-payment-hold-action]');if(!button)return;
   const {data:{session}}=await supabase.auth.getSession();
