@@ -1414,7 +1414,7 @@ $('authForm').addEventListener('submit',async e=>{e.preventDefault();clearMessag
    if(error)message(error.message);else if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){message('An account with this email may already exist. Please log in instead.')}else if(data.user){rfShowEmailOtpGate(data.user,email,'signup_email',true)}else message('Could not start email verification. Please check the email address and try again.');
   } else {
    const {data,error}=await supabase.auth.signInWithPassword({email,password});
-   if(error)message(error.message);else {localStorage.setItem('rf_temp_email_recovery',JSON.stringify({userId:data.user.id,expiresAt:Date.now()+7*24*60*60*1000}));await showDashboard(data.user,true);}
+   if(error)message(error.message);else {localStorage.setItem('rf_temp_email_recovery',JSON.stringify({userId:data.user.id,expiresAt:Date.now()+7*24*60*60*1000}));rfShowEmailOtpGate(data.user,email,'new_device',false);}
   }
  } catch(err){message('Something went wrong. Please try again.')} finally {btn.disabled=false}
 });
