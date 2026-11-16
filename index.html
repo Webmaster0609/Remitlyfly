@@ -956,7 +956,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <button class="tile" type="button" id="tileWallet" style="text-align:left;color:inherit"><span class="tile-icon">◉</span><b>My wallet</b></button>
   <button class="tile" type="button" id="tileTracking" style="text-align:left;color:inherit"><span class="tile-icon">◷</span><b>Transfer tracking</b></button>
   <button class="tile" type="button" id="tileRecipients" style="text-align:left;color:inherit"><span class="tile-icon">♙</span><b>Recipients</b></button>
-  <button class="tile" type="button" id="tileProfile" style="text-align:left;color:inherit"><span class="tile-icon">⚙</span><b>My profile</b><small id="profileEmail"></small></button>
+  <button class="tile" type="button" id="tileProfile" style="text-align:left;color:inherit"><span class="tile-icon">⚙</span><b>My profile</b></button>
  </div>
  <section class="profile-card" data-page="home" id="recentTransfers" aria-labelledby="recentTransfersHeading">
   <div class="quick-heading" style="margin-top:0"><div><h3 id="recentTransfersHeading">Recent test activity</h3><p class="muted">Your latest saved previews.</p></div><button class="link" type="button" id="viewAllHistory">View history</button></div>
@@ -1401,9 +1401,9 @@ async function showDashboard(user,deviceVerified=false){
   if(shell) shell.classList.add('dashboard-mode');
   $('authCard').style.display='none';$('dashboard').style.display='block';
   const meta=user.user_metadata||{};
-  const name=meta.full_name || user.email || 'Customer';
+  const name=meta.full_name || 'Customer';
   $('welcome').textContent='Welcome, '+name;
-  $('profileEmail').textContent=user.email||'Account profile';
+  
   $('profileName').value=meta.full_name||'';
   $('profileDateOfBirth').value=meta.date_of_birth||'';
   $('profileAddress').value=meta.address||'';
