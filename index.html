@@ -926,7 +926,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <div class="warning">TEST REQUEST ONLY — no payout is made and your wallet balance is not deducted. Provider names are for selection/testing only; RemitlyFly is not yet connected to these banks or wallets.</div>
    <form id="walletWithdrawForm">
     <div class="field"><label for="walletWithdrawAmount">Amount (USD test balance)</label><input id="walletWithdrawAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div>
-    <div class="field"><label for="walletWithdrawCountry">Destination country</label><select id="walletWithdrawCountry" required><option value="ET">Ethiopia</option><option value="KE">Kenya</option><option value="NG">Nigeria</option><option value="UG">Uganda</option></select></div>
+    <div class="field"><label for="walletWithdrawCountry">Destination country</label><select id="walletWithdrawCountry" required><option value="ET">Ethiopia</option><option value="KE">Kenya</option><option value="NG">Nigeria</option><option value="UG">Uganda</option><option value="TZ">Tanzania</option><option value="ZA">South Africa</option></select></div>
     <div class="field"><label for="walletWithdrawType">Payout method</label><select id="walletWithdrawType" required><option value="bank">Bank account</option><option value="mobile_wallet">Mobile money</option></select></div>
     <div class="field"><label for="walletWithdrawProvider">Bank or mobile money provider</label><select id="walletWithdrawProvider" required></select></div>
     <div class="field"><label for="walletWithdrawLabel">Account holder name or test label (no account number)</label><input id="walletWithdrawLabel" type="text" minlength="3" maxlength="80" placeholder="e.g. My own account" required></div>
@@ -1509,7 +1509,7 @@ async function loadWallet(){
  const {data:withdrawals,error:withdrawalError}=await supabase.from('wallet_withdrawal_requests').select('id,amount,currency,destination_type,destination_country,destination_provider,destination_label,status,created_at').order('created_at',{ascending:false}).limit(10);
  if(withdrawalError){$('walletWithdrawalList').innerHTML='<p class="muted">Could not load test withdrawal requests.</p>';}
  else if(!withdrawals?.length){$('walletWithdrawalList').innerHTML='<p class="muted">No test withdrawal requests yet.</p>';}
- else{$('walletWithdrawalList').innerHTML='<h5>Recent test withdrawal requests</h5>'+withdrawals.map(w=>'<div class="wallet-tx"><div><strong>'+escapeHtml(walletFormat(w.amount))+' · '+escapeHtml(w.destination_type==='bank'?'Bank account':'Mobile money')+' · '+escapeHtml(({ET:'Ethiopia',KE:'Kenya',NG:'Nigeria',UG:'Uganda'})[w.destination_country]||w.destination_country)+'</strong><small>'+escapeHtml(w.destination_provider)+' · '+escapeHtml(w.destination_label)+' · '+escapeHtml(new Date(w.created_at).toLocaleString())+'</small></div><span class="status-pill">'+escapeHtml(w.status.replaceAll('_',' '))+'</span></div>').join('');}
+ else{$('walletWithdrawalList').innerHTML='<h5>Recent test withdrawal requests</h5>'+withdrawals.map(w=>'<div class="wallet-tx"><div><strong>'+escapeHtml(walletFormat(w.amount))+' · '+escapeHtml(w.destination_type==='bank'?'Bank account':'Mobile money')+' · '+escapeHtml(({ET:'Ethiopia',KE:'Kenya',NG:'Nigeria',UG:'Uganda',TZ:'Tanzania',ZA:'South Africa'})[w.destination_country]||w.destination_country)+'</strong><small>'+escapeHtml(w.destination_provider)+' · '+escapeHtml(w.destination_label)+' · '+escapeHtml(new Date(w.created_at).toLocaleString())+'</small></div><span class="status-pill">'+escapeHtml(w.status.replaceAll('_',' '))+'</span></div>').join('');}
 }
 function walletShowProfile(person){
  walletModalRecipient=person;
@@ -1598,7 +1598,9 @@ const walletWithdrawProviders={
  ET:{bank:['Commercial Bank of Ethiopia','Awash Bank','Dashen Bank','Bank of Abyssinia','Cooperative Bank of Oromia','Hibret Bank','Wegagen Bank','Other bank (test only)'],mobile_wallet:['Telebirr','M-PESA Ethiopia','Kacha','Other mobile wallet (test only)']},
  KE:{bank:['KCB Bank Kenya','Equity Bank Kenya','Co-operative Bank of Kenya','Absa Bank Kenya','NCBA Bank Kenya','Diamond Trust Bank Kenya','I&M Bank Kenya','Other bank (test only)'],mobile_wallet:['M-PESA','Airtel Money','T-Kash','Other mobile wallet (test only)']},
  NG:{bank:['Access Bank','First Bank of Nigeria','Zenith Bank','United Bank for Africa (UBA)','Guaranty Trust Bank (GTBank)','First City Monument Bank (FCMB)','Fidelity Bank','Other bank (test only)'],mobile_wallet:['MTN MoMo','Airtel Money','SmartCash PSB','PalmPay','OPay','Other mobile wallet (test only)']},
- UG:{bank:['Stanbic Bank Uganda','Centenary Bank','DFCU Bank','Absa Bank Uganda','Equity Bank Uganda','Bank of Baroda Uganda','Other bank (test only)'],mobile_wallet:['MTN MoMo','Airtel Money','Other mobile wallet (test only)']}
+ UG:{bank:['Stanbic Bank Uganda','Centenary Bank','DFCU Bank','Absa Bank Uganda','Equity Bank Uganda','Bank of Baroda Uganda','Other bank (test only)'],mobile_wallet:['MTN MoMo','Airtel Money','Other mobile wallet (test only)']},
+ TZ:{bank:['NMB Bank','CRDB Bank','NBC Bank','Stanbic Bank Tanzania','Absa Bank Tanzania','Azania Bank','TCB Bank','Equity Bank Tanzania','Other bank (test only)'],mobile_wallet:['M-Pesa','Mixx by Yas (Tigo Pesa)','Airtel Money','HaloPesa','T-Pesa','Other mobile wallet (test only)']},
+ ZA:{bank:['ABSA','Capitec Bank','First National Bank (FNB)','Nedbank','Standard Bank','Investec','African Bank','Discovery Bank','Other bank (test only)'],mobile_wallet:['MTN MoMo','VodaPay','Telkom Pay','Other mobile wallet (test only)']}
 };
 function updateWalletWithdrawProviders(){
  const country=$('walletWithdrawCountry').value,type=$('walletWithdrawType').value;
@@ -1613,7 +1615,7 @@ $('walletWithdrawForm').addEventListener('submit',async e=>{
  const amount=Number($('walletWithdrawAmount').value),type=$('walletWithdrawType').value,country=$('walletWithdrawCountry').value,provider=$('walletWithdrawProvider').value,label=$('walletWithdrawLabel').value.trim();
  if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter a test withdrawal request between USD 0.01 and USD 5,000.');return;}
  if(!$('walletWithdrawOwn').checked){walletStatus('Confirm that the destination belongs to you.');return;}
- if(!confirm('Submit a TEST withdrawal request for '+walletFormat(amount)+' to '+provider+', '+({ET:'Ethiopia',KE:'Kenya',NG:'Nigeria',UG:'Uganda'})[country]+'? No money will be paid out or deducted.'))return;
+ if(!confirm('Submit a TEST withdrawal request for '+walletFormat(amount)+' to '+provider+', '+({ET:'Ethiopia',KE:'Kenya',NG:'Nigeria',UG:'Uganda',TZ:'Tanzania',ZA:'South Africa'})[country]+'? No money will be paid out or deducted.'))return;
  const button=$('walletWithdrawButton');button.disabled=true;
  try{
   const {data,error}=await supabase.rpc('rf_wallet_request_withdrawal',{p_amount:amount,p_destination_type:type,p_destination_country:country,p_destination_provider:provider,p_destination_label:label,p_confirm_ownership:$('walletWithdrawOwn').checked});
