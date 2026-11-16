@@ -2702,8 +2702,10 @@ $('adminWalletTransferList').addEventListener('click',async e=>{
  button.disabled=true;
  const {error}=await supabase.rpc('rf_admin_review_wallet_transfer',{p_transaction_id:transactionId,p_decision:decision,p_note:note});
  if(error){adminMessage('Could not '+decision+' wallet transfer: '+error.message);button.disabled=false;return;}
+ const {data:emailNotice,error:emailError}=await supabase.functions.invoke('notify-wallet-transfer-review',{body:{transaction_id:transactionId}});
  await loadAdminOverview();
- adminMessage(decision==='approved'?'Wallet transfer approved. The recipient wallet was credited with test funds.':'Wallet transfer rejected. The sender test funds were returned.','ok');
+ const actionText=decision==='approved'?'Wallet transfer approved. The recipient wallet was credited with test funds.':'Wallet transfer rejected. The sender test funds were returned.';
+ adminMessage(emailError||!emailNotice?.ok?actionText+' However, email alerts could not be sent to both users.':actionText+' Email alerts sent to both users.','ok');
  await loadWallet();
 });
 $('adminList').addEventListener('click',async e=>{
