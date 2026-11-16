@@ -852,10 +852,10 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <div class="field hidden" id="nameField"><label for="fullName">Full name</label><input id="fullName" autocomplete="name" placeholder="Your full name"></div>
   <div class="field" id="emailStep"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
   <button class="primary" id="emailContinue" type="button">Continue</button>
-  <div class="field hidden" id="passwordStep"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"><button class="link" id="backToEmail" type="button">← Back to email</button></div>
+  <div class="field hidden" id="passwordStep"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="8" placeholder="At least 8 characters"><button class="link" id="backToEmail" type="button">← Back to email</button></div>
   <div class="field hidden" id="confirmField"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Enter password again"></div>
-  <div class="rowline" id="loginOptions"><label><input type="checkbox" id="remember" checked> Keep me signed in</label><button class="link" id="forgot" type="button">Forgot password?</button></div>
-  <button class="primary" id="submitButton" type="submit">Log in</button>
+  <div class="rowline hidden" id="loginOptions"><label><input type="checkbox" id="remember" checked> Keep me signed in</label><button class="link" id="forgot" type="button">Forgot password?</button></div>
+  <button class="primary hidden" id="submitButton" type="submit">Log in</button>
  </form>
  <p class="fine">Account access is handled by Supabase. No remittance API, payment gateway, or real transfers are connected.</p>
  <div class="switch" id="switchLine">New to RemitlyFly? <button class="link" id="switchMode" type="button">Create an account</button></div>
