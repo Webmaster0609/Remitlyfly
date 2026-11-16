@@ -921,6 +921,19 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    </div>
   </div>
   <div class="wallet-panel" style="margin-top:14px">
+   <h4>Withdraw to your own account — test request</h4>
+   <p class="muted">Submit a simulated withdrawal request to a bank account or mobile wallet that belongs to you. Do not enter account numbers or passwords. Use a short label only.</p>
+   <div class="warning">TEST REQUEST ONLY — no payout is made and your wallet balance is not deducted. Account ownership is self-confirmed here, not independently verified.</div>
+   <form id="walletWithdrawForm">
+    <div class="field"><label for="walletWithdrawAmount">Amount (USD)</label><input id="walletWithdrawAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div>
+    <div class="field"><label for="walletWithdrawType">Your payout account type</label><select id="walletWithdrawType" required><option value="bank">My bank account</option><option value="mobile_wallet">My mobile wallet</option></select></div>
+    <div class="field"><label for="walletWithdrawLabel">Short account label (no full account number)</label><input id="walletWithdrawLabel" type="text" minlength="3" maxlength="80" placeholder="My bank account ending 1234" required></div>
+    <label class="wallet-check"><input id="walletWithdrawOwn" type="checkbox" required> I confirm this bank account or mobile wallet belongs to me.</label>
+    <button class="primary" type="submit" id="walletWithdrawButton">Submit test withdrawal request</button>
+   </form>
+   <div id="walletWithdrawalList" style="margin-top:12px"><p class="muted">Your test withdrawal requests will appear here.</p></div>
+  </div>
+  <div class="wallet-panel" style="margin-top:14px">
    <h4>Find a RemitlyFly user</h4><p class="muted">Enter an email address, @username, or phone number. A matching profile appears automatically.</p>
    <div class="field"><label for="walletSearch">Email, @username or phone number</label><input id="walletSearch" type="search" autocomplete="off" placeholder="name@example.com, @username or +1..."></div>
    <div id="walletSearchResults" aria-live="polite"></div>
@@ -1481,6 +1494,10 @@ async function loadWallet(){
   const cls=sign==='+'?'wallet-in':'wallet-out';
   return '<div class="wallet-tx"><div><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(new Date(t.created_at).toLocaleString())+' · '+escapeHtml(t.description||'Test wallet transaction')+'</small></div><strong class="'+cls+'">'+sign+walletFormat(t.amount)+'</strong></div>';
  }).join('');
+ const {data:withdrawals,error:withdrawalError}=await supabase.from('wallet_withdrawal_requests').select('id,amount,currency,destination_type,destination_label,status,created_at').order('created_at',{ascending:false}).limit(10);
+ if(withdrawalError){$('walletWithdrawalList').innerHTML='<p class="muted">Could not load test withdrawal requests.</p>';}
+ else if(!withdrawals?.length){$('walletWithdrawalList').innerHTML='<p class="muted">No test withdrawal requests yet.</p>';}
+ else{$('walletWithdrawalList').innerHTML='<h5>Recent test withdrawal requests</h5>'+withdrawals.map(w=>'<div class="wallet-tx"><div><strong>'+escapeHtml(walletFormat(w.amount))+' · '+escapeHtml(w.destination_type==='bank'?'Bank account':'Mobile wallet')+'</strong><small>'+escapeHtml(w.destination_label)+' · '+escapeHtml(new Date(w.created_at).toLocaleString())+'</small></div><span class="status-pill">'+escapeHtml(w.status.replaceAll('_',' '))+'</span></div>').join('');}
 }
 function walletShowProfile(person){
  walletModalRecipient=person;
@@ -1564,6 +1581,22 @@ $('walletProfileForm').addEventListener('submit',async e=>{
   const {error}=await supabase.from('wallet_profiles').update({username:username||null,allow_lookup:$('walletAllowLookup').checked}).eq('user_id',user.id);
   if(error)throw error;walletStatus('Wallet profile saved. Other users can find you using the enabled details.','ok');await loadWallet();
  }catch(err){walletStatus(err.message||'Could not save wallet profile.');}finally{button.disabled=false;}
+});
+$('walletWithdrawForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const amount=Number($('walletWithdrawAmount').value),type=$('walletWithdrawType').value,label=$('walletWithdrawLabel').value.trim();
+ if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter a test withdrawal request between USD 0.01 and USD 5,000.');return;}
+ if(!$('walletWithdrawOwn').checked){walletStatus('Confirm that the destination belongs to you.');return;}
+ if(!confirm('Submit a TEST withdrawal request for '+walletFormat(amount)+' to '+label+'? No money will be paid out or deducted.'))return;
+ const button=$('walletWithdrawButton');button.disabled=true;
+ try{
+  const {data,error}=await supabase.rpc('rf_wallet_request_withdrawal',{p_amount:amount,p_destination_type:type,p_destination_label:label,p_confirm_ownership:$('walletWithdrawOwn').checked});
+  if(error)throw error;
+  $('walletWithdrawForm').reset();
+  walletStatus('Test withdrawal request saved. No payout occurred and your wallet balance is unchanged.','ok');
+  await loadWallet();
+ }catch(err){walletStatus(err.message||'Could not submit the test withdrawal request.');}
+ finally{button.disabled=false;}
 });
 $('walletRefresh').addEventListener('click',loadWallet);
 
