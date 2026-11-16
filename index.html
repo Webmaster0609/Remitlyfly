@@ -22,6 +22,7 @@ h2{margin:0 0 8px;font-size:29px;letter-spacing:-.7px}.intro{margin:0 0 27px;col
 .profile-status.show{display:block}.profile-status.ok{background:#eaf8f1;color:#126b49}.profile-status.err{background:#fff0ef;color:#a52e27}
 .transfer-summary{background:#f3f8fc;border:1px solid var(--line);border-radius:12px;padding:14px;margin:14px 0}.transfer-summary div{display:flex;justify-content:space-between;gap:12px;padding:6px 0}.transfer-summary strong{overflow-wrap:anywhere}.warning{font-size:12px;line-height:1.5;color:#805600;background:#fff6dc;border:1px solid #f1dfaa;padding:12px;border-radius:10px;margin:12px 0}.nav-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 20px}.nav-actions button{flex:1}
 .hidden{display:none!important}
+.wallet-balance-card{display:grid;gap:7px;padding:22px;border-radius:20px;background:linear-gradient(135deg,#0757f9,#1648d8);color:#fff;margin:14px 0}.wallet-balance-card span,.wallet-balance-card small{color:#e1eaff;font-size:13px}.wallet-balance-card strong{font-size:clamp(30px,7vw,42px);letter-spacing:-1px}.wallet-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wallet-panel{background:#fff;border:1px solid #e0e8ef;border-radius:17px;padding:16px;min-width:0}.wallet-panel h4{font-size:17px;margin:0 0 7px}.wallet-panel p{font-size:13px;line-height:1.5}.wallet-share-row{display:grid;gap:4px;padding:9px 0;border-bottom:1px solid #e8eef4;overflow-wrap:anywhere}.wallet-share-row small{color:var(--muted)}.wallet-profile-result{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #dce6ef;border-radius:15px;background:#fff;margin:8px 0}.wallet-avatar{width:46px;height:46px;display:grid;place-items:center;border-radius:50%;background:#eaf2ff;color:#175b9a;font-weight:800;font-size:18px;flex:0 0 auto}.wallet-profile-result .wallet-person{flex:1;min-width:0}.wallet-profile-result .wallet-person strong{display:block;overflow-wrap:anywhere}.wallet-check{display:flex;align-items:flex-start;gap:9px;font-size:13px;margin:12px 0}.wallet-check input{width:18px;height:18px;flex:0 0 auto}.wallet-tx{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e8eef4}.wallet-tx strong{display:block}.wallet-tx small{display:block;color:var(--muted);margin-top:4px}.wallet-in{color:#13865e}.wallet-out{color:#a34c31}@media(max-width:650px){.wallet-columns{grid-template-columns:1fr}.wallet-panel{padding:14px}}
 #recipientList p{overflow-wrap:anywhere}#recipientList .secondary{min-width:76px}#recipientViews{margin:10px 0 14px}#recipientViews button{font-size:13px}
 @media(max-width:800px){.shell{grid-template-columns:1fr}.hero{min-height:auto;padding:24px 25px 28px}.hero h1{font-size:34px;margin:32px 0 10px}.hero p{font-size:15px}.benefits{grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}.hero-foot{margin-top:25px}.panel{padding:22px 14px 36px}.card{border-radius:17px}.brand{font-size:23px}}
 @media(max-width:520px){.stat-grid{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:span 2}}
@@ -880,6 +881,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  <div class="dash-head"><div class="dash-head-brand"><div class="dash-brand">RemitlyFly</div><div class="muted" id="welcome">Your account</div></div><div class="dash-head-controls"><button type="button" class="secondary app-menu-toggle" id="appMenuToggle" aria-controls="appMenu" aria-expanded="false" aria-label="Open navigation menu"><span class="menu-toggle-icon" aria-hidden="true">☰</span><span class="menu-toggle-label">Menu</span></button><button class="secondary" id="logout">Log out</button></div></div>
  <nav class="app-menu" id="appMenu" aria-label="Main dashboard menu">
   <button type="button" class="app-menu-item active" data-menu-target="dashboardTop" aria-current="page"><span>⌂</span>Home</button>
+  <button type="button" class="app-menu-item" data-menu-target="walletSection"><span>◉</span>Wallet</button>
   <button type="button" class="app-menu-item" data-menu-target="transferSection"><span>➤</span>Send</button>
   <button type="button" class="app-menu-item" data-menu-target="recipientsSection"><span>♙</span>Recipients</button>
   <button type="button" class="app-menu-item" data-menu-target="historySection"><span>▤</span>History</button>
@@ -900,9 +902,43 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <div class="stat"><small>Test previews</small><strong id="dashHistoryCount">—</strong></div>
   <div class="stat"><small>Total test amount (USD equivalent)</small><strong id="dashTotalAmount">$0</strong></div>
  </div>
+ <section class="profile-card" data-page="wallet" id="walletSection" aria-labelledby="walletHeading">
+  <h3 id="walletHeading">My RemitlyFly Wallet</h3>
+  <p class="muted">Top up a simulated test balance and send or receive test funds between RemitlyFly users.</p>
+  <div class="warning"><strong>TEST WALLET ONLY — NO REAL MONEY.</strong> Top-ups create simulated credits. Wallet transfers are database-recorded test transactions only. Deposits, withdrawals and real payments are disabled.</div>
+  <div class="wallet-balance-card"><span>Available test balance</span><strong id="walletBalance">USD 0.00</strong><small id="walletBalanceNote">Test wallet · USD</small></div>
+  <div id="walletStatus" class="profile-status" role="status" aria-live="polite"></div>
+  <div class="wallet-columns">
+   <div class="wallet-panel">
+    <h4>Top up test wallet</h4><p class="muted">Add simulated funds for testing. Maximum USD 5,000 per top-up.</p>
+    <form id="walletTopupForm"><div class="field"><label for="walletTopupAmount">Amount (USD)</label><input id="walletTopupAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="100.00" required></div><button class="primary" type="submit" id="walletTopupButton">Add test funds</button></form>
+   </div>
+   <div class="wallet-panel">
+    <h4>Receive money</h4><p class="muted">Share one of these details so another RemitlyFly user can find you.</p>
+    <div class="wallet-share-row"><small>Your registered email</small><strong id="walletOwnEmail">—</strong></div>
+    <div class="wallet-share-row"><small>Your RemitlyFly username</small><strong id="walletOwnUsername">@not-set</strong></div>
+    <p class="fine" style="text-align:left">You can also be found by your verified phone number when one is on your account and lookup is enabled.</p>
+   </div>
+  </div>
+  <div class="wallet-panel" style="margin-top:14px">
+   <h4>Find a RemitlyFly user</h4><p class="muted">Enter an email address, @username, or phone number. A matching profile appears automatically.</p>
+   <div class="field"><label for="walletSearch">Email, @username or phone number</label><input id="walletSearch" type="search" autocomplete="off" placeholder="name@example.com, @username or +1..."></div>
+   <div id="walletSearchResults" aria-live="polite"></div>
+   <div id="walletSendPanel" class="wallet-panel hidden" style="margin-top:12px;background:#f7fbff">
+    <h4>Send test money</h4><div id="walletSelectedProfile"></div>
+    <form id="walletSendForm"><div class="field"><label for="walletSendAmount">Amount (USD)</label><input id="walletSendAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div><button class="primary" type="submit" id="walletSendButton">Review and send test money</button></form>
+   </div>
+  </div>
+  <div class="wallet-panel" style="margin-top:14px">
+   <h4>Your wallet discovery settings</h4><p class="muted">Choose whether other signed-in users can find you by your registered email, username or verified phone.</p>
+   <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me</label><button class="secondary" type="submit" id="walletProfileSave">Save wallet profile</button></form>
+  </div>
+  <div class="wallet-panel" style="margin-top:14px"><h4>Wallet activity</h4><div id="walletTransactions"><p class="muted">Your wallet transactions will appear here.</p></div><button class="secondary" type="button" id="walletRefresh">Refresh wallet</button></div>
+ </section>
  <div class="quick-heading" data-page="home"><div><h3>Quick actions</h3><p class="muted">Your most-used tools, in one place.</p></div></div>
  <div class="tile-grid" data-page="home">
   <button class="tile" type="button" id="tileSend" style="text-align:left;color:inherit"><span class="tile-icon">➤</span><b>Send money</b><small>Build an illustrative test preview</small></button>
+  <button class="tile" type="button" id="tileWallet" style="text-align:left;color:inherit"><span class="tile-icon">◉</span><b>My wallet</b><small>Top up, send and receive test funds</small></button>
   <button class="tile" type="button" id="tileTracking" style="text-align:left;color:inherit"><span class="tile-icon">◷</span><b>Transfer tracking</b><small>Review saved test record statuses</small></button>
   <button class="tile" type="button" id="tileRecipients" style="text-align:left;color:inherit"><span class="tile-icon">♙</span><b>Recipients</b><small>Manage your saved recipients</small></button>
   <button class="tile" type="button" id="tileProfile" style="text-align:left;color:inherit"><span class="tile-icon">⚙</span><b>My profile</b><small id="profileEmail"></small></button>
@@ -1405,6 +1441,107 @@ $('rfLivePaymentsSwitch')?.addEventListener('change',async()=>{
 function profileMessage(text,type='err'){
   const el=$('profileStatus');el.textContent=text;el.className='profile-status show '+type;
 }
+
+/* RemitlyFly test wallet: balances and peer transfers are enforced by Supabase RPCs. */
+let walletSelectedRecipient=null, walletLookupTimer=null, walletLookupSequence=0;
+function walletStatus(text,type='err'){const el=$('walletStatus');if(el){el.textContent=text;el.className='profile-status show '+type;}}
+function walletFormat(value){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);}
+async function loadWallet(){
+ if(!supabase)return;
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)return;
+ $('walletOwnEmail').textContent=user.email||'Not available';
+ const [walletResult,profileResult,txResult]=await Promise.all([
+  supabase.from('wallets').select('balance,currency').eq('user_id',user.id).maybeSingle(),
+  supabase.from('wallet_profiles').select('username,allow_lookup').eq('user_id',user.id).maybeSingle(),
+  supabase.from('wallet_transactions').select('id,sender_user_id,receiver_user_id,transaction_type,amount,currency,description,created_at').order('created_at',{ascending:false}).limit(20)
+ ]);
+ if(walletResult.error){walletStatus('Could not load wallet balance: '+walletResult.error.message);return;}
+ $('walletBalance').textContent=walletFormat(walletResult.data?.balance||0);
+ $('walletBalanceNote').textContent='Test wallet · '+(walletResult.data?.currency||'USD')+' · no real funds';
+ if(profileResult.error){walletStatus('Could not load wallet profile: '+profileResult.error.message);return;}
+ $('walletUsername').value=profileResult.data?.username||'';
+ $('walletOwnUsername').textContent=profileResult.data?.username?'@'+profileResult.data.username:'Not set — choose a username below';
+ $('walletAllowLookup').checked=profileResult.data?.allow_lookup!==false;
+ if(txResult.error){$('walletTransactions').innerHTML='<p class="muted">Could not load wallet activity.</p>';return;}
+ const rows=txResult.data||[];
+ if(!rows.length){$('walletTransactions').innerHTML='<p class="muted">No wallet activity yet. Add test funds to begin.</p>';return;}
+ $('walletTransactions').innerHTML=rows.map(t=>{
+  const incoming=t.receiver_user_id===user.id;
+  const label=t.transaction_type==='test_topup'?'Test top-up':(incoming?'Received test money':'Sent test money');
+  const sign=t.transaction_type==='test_topup'||incoming?'+':'−';
+  const cls=sign==='+'?'wallet-in':'wallet-out';
+  return '<div class="wallet-tx"><div><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(new Date(t.created_at).toLocaleString())+' · '+escapeHtml(t.description||'Test wallet transaction')+'</small></div><strong class="'+cls+'">'+sign+walletFormat(t.amount)+'</strong></div>';
+ }).join('');
+}
+function walletRenderMatches(matches,query){
+ const box=$('walletSearchResults');
+ if(!matches.length){box.innerHTML='<p class="muted">No matching RemitlyFly user found. Check the details or ask them to enable wallet discovery.</p>';return;}
+ box.innerHTML=matches.map(p=>{
+  const name=escapeHtml(p.display_name||'RemitlyFly user');
+  const handle=p.username?'@'+escapeHtml(p.username):'RemitlyFly user';
+  const initial=escapeHtml((p.display_name||'R').trim().charAt(0).toUpperCase());
+  return '<div class="wallet-profile-result"><div class="wallet-avatar">'+initial+'</div><div class="wallet-person"><strong>'+name+'</strong><small class="muted">'+handle+' · RemitlyFly user</small><div><span class="status-pill">Account found</span></div></div><button type="button" class="secondary" data-wallet-recipient="'+escapeHtml(p.user_id)+'">Select</button></div>';
+ }).join('');
+ if(matches.length===1)box.querySelector('[data-wallet-recipient]')?.focus({preventScroll:true});
+}
+$('walletSearch').addEventListener('input',()=>{
+ clearTimeout(walletLookupTimer);
+ const query=$('walletSearch').value.trim();
+ const sequence=++walletLookupSequence;
+ walletSelectedRecipient=null;$('walletSendPanel').classList.add('hidden');
+ if(query.length<3){$('walletSearchResults').innerHTML=query?'<p class="muted">Enter at least 3 characters to search.</p>':'';return;}
+ $('walletSearchResults').innerHTML='<p class="muted">Finding RemitlyFly user…</p>';
+ walletLookupTimer=setTimeout(async()=>{
+  try{
+   const {data,error}=await supabase.rpc('rf_wallet_lookup',{p_query:query});
+   if(sequence!==walletLookupSequence)return;
+   if(error)throw error;
+   walletRenderMatches(data||[],query);
+  }catch(err){if(sequence===walletLookupSequence)$('walletSearchResults').innerHTML='<p class="profile-status show err">Could not search users: '+escapeHtml(err.message)+'</p>';}
+ },350);
+});
+$('walletSearchResults').addEventListener('click',async e=>{
+ const b=e.target.closest('[data-wallet-recipient]');if(!b)return;
+ const id=b.dataset.walletRecipient;
+ const {data,error}=await supabase.rpc('rf_wallet_lookup',{p_query:$('walletSearch').value.trim()});
+ if(error){walletStatus(error.message);return;}
+ const person=(data||[]).find(p=>p.user_id===id);
+ if(!person){walletStatus('This profile is no longer available. Search again.');return;}
+ walletSelectedRecipient=person;
+ $('walletSelectedProfile').innerHTML='<div class="wallet-profile-result"><div class="wallet-avatar">'+escapeHtml((person.display_name||'R').trim().charAt(0).toUpperCase())+'</div><div class="wallet-person"><strong>'+escapeHtml(person.display_name||'RemitlyFly user')+'</strong><small class="muted">'+(person.username?'@'+escapeHtml(person.username):'RemitlyFly user')+'</small></div></div>';
+ $('walletSendPanel').classList.remove('hidden');
+ $('walletSendAmount').focus({preventScroll:true});
+});
+$('walletTopupForm').addEventListener('submit',async e=>{
+ e.preventDefault();const amount=Number($('walletTopupAmount').value);const button=$('walletTopupButton');
+ if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter a test top-up between USD 0.01 and USD 5,000.');return;}
+ button.disabled=true;
+ try{const {data,error}=await supabase.rpc('rf_wallet_test_topup',{p_amount:amount});if(error)throw error;
+  $('walletTopupAmount').value='';walletStatus('Test top-up added. No real money was deposited. New balance: '+walletFormat(data.balance),'ok');await loadWallet();
+ }catch(err){walletStatus(err.message||'Could not add test funds.');}finally{button.disabled=false;}
+});
+$('walletSendForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!walletSelectedRecipient){walletStatus('Find and select a RemitlyFly user first.');return;}
+ const amount=Number($('walletSendAmount').value);if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter an amount between USD 0.01 and USD 5,000.');return;}
+ if(!confirm('Send '+walletFormat(amount)+' in TEST funds to '+(walletSelectedRecipient.display_name||'this user')+'? No real money will move.'))return;
+ const button=$('walletSendButton');button.disabled=true;
+ try{const {data,error}=await supabase.rpc('rf_wallet_send',{p_recipient_user_id:walletSelectedRecipient.user_id,p_amount:amount});if(error)throw error;
+  $('walletSendAmount').value='';walletStatus('Test wallet transfer recorded. The recipient wallet has been credited. Your new balance is '+walletFormat(data.sender_balance)+'. No real money moved.','ok');
+  $('walletSendPanel').classList.add('hidden');$('walletSearch').value='';$('walletSearchResults').innerHTML='';walletSelectedRecipient=null;await loadWallet();
+ }catch(err){walletStatus(err.message||'Could not send test money.');}finally{button.disabled=false;}
+});
+$('walletProfileForm').addEventListener('submit',async e=>{
+ e.preventDefault();const button=$('walletProfileSave');let username=$('walletUsername').value.trim().replace(/^@/,'').toLowerCase();
+ if(username&&!/^[a-z0-9_]{3,24}$/.test(username)){walletStatus('Username must be 3–24 characters using letters, numbers or underscores.');return;}
+ button.disabled=true;
+ try{const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Please sign in again.');
+  const {error}=await supabase.from('wallet_profiles').update({username:username||null,allow_lookup:$('walletAllowLookup').checked}).eq('user_id',user.id);
+  if(error)throw error;walletStatus('Wallet profile saved. Other users can find you using the enabled details.','ok');await loadWallet();
+ }catch(err){walletStatus(err.message||'Could not save wallet profile.');}finally{button.disabled=false;}
+});
+$('walletRefresh').addEventListener('click',loadWallet);
+
 function showAuth(){ const shell=document.querySelector('.shell');shell.classList.remove('dashboard-mode','intro-mode','otp-mode');shell.classList.add('login-mode');$('otpCard').classList.add('hidden');$('otpCard').style.setProperty('display','none','important');$('authCard').style.removeProperty('display');$('authCard').style.display='block';$('dashboard').classList.remove('account-pending');$('dashboard').style.display='none' }
 $('pendingRefresh').addEventListener('click',async()=>{const {data:{user}}=await supabase.auth.getUser();if(user)await showDashboard(user);});
 $('loginTab').addEventListener('click',()=>setMode('login'));$('signupTab').addEventListener('click',()=>setMode('signup'));$('switchLine').addEventListener('click',(e)=>{if(e.target && e.target.id==='switchMode')setMode(mode==='login'?'signup':'login')}); 
@@ -2632,9 +2769,9 @@ refreshTransferSummary();
 (function installMainMenu(){
  const menu=document.getElementById('appMenu');
  if(!menu)return;
- const labels={home:'Home',send:'Send',recipients:'Recipients',history:'History',tracking:'Tracking',profile:'Profile',rates:'Rates'};
+ const labels={home:'Home',wallet:'Wallet',send:'Send',recipients:'Recipients',history:'History',tracking:'Tracking',profile:'Profile',rates:'Rates'};
  function showPage(page,button){
-  const pageSections=['transferSection','historySection','trackingSection','recipientsSection','profileCard'];
+  const pageSections=['walletSection','transferSection','historySection','trackingSection','recipientsSection','profileCard'];
   document.querySelectorAll('[data-page]').forEach(el=>{
    const visible=el.dataset.page===page;
    el.classList.toggle('page-hidden',!visible);
@@ -2654,10 +2791,11 @@ refreshTransferSummary();
   if(feedback){feedback.textContent='Opened '+(labels[page]||'page')+'.';feedback.style.display='block';}
   if(page==='history'||page==='tracking'){if(typeof loadTransferHistory==='function')loadTransferHistory();}
   if(page==='recipients'&&typeof loadRecipients==='function')loadRecipients();
+   if(page==='wallet'&&typeof loadWallet==='function')loadWallet();
   const first=document.querySelector('[data-page="'+page+'"]');
   if(first)first.scrollIntoView({behavior:'smooth',block:'start'});
  }
- function pageForTarget(id){return ({dashboardTop:'home',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile'})[id]||'home';}
+ function pageForTarget(id){return ({dashboardTop:'home',walletSection:'wallet',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile'})[id]||'home';}
  menu.addEventListener('click',event=>{
   const button=event.target.closest('[data-menu-target]');
   if(!button)return;
@@ -2665,8 +2803,8 @@ refreshTransferSummary();
  });
  document.addEventListener('click',event=>{
   const button=event.target.closest('button');if(!button)return;
-  const map={tileSend:'send',heroSend:'send',goTransfer:'send',tileRecipients:'recipients',heroRecipients:'recipients',goRecipients:'recipients',tileTracking:'tracking',goHistory:'history',viewAllHistory:'history',tileProfile:'profile'};
-  if(map[button.id]){const menuButton=menu.querySelector('[data-menu-target="'+({send:'transferSection',recipients:'recipientsSection',history:'historySection',tracking:'trackingSection',profile:'profileCard'}[map[button.id]]||'dashboardTop')+'"]');showPage(map[button.id],menuButton);}
+  const map={tileSend:'send',heroSend:'send',goTransfer:'send',tileWallet:'wallet',tileRecipients:'recipients',heroRecipients:'recipients',goRecipients:'recipients',tileTracking:'tracking',goHistory:'history',viewAllHistory:'history',tileProfile:'profile'};
+  if(map[button.id]){const menuButton=menu.querySelector('[data-menu-target="'+({wallet:'walletSection',send:'transferSection',recipients:'recipientsSection',history:'historySection',tracking:'trackingSection',profile:'profileCard'}[map[button.id]]||'dashboardTop')+'"]');showPage(map[button.id],menuButton);}
  });
  // Start with a clean Home page instead of showing every section in one long scroll.
  showPage('home',menu.querySelector('[data-menu-target="dashboardTop"]'));
