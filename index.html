@@ -980,7 +980,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <div class="field"><label for="transferPaymentSource">How would you like to pay?</label><select id="transferPaymentSource" required><option value="" selected disabled>Choose payment method</option><option value="sandbox_card_demo">Card payment (sandbox demo)</option><option value="wallet_test_preview">My RemitlyFly wallet balance (test)</option></select><p id="transferPaymentSourceStatus" class="fine" aria-live="polite"></p></div>
    <select id="receivingBank" hidden aria-hidden="true"><option value="">Loading banks…</option></select>
    <div class="field"><label for="demoRate">Reference exchange rate (<span id="destinationCurrencyLabel">ETB</span> per <span id="rateCurrencyLabel">USD</span>)</label><input id="demoRate" type="number" min="0.01" max="100000" step="any" inputmode="decimal" value="150.00" required><small class="muted">Live published bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.</small></div>
-   <div class="field"><label for="demoFee">Fee (3%) (<span id="feeCurrencyLabel">USD</span>)</label><input id="demoFee" type="number" min="0" max="1000" step="0.01" value="2.99" required></div>
+   <div class="field"><label for="demoFee">Fee (3%) (<span id="feeCurrencyLabel">USD</span>)</label><input id="demoFee" type="number" min="0" max="1000" step="0.01" value="0.00" readonly aria-readonly="true"></div>
    <div class="transfer-summary" aria-live="polite"><div><span>Transfer amount</span><strong id="summarySend">$0.00 USD</strong></div><div><span>Fee</span><strong id="summaryFee">$2.99 USD</strong></div><div><span>Total paid (example)</span><strong id="summaryTotal">$2.99 USD</strong></div><div><span>Recipient receives (example)</span><strong id="summaryReceive">ETB 0.00</strong></div><div><span>Example rate</span><strong id="summaryRate">1 USD = 150.00 ETB</strong></div></div>
    <button class="primary" type="submit" id="reviewTransferButton">Review test transfer</button>
    <div id="transferStatus" class="profile-status" role="status" aria-live="polite"></div>
@@ -2096,7 +2096,8 @@ function refreshTransferSummary() {
   const currency = currentCurrency();
   const amount = Math.max(0, Number($('sendAmount').value) || 0);
   const rate = Math.max(0, Number($('demoRate').value) || 0);
-  const fee = Math.max(0, Number($('demoFee').value) || 0);
+  const fee = Math.round((amount * 0.03 + Number.EPSILON) * 100) / 100;
+  $('demoFee').value = fee.toFixed(2);
   $('summarySend').textContent = money(amount, currency);
   $('summaryFee').textContent = money(fee, currency);
   $('summaryTotal').textContent = money(amount + fee, currency);
