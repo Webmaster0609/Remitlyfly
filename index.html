@@ -875,7 +875,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <h2>Account awaiting approval</h2>
    <p>Your email registration is recorded. An administrator must review and approve your RemitlyFly account before you can use the dashboard features.</p>
    <p class="muted">You can sign out and return later. If you need help, contact support@remitlyfly.com.</p>
-   <button class="secondary" type="button" id="pendingRefresh">Check approval status</button>
+   
    <p id="pendingApprovalStatus" class="profile-status" role="status" aria-live="polite"></p>
   </section>
  <div class="dash-head"><div class="dash-head-brand"><div class="dash-brand">RemitlyFly</div><div class="muted" id="welcome">Your account</div></div><div class="dash-head-controls"><button type="button" class="secondary app-menu-toggle" id="appMenuToggle" aria-controls="appMenu" aria-expanded="false" aria-label="Open navigation menu"><span class="menu-toggle-icon" aria-hidden="true">☰</span><span class="menu-toggle-label">Menu</span></button><button class="secondary" id="logout">Log out</button></div></div>
@@ -1015,7 +1015,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
 
   <div id="historyStatus" class="profile-status" role="status" aria-live="polite"></div>
   <div id="historyList" aria-live="polite"><p class="muted">Sign in to load your test history.</p></div>
-  <button class="secondary" type="button" id="refreshHistory">Refresh history</button>
+  
  </section>
  <section class="profile-card" data-page="tracking" id="trackingSection" aria-labelledby="trackingHeading">
   <h3 id="trackingHeading">Transfer tracking</h3><p class="tracking-intro"></p>
@@ -1056,7 +1056,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <button type="button" id="rfCreateApiKey">Create test API key</button>
    <div id="rfApiKeyResult" class="warning hidden" role="status" aria-live="polite" style="overflow-wrap:anywhere;margin-top:12px"></div>
    <div id="rfApiKeyList" style="margin-top:14px"><p class="muted">API keys will appear here after loading.</p></div>
-   <button class="secondary" type="button" id="rfRefreshApiKeys">Refresh API keys</button>
+   
    <p class="fine" style="text-align:left;margin-top:12px">TEST KEYS ONLY. These keys cannot move real money. Keep the full key private; only its prefix is listed after creation.</p>
   </div>
 
@@ -1120,7 +1120,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <p class="fine" style="text-align:left">Keep your key private. If it is exposed, revoke it from the API key management area and create a replacement. These examples are for developer testing only; no live payout partners, licences, or real-money capability are implied.</p>
   </section>
   <div class="stat-grid"><div class="stat"><small>Test records</small><strong id="adminRecordCount">—</strong></div><div class="stat"><small>Unique accounts</small><strong id="adminUserCount">—</strong></div><div class="stat"><small>Simulated send total</small><strong id="adminTotalAmount">$0</strong></div></div>
-  <button class="secondary" type="button" id="refreshAdmin">Refresh admin data</button>
+  
   <div id="adminList"><p class="muted">Admin data has not been loaded.</p></div>
  </section>
  <section class="profile-card" data-page="recipients" id="recipientsSection" aria-labelledby="recipientsHeading">
@@ -1716,7 +1716,7 @@ $('walletWithdrawForm').addEventListener('submit',async e=>{
 });
 
 function showAuth(){ const shell=document.querySelector('.shell');shell.classList.remove('dashboard-mode','intro-mode','otp-mode');shell.classList.add('login-mode');$('otpCard').classList.add('hidden');$('otpCard').style.setProperty('display','none','important');$('authCard').style.removeProperty('display');$('authCard').style.display='block';$('dashboard').classList.remove('account-pending');$('dashboard').style.display='none' }
-$('pendingRefresh').addEventListener('click',async()=>{const {data:{user}}=await supabase.auth.getUser();if(user)await showDashboard(user);});
+
 $('loginTab').addEventListener('click',()=>setMode('login'));$('signupTab').addEventListener('click',()=>setMode('signup'));$('switchLine').addEventListener('click',(e)=>{if(e.target && e.target.id==='switchMode')setMode(mode==='login'?'signup':'login')}); 
 $('forgot').addEventListener('click',async()=>{clearMessage();if(!configured){message('Setup is not finished. Add your Supabase project URL and public key first.');return}if(!supabase){message('Could not load the authentication service. Check your internet connection and reload the page.');return}const email=$('email').value.trim();if(!email){message('Enter your email address first.');return}const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});if(error)message(error.message);else message('If this email belongs to an account, password recovery instructions will be sent. Check your inbox.','ok')});
 $('authForm').addEventListener('submit',async e=>{e.preventDefault();const authShell=document.querySelector('.shell');if(authShell){authShell.classList.remove('intro-mode','dashboard-mode','otp-mode');authShell.classList.add('login-mode');} $('authCard').style.display='block';$('dashboard').style.display='none';$('otpCard').classList.add('hidden');$('otpCard').style.setProperty('display','none','important');clearMessage();if(!configured){message('Authentication is not configured yet. Add your Supabase project URL and public key.');return}if(!supabase){message('Could not load the authentication service. Check your internet connection and reload the page.');return}
@@ -2738,7 +2738,7 @@ $('rfCreateApiKey')?.addEventListener('click',async()=>{
   }catch(e){result.textContent=e.message;}
   finally{btn.disabled=false;}
 });
-$('rfRefreshApiKeys')?.addEventListener('click',rfLoadApiKeys);
+
 $('rfApiKeyList')?.addEventListener('click',async e=>{
   const btn=e.target.closest('[data-rf-revoke-key]');if(!btn)return;
   if(!confirm('Revoke this test API key? Apps using it will no longer authenticate.'))return;
@@ -2747,7 +2747,7 @@ $('rfApiKeyList')?.addEventListener('click',async e=>{
   catch(err){alert(err.message);btn.disabled=false;}
 });
 
-$('refreshAdmin').addEventListener('click',loadAdminOverview);
+
 $('adminAccountList').addEventListener('click',async e=>{
   const button=e.target.closest('[data-account-action]');if(!button)return;
   const {data:{session}}=await supabase.auth.getSession();
@@ -2897,6 +2897,9 @@ $('finishReview').addEventListener('click', async () => {
 });
 // Refresh transfer history automatically while the page is visible.
 setInterval(()=>{if(!document.hidden)loadTransferHistory();},30000);
+// Keep admin data and API-key listings current automatically while the dashboard is visible.
+setInterval(()=>{if(!document.hidden&&$('adminSection')&&!$('adminSection').classList.contains('hidden'))loadAdminOverview();},60000);
+
 $('goHistory').addEventListener('click',()=>{ $('historySection').scrollIntoView({behavior:'smooth',block:'start'}); loadTransferHistory(); });
 $('tileSend').addEventListener('click',()=> $('transferSection').scrollIntoView({behavior:'smooth',block:'start'}));
 $('heroSend').addEventListener('click',()=> $('transferSection').scrollIntoView({behavior:'smooth',block:'start'}));
