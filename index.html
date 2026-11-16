@@ -22,7 +22,7 @@ h2{margin:0 0 8px;font-size:29px;letter-spacing:-.7px}.intro{margin:0 0 27px;col
 .profile-status.show{display:block}.profile-status.ok{background:#eaf8f1;color:#126b49}.profile-status.err{background:#fff0ef;color:#a52e27}
 .transfer-summary{background:#f3f8fc;border:1px solid var(--line);border-radius:12px;padding:14px;margin:14px 0}.transfer-summary div{display:flex;justify-content:space-between;gap:12px;padding:6px 0}.transfer-summary strong{overflow-wrap:anywhere}.warning{font-size:12px;line-height:1.5;color:#805600;background:#fff6dc;border:1px solid #f1dfaa;padding:12px;border-radius:10px;margin:12px 0}.nav-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 20px}.nav-actions button{flex:1}
 .hidden{display:none!important}
-.wallet-balance-card{display:grid;gap:7px;padding:22px;border-radius:20px;background:linear-gradient(135deg,#0757f9,#1648d8);color:#fff;margin:14px 0}.wallet-balance-card span,.wallet-balance-card small{color:#e1eaff;font-size:13px}.wallet-balance-card strong{font-size:clamp(30px,7vw,42px);letter-spacing:-1px}.wallet-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wallet-panel{background:#fff;border:1px solid #e0e8ef;border-radius:17px;padding:16px;min-width:0}.wallet-panel h4{font-size:17px;margin:0 0 7px}.wallet-panel p{font-size:13px;line-height:1.5}.wallet-share-row{display:grid;gap:4px;padding:9px 0;border-bottom:1px solid #e8eef4;overflow-wrap:anywhere}.wallet-share-row small{color:var(--muted)}.wallet-profile-result{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #dce6ef;border-radius:15px;background:#fff;margin:8px 0}.wallet-avatar{width:46px;height:46px;display:grid;place-items:center;border-radius:50%;background:#eaf2ff;color:#175b9a;font-weight:800;font-size:18px;flex:0 0 auto}.wallet-profile-result .wallet-person{flex:1;min-width:0}.wallet-profile-result .wallet-person strong{display:block;overflow-wrap:anywhere}.wallet-check{display:flex;align-items:flex-start;gap:9px;font-size:13px;margin:12px 0}.wallet-check input{width:18px;height:18px;flex:0 0 auto}.wallet-tx{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e8eef4}.wallet-tx strong{display:block}.wallet-tx small{display:block;color:var(--muted);margin-top:4px}.wallet-in{color:#13865e}.wallet-out{color:#a34c31}@media(max-width:650px){.wallet-columns{grid-template-columns:1fr}.wallet-panel{padding:14px}}
+.wallet-profile-modal{position:fixed;inset:0;z-index:1000;background:#102b4699;display:flex;align-items:center;justify-content:center;padding:18px}.wallet-profile-modal-card{width:min(100%,420px);background:#fff;border-radius:22px;padding:24px;box-shadow:0 22px 70px #001d3d40}.wallet-profile-modal-card h4{font-size:22px;margin:0 0 6px}.wallet-profile-modal-card .wallet-avatar{margin-top:16px}.wallet-balance-card{display:grid;gap:7px;padding:22px;border-radius:20px;background:linear-gradient(135deg,#0757f9,#1648d8);color:#fff;margin:14px 0}.wallet-balance-card span,.wallet-balance-card small{color:#e1eaff;font-size:13px}.wallet-balance-card strong{font-size:clamp(30px,7vw,42px);letter-spacing:-1px}.wallet-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wallet-panel{background:#fff;border:1px solid #e0e8ef;border-radius:17px;padding:16px;min-width:0}.wallet-panel h4{font-size:17px;margin:0 0 7px}.wallet-panel p{font-size:13px;line-height:1.5}.wallet-share-row{display:grid;gap:4px;padding:9px 0;border-bottom:1px solid #e8eef4;overflow-wrap:anywhere}.wallet-share-row small{color:var(--muted)}.wallet-profile-result{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #dce6ef;border-radius:15px;background:#fff;margin:8px 0}.wallet-avatar{width:46px;height:46px;display:grid;place-items:center;border-radius:50%;background:#eaf2ff;color:#175b9a;font-weight:800;font-size:18px;flex:0 0 auto}.wallet-profile-result .wallet-person{flex:1;min-width:0}.wallet-profile-result .wallet-person strong{display:block;overflow-wrap:anywhere}.wallet-check{display:flex;align-items:flex-start;gap:9px;font-size:13px;margin:12px 0}.wallet-check input{width:18px;height:18px;flex:0 0 auto}.wallet-tx{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e8eef4}.wallet-tx strong{display:block}.wallet-tx small{display:block;color:var(--muted);margin-top:4px}.wallet-in{color:#13865e}.wallet-out{color:#a34c31}@media(max-width:650px){.wallet-columns{grid-template-columns:1fr}.wallet-panel{padding:14px}}
 #recipientList p{overflow-wrap:anywhere}#recipientList .secondary{min-width:76px}#recipientViews{margin:10px 0 14px}#recipientViews button{font-size:13px}
 @media(max-width:800px){.shell{grid-template-columns:1fr}.hero{min-height:auto;padding:24px 25px 28px}.hero h1{font-size:34px;margin:32px 0 10px}.hero p{font-size:15px}.benefits{grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}.hero-foot{margin-top:25px}.panel{padding:22px 14px 36px}.card{border-radius:17px}.brand{font-size:23px}}
 @media(max-width:520px){.stat-grid{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:span 2}}
@@ -924,6 +924,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <h4>Find a RemitlyFly user</h4><p class="muted">Enter an email address, @username, or phone number. A matching profile appears automatically.</p>
    <div class="field"><label for="walletSearch">Email, @username or phone number</label><input id="walletSearch" type="search" autocomplete="off" placeholder="name@example.com, @username or +1..."></div>
    <div id="walletSearchResults" aria-live="polite"></div>
+   <div id="walletProfileModal" class="wallet-profile-modal hidden" role="dialog" aria-modal="true" aria-labelledby="walletModalName"><div class="wallet-profile-modal-card"><button type="button" class="secondary" id="walletModalClose" style="float:right">Close</button><div class="wallet-avatar" style="width:58px;height:58px;font-size:23px;margin:8px 0 14px" id="walletModalAvatar">R</div><h4 id="walletModalName">RemitlyFly user</h4><p class="muted" id="walletModalHandle">@username</p><span class="status-pill">RemitlyFly account found</span><p class="muted" style="margin-top:14px">Check this profile before sending. Email, phone number and wallet balance are kept private.</p><button type="button" class="primary" id="walletModalContinue" style="margin-top:12px">Continue to send money</button></div></div>
    <div id="walletSendPanel" class="wallet-panel hidden" style="margin-top:12px;background:#f7fbff">
     <h4>Send test money</h4><div id="walletSelectedProfile"></div>
     <form id="walletSendForm"><div class="field"><label for="walletSendAmount">Amount (USD)</label><input id="walletSendAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div><button class="primary" type="submit" id="walletSendButton">Review and send test money</button></form>
@@ -1443,7 +1444,7 @@ function profileMessage(text,type='err'){
 }
 
 /* RemitlyFly test wallet: balances and peer transfers are enforced by Supabase RPCs. */
-let walletSelectedRecipient=null, walletLookupTimer=null, walletLookupSequence=0, walletRealtimeChannel=null;
+let walletSelectedRecipient=null, walletModalRecipient=null, walletLookupTimer=null, walletLookupSequence=0, walletRealtimeChannel=null;
 function walletStatus(text,type='err'){const el=$('walletStatus');if(el){el.textContent=text;el.className='profile-status show '+type;}}
 function walletFormat(value){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);}
 async function loadWallet(){
@@ -1481,22 +1482,41 @@ async function loadWallet(){
   return '<div class="wallet-tx"><div><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(new Date(t.created_at).toLocaleString())+' · '+escapeHtml(t.description||'Test wallet transaction')+'</small></div><strong class="'+cls+'">'+sign+walletFormat(t.amount)+'</strong></div>';
  }).join('');
 }
+function walletShowProfile(person){
+ walletModalRecipient=person;
+ $('walletModalAvatar').textContent=(person.display_name||'R').trim().charAt(0).toUpperCase();
+ $('walletModalName').textContent=person.display_name||'RemitlyFly user';
+ $('walletModalHandle').textContent=person.username?'@'+person.username:'RemitlyFly user';
+ $('walletProfileModal').classList.remove('hidden');
+}
 function walletRenderMatches(matches,query){
  const box=$('walletSearchResults');
  if(!matches.length){box.innerHTML='<p class="muted">No matching RemitlyFly user found. Check the details or ask them to enable wallet discovery.</p>';return;}
+ if(matches.length===1){
+  box.innerHTML='<p class="profile-status show ok">RemitlyFly profile found. Opening profile…</p>';
+  walletShowProfile(matches[0]);
+  return;
+ }
  box.innerHTML=matches.map(p=>{
   const name=escapeHtml(p.display_name||'RemitlyFly user');
   const handle=p.username?'@'+escapeHtml(p.username):'RemitlyFly user';
   const initial=escapeHtml((p.display_name||'R').trim().charAt(0).toUpperCase());
-  return '<div class="wallet-profile-result"><div class="wallet-avatar">'+initial+'</div><div class="wallet-person"><strong>'+name+'</strong><small class="muted">'+handle+' · RemitlyFly user</small><div><span class="status-pill">Account found</span></div></div><button type="button" class="secondary" data-wallet-recipient="'+escapeHtml(p.user_id)+'">Select</button></div>';
+  return '<div class="wallet-profile-result"><div class="wallet-avatar">'+initial+'</div><div class="wallet-person"><strong>'+name+'</strong><small class="muted">'+handle+' · RemitlyFly user</small></div><button type="button" class="secondary" data-wallet-recipient="'+escapeHtml(p.user_id)+'">View profile</button></div>';
  }).join('');
- if(matches.length===1)box.querySelector('[data-wallet-recipient]')?.focus({preventScroll:true});
 }
+$('walletModalClose').addEventListener('click',()=>{$('walletProfileModal').classList.add('hidden');walletModalRecipient=null;});
+$('walletProfileModal').addEventListener('click',e=>{if(e.target===$('walletProfileModal')){$('walletProfileModal').classList.add('hidden');walletModalRecipient=null;}});
+$('walletModalContinue').addEventListener('click',()=>{
+ if(!walletModalRecipient)return;
+ walletSelectedRecipient=walletModalRecipient;
+ $('walletSelectedProfile').innerHTML='<div class="wallet-profile-result"><div class="wallet-avatar">'+escapeHtml((walletSelectedRecipient.display_name||'R').trim().charAt(0).toUpperCase())+'</div><div class="wallet-person"><strong>'+escapeHtml(walletSelectedRecipient.display_name||'RemitlyFly user')+'</strong><small class="muted">'+(walletSelectedRecipient.username?'@'+escapeHtml(walletSelectedRecipient.username):'RemitlyFly user')+'</small></div></div>';
+ $('walletProfileModal').classList.add('hidden');$('walletSendPanel').classList.remove('hidden');$('walletSendAmount').focus({preventScroll:true});
+});
 $('walletSearch').addEventListener('input',()=>{
  clearTimeout(walletLookupTimer);
  const query=$('walletSearch').value.trim();
  const sequence=++walletLookupSequence;
- walletSelectedRecipient=null;$('walletSendPanel').classList.add('hidden');
+ walletSelectedRecipient=null;walletModalRecipient=null;$('walletProfileModal').classList.add('hidden');$('walletSendPanel').classList.add('hidden');
  if(query.length<3){$('walletSearchResults').innerHTML=query?'<p class="muted">Enter at least 3 characters to search.</p>':'';return;}
  $('walletSearchResults').innerHTML='<p class="muted">Finding RemitlyFly user…</p>';
  walletLookupTimer=setTimeout(async()=>{
@@ -1515,11 +1535,9 @@ $('walletSearchResults').addEventListener('click',async e=>{
  if(error){walletStatus(error.message);return;}
  const person=(data||[]).find(p=>p.user_id===id);
  if(!person){walletStatus('This profile is no longer available. Search again.');return;}
- walletSelectedRecipient=person;
- $('walletSelectedProfile').innerHTML='<div class="wallet-profile-result"><div class="wallet-avatar">'+escapeHtml((person.display_name||'R').trim().charAt(0).toUpperCase())+'</div><div class="wallet-person"><strong>'+escapeHtml(person.display_name||'RemitlyFly user')+'</strong><small class="muted">'+(person.username?'@'+escapeHtml(person.username):'RemitlyFly user')+'</small></div></div>';
- $('walletSendPanel').classList.remove('hidden');
- $('walletSendAmount').focus({preventScroll:true});
+ walletShowProfile(person);
 });
+
 $('walletTopupForm').addEventListener('submit',async e=>{
  e.preventDefault();const amount=Number($('walletTopupAmount').value);const button=$('walletTopupButton');
  if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter a test top-up between USD 0.01 and USD 5,000.');return;}
