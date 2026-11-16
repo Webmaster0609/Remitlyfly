@@ -1296,7 +1296,7 @@ async function rfVerifyDeviceOtp(){
     if(!trustData?.trusted)throw new Error('Email verified, but this device could not be saved. Please try again.');
     rfOtpVerificationInProgress=false;rfOtpSessionVerified=false;
     try{sessionStorage.removeItem('rf_pending_email_otp');}catch(e){}
-    $('otpCard').classList.add('hidden');
+    $('otpCard').classList.add('hidden');$('otpCard').style.setProperty('display','none','important');
     const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');
     await showDashboard(user,true);
   }catch(err){rfOtpVerificationInProgress=false;rfOtpMessage(err.message||'The code could not be verified. Please try again.');}
@@ -1310,8 +1310,9 @@ async function showDashboard(user,deviceVerified=false){
   let recoveryAllowed=false;
   try{const recovery=JSON.parse(localStorage.getItem('rf_temp_email_recovery')||'null');recoveryAllowed=!!(recovery&&recovery.userId===user.id&&recovery.expiresAt>Date.now());if(!recoveryAllowed&&recovery)localStorage.removeItem('rf_temp_email_recovery');}catch(e){localStorage.removeItem('rf_temp_email_recovery');}
   if(!deviceVerified && !recoveryAllowed && !(await rfEnsureTrustedDevice(user)))return;
-  const {data:approval,error:approvalError}=await supabase.from('account_approvals').select('status').eq('user_id',user.id).maybeSingle();
+  $('otpCard').classList.add('hidden');$('otpCard').style.setProperty('display','none','important');
   const shell=document.querySelector('.shell');
+  const {data:approval,error:approvalError}=await supabase.from('account_approvals').select('status').eq('user_id',user.id).maybeSingle();
   function showApprovalGate(title,statusText){
     $('dashboard').classList.add('account-pending');
     $('accountApprovalGate').classList.remove('hidden');
