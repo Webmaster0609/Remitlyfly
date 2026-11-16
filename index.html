@@ -2544,7 +2544,7 @@ async function loadTransferHistory() {
   } catch (err) {
     const detail = escapeHtml(err?.message || 'Unknown error');
     list.innerHTML='<p class="muted">Could not load test history: '+detail+'</p>';
-    $('trackingList').innerHTML='<p class="muted">Could not load tracking records. Refresh history to try again.</p>';
+    $('trackingList').innerHTML='<p class="muted">Could not load tracking records. They will be checked again automatically.</p>';
     historyMessage('Could not load test history: '+detail);
   }
 }
@@ -2895,7 +2895,8 @@ $('finishReview').addEventListener('click', async () => {
   }
   await loadTransferHistory();
 });
-$('refreshHistory').addEventListener('click',loadTransferHistory);
+// Refresh transfer history automatically while the page is visible.
+setInterval(()=>{if(!document.hidden)loadTransferHistory();},30000);
 $('goHistory').addEventListener('click',()=>{ $('historySection').scrollIntoView({behavior:'smooth',block:'start'}); loadTransferHistory(); });
 $('tileSend').addEventListener('click',()=> $('transferSection').scrollIntoView({behavior:'smooth',block:'start'}));
 $('heroSend').addEventListener('click',()=> $('transferSection').scrollIntoView({behavior:'smooth',block:'start'}));
