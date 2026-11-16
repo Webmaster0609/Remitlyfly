@@ -903,11 +903,11 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  <section class="profile-card" data-page="wallet" id="walletSection" aria-labelledby="walletHeading">
   <h3 id="walletHeading">My RemitlyFly Wallet</h3>
 
-  <div class="wallet-balance-card"><div class="field" style="margin:12px 0"><label for="walletCurrencySelect">Wallet currency</label><select id="walletCurrencySelect"><option value="USD">USD — US Dollar</option><option value="GBP">GBP — British Pound</option><option value="EUR">EUR — Euro</option></select></div><span>Available balance</span><strong id="walletBalance" style="display:block;font-size:clamp(2rem,8vw,3.2rem);line-height:1.2;overflow-wrap:anywhere">$0.00</strong><small id="walletBalanceNote">Selected test wallet · no real funds</small></div>
+  <div class="wallet-balance-card"><div class="field" style="margin:12px 0"><label for="walletCurrencySelect">Wallet currency</label><select id="walletCurrencySelect"><option value="USD">USD — US Dollar</option><option value="GBP">GBP — British Pound</option><option value="EUR">EUR — Euro</option></select></div><span>Available balance</span><strong id="walletBalance" style="display:block;font-size:clamp(2rem,8vw,3.2rem);line-height:1.2;overflow-wrap:anywhere">$0.00</strong></div>
   <div id="walletStatus" class="profile-status" role="status" aria-live="polite"></div>
   <div class="wallet-columns">
    <div class="wallet-panel">
-    <h4>Top up test wallet</h4>
+
     <form id="walletTopupForm"><div class="field"> <label for="walletTopupAmount">Wallet amount to add</label><input id="walletTopupAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="100.00" required></div><div id="walletTopupFeePreview" class="muted" style="padding:10px 12px;border:1px solid var(--border,#ddd);border-radius:10px;margin:10px 0" aria-live="polite">3% card fee: 0.00 · Total card charge: 0.00 · Wallet receives: 0.00</div><button class="primary" type="submit" id="walletTopupButton">Add test funds</button></form>
    </div>
    <div class="wallet-panel hidden">
@@ -1476,7 +1476,7 @@ let walletSelectedRecipient=null, walletModalRecipient=null, walletLookupTimer=n
 function walletStatus(text,type='err'){const el=$('walletStatus');if(el){el.textContent=text;el.className='profile-status show '+type;}}
 function walletFormat(value,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);}
 let walletBalances={USD:0,GBP:0,EUR:0};
-function renderSelectedWalletBalance(){const currency=$('walletCurrencySelect')?.value||'USD';$('walletBalance').textContent=walletFormat(walletBalances[currency]||0,currency);$('walletBalanceNote').textContent=currency+' selected · separate test balance · no real funds';const withdrawLabel=$('walletWithdrawAmountLabel');if(withdrawLabel)withdrawLabel.textContent='Amount ('+currency+' test wallet)';}
+function renderSelectedWalletBalance(){const currency=$('walletCurrencySelect')?.value||'USD';$('walletBalance').textContent=walletFormat(walletBalances[currency]||0,currency);const withdrawLabel=$('walletWithdrawAmountLabel');if(withdrawLabel)withdrawLabel.textContent='Amount ('+currency+' test wallet)';}
 $('walletCurrencySelect').addEventListener('change',renderSelectedWalletBalance);
 async function loadWallet(){
  if(!supabase)return;
