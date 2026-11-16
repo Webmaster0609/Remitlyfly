@@ -2088,7 +2088,7 @@ function refreshDestinationCurrencyLabel(){
     const pairRate=window.remitlyFlyCountryRates?.[country+':'+currentCurrency()];
     rateLabel.textContent=country!=='Ethiopia'
       ? (pairRate ? 'Indicative central-bank reference rate from AfriRate · '+(pairRate.rateDate||'date not supplied')+'. Not a RemitlyFly payout quote.' : 'Loading published '+destinationCurrency+' reference rate for '+country+'… If this currency pair is not published, no estimate will be shown.')
-      : 'Live published Ethiopian bank reference rates can be applied with the button above. If the feed is unavailable, this field remains a test value; it is not a guaranteed RemitlyFly payout rate.';
+      : '';
   }
 }
 function refreshCurrencyLabels(){const currency=currentCurrency();$('sendCurrencyLabel').textContent=currency;$('rateCurrencyLabel').textContent=currency;$('feeCurrencyLabel').textContent=currency;const walletCurrency=$('walletSendCurrencyLabel');if(walletCurrency)walletCurrency.textContent=currency;if(!$('demoRate').dataset.userEdited){const live=window.remitlyFlyLiveRates?.bestByCurrency?.[currency];if(live?.rate){$('demoRate').value=String(live.rate);$('demoRate').dataset.liveApplied='1';}else{$('demoRate').value=String(({USD:150,EUR:162,GBP:190})[currency]||150);delete $('demoRate').dataset.liveApplied;}}refreshDestinationCurrencyLabel();refreshTransferSummary();updateCalculatorRateStatus();if(typeof updateWalletSendPreview==='function')updateWalletSendPreview();}
