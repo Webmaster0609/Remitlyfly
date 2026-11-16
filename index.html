@@ -2350,6 +2350,8 @@ $('transferRecipient').addEventListener(
 );
 $('demoRate').addEventListener('input',()=>{$('demoRate').dataset.userEdited='1';delete $('demoRate').dataset.liveApplied;refreshTransferSummary();}); ['sendAmount','demoFee'].forEach(id => $(id).addEventListener('input', refreshTransferSummary));
 $('senderCountry').addEventListener('change',refreshCurrencyLabels);
+$('transferPaymentSource')?.addEventListener('change',()=>{const el=$('transferPaymentSourceStatus');if(el)el.textContent=$('transferPaymentSource').value==='wallet_test_preview'?'Wallet selected: balance is checked against the send amount plus fee, but test funds are not deducted.':'Card sandbox demo selected. No card is charged.';});
+$('walletCurrencySelect')?.addEventListener('change',()=>{const el=$('transferPaymentSourceStatus');if(el&&$('transferPaymentSource')?.value==='wallet_test_preview')el.textContent='Selected wallet: '+$('walletCurrencySelect').value+'. Sending currency: '+currentCurrency()+'. The currencies must match; no test funds are deducted.';});
 function syncTransferPayoutMethod(){
  const method=$('payoutMethod')?.value||'bank';
  const bankSection=$('transferBankPayoutSection'),walletSection=$('transferWalletPayoutSection');
