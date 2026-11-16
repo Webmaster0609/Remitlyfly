@@ -1227,8 +1227,8 @@ function rfShowEmailOtpGate(user,email,purpose,codeAlreadySent=false){
   if(shell){shell.classList.remove('intro-mode','dashboard-mode');shell.classList.add('login-mode','otp-mode');}
   rfOtpUser=user||null;rfOtpEmail=email||user?.email||'';rfOtpPurpose=purpose;rfOtpSessionVerified=false;
   rfOtpDeviceToken=rfGetDeviceToken();
-  $('authCard').style.display='none';$('dashboard').style.display='none';
-  $('otpCard').classList.remove('hidden');$('otpCard').style.removeProperty('display');
+  $('authCard').style.setProperty('display','none','important');$('dashboard').style.setProperty('display','none','important');
+  $('otpCard').classList.remove('hidden');$('otpCard').style.removeProperty('display');$('otpCard').style.setProperty('display','block','important');
   $('otpTitle').textContent=purpose==='signup_email'?'Verify your email address':'Verify this new device';
   $('otpIntro').textContent=purpose==='signup_email'
     ? 'Enter the verification code sent to your email to confirm your RemitlyFly registration.'
@@ -1404,7 +1404,7 @@ $('rfLivePaymentsSwitch')?.addEventListener('change',async()=>{
 function profileMessage(text,type='err'){
   const el=$('profileStatus');el.textContent=text;el.className='profile-status show '+type;
 }
-function showAuth(){ const shell=document.querySelector('.shell');shell.classList.remove('dashboard-mode','intro-mode','otp-mode');shell.classList.add('login-mode');$('otpCard').classList.add('hidden');$('dashboard').classList.remove('account-pending');$('dashboard').style.display='none';$('authCard').style.display='block' }
+function showAuth(){ const shell=document.querySelector('.shell');shell.classList.remove('dashboard-mode','intro-mode','otp-mode');shell.classList.add('login-mode');$('otpCard').classList.add('hidden');$('otpCard').style.setProperty('display','none','important');$('authCard').style.removeProperty('display');$('authCard').style.display='block';$('dashboard').classList.remove('account-pending');$('dashboard').style.display='none' }
 $('pendingRefresh').addEventListener('click',async()=>{const {data:{user}}=await supabase.auth.getUser();if(user)await showDashboard(user);});
 $('loginTab').addEventListener('click',()=>setMode('login'));$('signupTab').addEventListener('click',()=>setMode('signup'));$('switchLine').addEventListener('click',(e)=>{if(e.target && e.target.id==='switchMode')setMode(mode==='login'?'signup':'login')}); 
 $('forgot').addEventListener('click',async()=>{clearMessage();if(!configured){message('Setup is not finished. Add your Supabase project URL and public key first.');return}if(!supabase){message('Could not load the authentication service. Check your internet connection and reload the page.');return}const email=$('email').value.trim();if(!email){message('Enter your email address first.');return}const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});if(error)message(error.message);else message('If this email belongs to an account, password recovery instructions will be sent. Check your inbox.','ok')});
