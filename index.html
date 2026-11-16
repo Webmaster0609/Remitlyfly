@@ -1029,6 +1029,16 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <p class="muted">Restricted to accounts whose Supabase app metadata role is set to <code>admin</code>. This panel shows test records only.</p>
   <div class="warning">Never make a user an admin by editing browser code or user-editable metadata. Set the role securely in Supabase Auth user app_metadata.</div>
   
+  <section class="profile-card" id="rfLivePaymentsAdmin" aria-labelledby="rfLivePaymentsHeading" style="margin:18px 0">
+   <h3 id="rfLivePaymentsHeading">Future real-payment controls</h3>
+   <div class="rf-live-toggle-row" style="margin:16px 0">
+    <div class="rf-live-toggle-copy"><strong>Request LIVE mode</strong></div>
+    <label class="rf-switch-control" aria-label="Request live mode">
+     <input id="rfLivePaymentsSwitch" class="rf-switch-input" type="checkbox">
+     <span class="rf-switch-track" aria-hidden="true"></span>
+    </label>
+   </div>
+  </section>
   <div id="adminNewAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
   <h3>New user registrations</h3>
   <p class="muted">Review new accounts here. Pending users cannot access recipient or transfer features.</p>
@@ -1403,7 +1413,7 @@ async function showDashboard(user,deviceVerified=false){
   loadTransferHistory();
 }
 async function rfLoadPaymentModeSetting(){
- const toggle=$('rfLivePaymentsSwitch'), lock=$('rfLivePaymentsLock'), badge=$('rfPaymentModeBadge');
+ const toggle=$('rfLivePaymentsSwitch');
  if(!toggle||!supabase)return;
  try{
   const {data:{session}}=await supabase.auth.getSession();
@@ -1415,17 +1425,14 @@ async function rfLoadPaymentModeSetting(){
   if(!response.ok)throw new Error(data.error||'Could not load the backend payment setting.');
   toggle.checked=data.setting?.requested_mode==='LIVE';
   toggle.disabled=false;
-  lock.textContent=toggle.checked
-   ? 'LIVE has been requested by the administrator. Effective mode is still ; no production provider is configured.'
-   : 'Admin request is . The backend blocks real payments until a verified production provider and required approvals are configured.';
-  if(badge)badge.textContent='EFFECTIVE MODE: '+(data.setting?.effective_mode||'TEST_ONLY')+' — LIVE LOCKED';
+
  }catch(err){
   toggle.disabled=true;
-  lock.textContent=(err.message||'Unable to load setting.')+' The switch is disabled until the secure backend responds.';
+
  }
 }
 $('rfLivePaymentsSwitch')?.addEventListener('change',async()=>{
- const toggle=$('rfLivePaymentsSwitch'), lock=$('rfLivePaymentsLock'), badge=$('rfPaymentModeBadge');
+ const toggle=$('rfLivePaymentsSwitch');
  const requested=toggle.checked?'LIVE':'TEST_ONLY';
  toggle.disabled=true;
  try{
@@ -1438,15 +1445,11 @@ $('rfLivePaymentsSwitch')?.addEventListener('change',async()=>{
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(data.error||'The backend rejected the setting change.');
   toggle.checked=data.setting?.requested_mode==='LIVE';
-  lock.textContent=toggle.checked
-   ? 'LIVE request saved by admin, but effective mode remains . Real payments are blocked until the provider and required approvals are verified.'
-   : ' request saved. The backend continues to block all real payments.';
-  if(badge)badge.textContent='EFFECTIVE MODE: '+(data.setting?.effective_mode||'TEST_ONLY')+' — LIVE LOCKED';
+
   adminMessage(data.message||'Payment mode request saved. Effective mode remains .','ok');
  }catch(err){
   toggle.checked=!toggle.checked;
-  lock.textContent=err.message||'Could not save the setting.';
-  adminMessage(lock.textContent,'err');
+  adminMessage(err.message||'Could not save the setting.','err');
  }finally{toggle.disabled=false;}
 });
 function profileMessage(text,type='err'){
