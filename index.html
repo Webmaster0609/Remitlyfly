@@ -2512,7 +2512,7 @@ function trackingTimeline(status='saved') {
   return '<div class="tracking-timeline" aria-label="Test tracking progress"><ol style="list-style:none;padding:0;margin:14px 0;display:grid;gap:8px">' + steps.map((step,index) => {
     const active = index <= activeIndex;
     return '<li style="display:flex;align-items:center;gap:10px"><span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:700;background:' + (active ? '#e7f2ff' : '#f1f5f9') + ';color:' + (active ? '#17436b' : '#64748b') + ';border:1px solid ' + (active ? '#b8d5f2' : '#dbe3ec') + '">' + (active ? '✓' : (index+1)) + '</span><span style="color:' + (active ? '#173b5e' : '#64748b') + ';font-weight:' + (step.key===current ? '700' : '500') + '">' + step.label + '</span></li>';
-  }).join('') + '</ol><p class="muted" style="margin:0">Illustrative status only — not evidence of a real transfer or delivery.</p></div>';
+  }).join('') + '</ol></div>';
 }
 function historyMessage(text, type='err') { const el=$('historyStatus'); if(!el)return; el.textContent=text; el.className='profile-status show '+type; }
 function safeDate(value) { const d=new Date(value); return Number.isNaN(d.getTime())?'Date unavailable':d.toLocaleString(); }
@@ -2523,7 +2523,7 @@ function renderRecentTransfers(rows) {
     const b=$('recentStartTest'); if(b)b.addEventListener('click',()=> $('transferSection').scrollIntoView({behavior:'smooth',block:'start'}));
     return;
   }
-  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span> ·  · Sandbox API: ${escapeHtml(r.sandbox_status||'not connected')}</small><small>Reference: ${escapeHtml(r.sandbox_reference||'—')}</small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</div></article>`).join('');
+  el.innerHTML=rows.map(r=>`<article class="recent-item"><div class="recent-main"><strong>${escapeHtml(r.recipient_name||'Recipient')} · ${escapeHtml(r.recipient_country||'Ethiopia')}</strong><small>${escapeHtml(r.sender_country||'Sending country not set')} · ${escapeHtml(safeDate(r.created_at))}</small><small><span class="status-pill">${escapeHtml((r.tracking_status||'saved').replaceAll('_',' '))}</span></small></div><div class="recent-amount">${money(r.send_amount_original ?? r.send_amount_usd,r.send_currency||'USD')}</div></article>`).join('');
 }
 async function loadTransferHistory() {
   const list=$('historyList'); if(!list || !supabase)return;
