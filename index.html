@@ -864,7 +864,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  <p class="intro" id="otpIntro">A one-time email code is required to continue.</p>
  <p class="muted" id="otpSavedPhone"></p>
  <button class="primary" type="button" id="otpSendButton">Send email code</button>
- <div class="field hidden" id="otpCodeField"><label for="otpCode">6-digit email code</label><input id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="Enter code" /></div>
+ <div class="field hidden" id="otpCodeField"><label for="otpCode">Email verification code</label><input id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" pattern="[0-9]{6,10}" placeholder="Enter code" /></div>
  <button class="primary hidden" type="button" id="otpVerifyButton">Verify and continue</button>
  <div id="otpNotice" class="notice" role="status" aria-live="polite"></div>
  <button class="link" type="button" id="otpLogoutButton">Sign out</button>
@@ -1230,7 +1230,7 @@ function rfShowEmailOtpGate(user,email,purpose,codeAlreadySent=false){
   $('otpCard').classList.remove('hidden');$('otpCard').style.removeProperty('display');
   $('otpTitle').textContent=purpose==='signup_email'?'Verify your email address':'Verify this new device';
   $('otpIntro').textContent=purpose==='signup_email'
-    ? 'Enter the six-digit code sent to your email to confirm your RemitlyFly registration.'
+    ? 'Enter the verification code sent to your email to confirm your RemitlyFly registration.'
     : 'This browser or app installation is not trusted yet. Enter the email code to verify it once.';
   $('otpSavedPhone').textContent='Verification code destination: '+rfOtpEmail;
   $('otpCodeField').classList.toggle('hidden',!codeAlreadySent);
@@ -1278,7 +1278,7 @@ async function rfVerifyDeviceOtp(){
     let user=rfOtpUser;
     if(!rfOtpSessionVerified){
       const otp=$('otpCode').value.trim();
-      if(!/^\d{6}$/.test(otp))throw new Error('Enter the 6-digit code from your email.');
+      if(!/^\d{6,10}$/.test(otp))throw new Error('Enter the complete 6–10 digit code from your email.');
       const {data,error}=await supabase.auth.verifyOtp({email:rfOtpEmail,token:otp,type:rfOtpPurpose==='signup_email'?'signup':'email'});
       if(error)throw error;
       user=data?.user||null;rfOtpSessionVerified=true;
