@@ -2941,21 +2941,7 @@ refreshTransferSummary();
       target.setAttribute('tabindex','-1');
       try { target.focus({preventScroll:true}); } catch (_) {}
     });
-    let feedback = document.getElementById('quickActionFeedback');
-    if (!feedback) {
-      feedback = document.createElement('p');
-      feedback.id = 'quickActionFeedback';
-      feedback.className = 'navigation-feedback';
-      feedback.setAttribute('role','status');
-      const heading = document.querySelector('.quick-heading');
-      if (heading && heading.parentNode) heading.parentNode.insertBefore(feedback, heading.nextSibling);
-    }
-    if(id!=='recipientsSection') feedback.textContent = 'Opening ' + ({
-      transferSection:'Send money (test preview)',
-      trackingSection:'Transfer tracking (test records)',
-      historySection:'Transfer history (test previews)',
-      profileCard:'Your profile'
-    }[id] || 'section') + '…';
+
   }
   document.addEventListener('click', function(event){
     const button = event.target.closest('button');
