@@ -926,7 +926,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
     <div class="field"><label for="walletWithdrawType">Payout method</label><select id="walletWithdrawType" required><option value="bank">Bank account</option><option value="mobile_wallet">Mobile money</option></select></div>
     <div class="field"><label for="walletWithdrawProvider">Bank or mobile money provider</label><select id="walletWithdrawProvider" required></select></div>
     <div class="field"><label for="walletWithdrawLabel">Your full name (account holder)</label><input id="walletWithdrawLabel" type="text" minlength="3" maxlength="80" placeholder="Your name as shown on your own account" required></div>
-    <div class="field"><label for="walletWithdrawIdentifier" id="walletWithdrawIdentifierLabel">Test bank account number</label><input id="walletWithdrawIdentifier" type="text" minlength="3" maxlength="100" autocomplete="off" placeholder="Invented test number only" required></div>
+    <div class="field"><label for="walletWithdrawIdentifier" id="walletWithdrawIdentifierLabel">Bank account number</label><input id="walletWithdrawIdentifier" type="text" minlength="3" maxlength="100" autocomplete="off" placeholder="Invented test number only" required></div>
     <label class="wallet-check"><input id="walletWithdrawSave" type="checkbox"> Save this beneficiary for next time</label>
     <button class="primary" type="submit" id="walletWithdrawButton">Submit test withdrawal request</button>
    </form>
@@ -1689,12 +1689,12 @@ function updateWalletWithdrawProviders(){
 $('walletWithdrawCountry').addEventListener('change',updateWalletWithdrawProviders);
 $('walletWithdrawType').addEventListener('change',()=>{
  updateWalletWithdrawProviders();
- $('walletWithdrawIdentifierLabel').textContent=$('walletWithdrawType').value==='bank'?'Test bank account number':'Test mobile-money phone number';
+ $('walletWithdrawIdentifierLabel').textContent=$('walletWithdrawType').value==='bank'?'Bank account number':'Test mobile-money phone number';
  $('walletWithdrawIdentifier').placeholder=$('walletWithdrawType').value==='bank'?'Invented test account number only':'Invented test phone number only';
 });
 $('walletWithdrawCountry').addEventListener('change',updateWalletWithdrawProviders);
 updateWalletWithdrawProviders();
-$('walletWithdrawIdentifierLabel').textContent='Test bank account number';
+$('walletWithdrawIdentifierLabel').textContent='Bank account number';
 $('walletWithdrawForm').addEventListener('submit',async e=>{
  e.preventDefault();
  const amount=Number($('walletWithdrawAmount').value),type=$('walletWithdrawType').value,country=$('walletWithdrawCountry').value,provider=$('walletWithdrawProvider').value,label=$('walletWithdrawLabel').value.trim(),identifier=$('walletWithdrawIdentifier').value.trim(),saveBeneficiary=$('walletWithdrawSave').checked;
@@ -1707,7 +1707,7 @@ $('walletWithdrawForm').addEventListener('submit',async e=>{
   if(error)throw error;
   if(data?.request_id)await rfWalletNotifyAdmin('withdrawal',data.request_id);
   $('walletWithdrawForm').reset();
-  updateWalletWithdrawProviders();$('walletWithdrawIdentifierLabel').textContent='Test bank account number';
+  updateWalletWithdrawProviders();$('walletWithdrawIdentifierLabel').textContent='Bank account number';
   await loadWalletBeneficiaries();
   walletStatus('Test withdrawal request saved. '+(saveBeneficiary?'Beneficiary saved for next time. ':'')+'No payout occurred and your wallet balance is unchanged.','ok');
   await loadWallet();
