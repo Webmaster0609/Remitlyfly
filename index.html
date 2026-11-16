@@ -1195,6 +1195,17 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
     var back=document.getElementById('backToIntro');
     var form=document.getElementById('authForm');
     var notice=document.getElementById('notice');
+    function reportStartupError(detail){
+      if(!notice)return;
+      notice.textContent='Login startup error: '+String(detail||'Unknown script error').slice(0,220)+'. Please share this exact message.';
+      notice.className='notice show err';
+    }
+    window.addEventListener('error',function(e){
+      if(!window.rfAuthHandlerReady)reportStartupError((e.message||'Script error')+(e.filename?' at '+e.filename.split('/').pop():'')+(e.lineno?':'+e.lineno:''));
+    });
+    window.addEventListener('unhandledrejection',function(e){
+      if(!window.rfAuthHandlerReady){var r=e.reason;reportStartupError(r&&(r.message||r.toString())||'Module startup was rejected');}
+    });
     function showLogin(){
       if(!shell)return;
       shell.classList.remove('intro-mode','dashboard-mode');
