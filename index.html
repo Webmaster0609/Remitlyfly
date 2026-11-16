@@ -2991,7 +2991,7 @@ refreshTransferSummary();
    if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
   });
   const feedback=document.getElementById('menuNavigationStatus');
-  if(feedback && page!=='recipients'){feedback.textContent='Opened '+(labels[page]||'page')+'.';feedback.style.display='block';}
+  if(feedback && page!=='recipients' && page!=='wallet'){feedback.textContent='Opened '+(labels[page]||'page')+'.';feedback.style.display='block';}
   if(page==='history'||page==='tracking'){if(typeof loadTransferHistory==='function')loadTransferHistory();}
   if(page==='recipients'&&typeof loadRecipients==='function')loadRecipients();
    if(page==='wallet'&&typeof loadWallet==='function')loadWallet();
