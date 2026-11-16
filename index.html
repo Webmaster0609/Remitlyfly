@@ -1049,6 +1049,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <h3>New user registrations</h3>
   <p class="muted">Review new accounts here. Pending users cannot access recipient or transfer features.</p>
   <div id="adminAccountAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
+  <div id="adminWalletAlert" class="warning hidden" role="alert" aria-live="assertive"></div>
   <div id="adminAccountList"><p class="muted">Loading account registrations…</p></div>
   <div id="adminStatus" class="profile-status" role="status" aria-live="polite"></div>
   <div class="profile-card" style="margin:18px 0;background:#f5f9fd">
@@ -1469,6 +1470,11 @@ function profileMessage(text,type='err'){
 }
 
 /* RemitlyFly test wallet: balances and peer transfers are enforced by Supabase RPCs. */
+async function rfWalletNotifyAdmin(kind,recordId){
+ if(!recordId)return;
+ try{const {data,error}=await supabase.functions.invoke('notify-admin-wallet',{body:{kind,record_id:recordId}});if(error||!data?.ok)console.warn('Wallet admin email alert could not be sent:',error?.message||data?.error||'Unknown error');}
+ catch(err){console.warn('Wallet admin email alert failed:',err?.message||err);}
+ }
 let walletSelectedRecipient=null, walletModalRecipient=null, walletLookupTimer=null, walletLookupSequence=0, walletRealtimeChannel=null;
 function walletStatus(text,type='err'){const el=$('walletStatus');if(el){el.textContent=text;el.className='profile-status show '+type;}}
 function walletFormat(value,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);}
@@ -1575,6 +1581,9 @@ $('walletTopupForm').addEventListener('submit',async e=>{
  if(!Number.isFinite(amount)||amount<=0||amount>5000){walletStatus('Enter a test top-up between USD 0.01 and USD 5,000.');return;}
  button.disabled=true;
  try{const {data,error}=await supabase.rpc('rf_wallet_test_topup',{p_amount:amount,p_currency:currency});if(error)throw error;
+  const {data:{user}}=await supabase.auth.getUser();
+  const {data:tx}=await supabase.from('wallet_transactions').select('id').eq('receiver_user_id',user.id).eq('transaction_type','test_topup').eq('amount',amount).eq('currency',currency).order('created_at',{ascending:false}).limit(1).maybeSingle();
+  if(tx?.id)await rfWalletNotifyAdmin('topup',tx.id);
   $('walletTopupAmount').value='';walletStatus('Test top-up added. No real money was deposited. New balance: '+walletFormat(data.balance,currency),'ok');await loadWallet();
  }catch(err){walletStatus(err.message||'Could not add test funds.');}finally{button.disabled=false;}
 });
@@ -1584,6 +1593,9 @@ $('walletSendForm').addEventListener('submit',async e=>{
  if(!confirm('Send '+walletFormat(amount,currency)+' in TEST funds to '+(walletSelectedRecipient.display_name||'this user')+'? No real money will move.'))return;
  const button=$('walletSendButton');button.disabled=true;
  try{const {data,error}=await supabase.rpc('rf_wallet_send',{p_recipient_user_id:walletSelectedRecipient.user_id,p_amount:amount,p_currency:currency});if(error)throw error;
+  const {data:{user}}=await supabase.auth.getUser();
+  const {data:tx}=await supabase.from('wallet_transactions').select('id').eq('sender_user_id',user.id).eq('transaction_type','wallet_transfer').eq('amount',amount).eq('currency',currency).order('created_at',{ascending:false}).limit(1).maybeSingle();
+  if(tx?.id)await rfWalletNotifyAdmin('wallet_transfer',tx.id);
   $('walletSendAmount').value='';walletStatus('Test wallet transfer recorded. The recipient wallet has been credited. Your new balance is '+walletFormat(data.sender_balance,currency)+'. No real money moved.','ok');
   $('walletSendPanel').classList.add('hidden');$('walletSearch').value='';$('walletSearchResults').innerHTML='';walletSelectedRecipient=null;await loadWallet();
  }catch(err){walletStatus(err.message||'Could not send test money.');}finally{button.disabled=false;}
@@ -1623,6 +1635,7 @@ $('walletWithdrawForm').addEventListener('submit',async e=>{
  try{
   const {data,error}=await supabase.rpc('rf_wallet_request_withdrawal',{p_amount:amount,p_destination_type:type,p_destination_country:country,p_destination_provider:provider,p_destination_label:label,p_confirm_ownership:$('walletWithdrawOwn').checked});
   if(error)throw error;
+  if(data?.request_id)await rfWalletNotifyAdmin('withdrawal',data.request_id);
   $('walletWithdrawForm').reset();
   updateWalletWithdrawProviders();
   walletStatus('Test withdrawal request saved. No payout occurred and your wallet balance is unchanged.','ok');
@@ -2494,6 +2507,7 @@ $('trackingList').addEventListener('change',async e=>{
 });
 let adminSeenRecordIds = null;
 let adminSeenAccountIds = null;
+let adminSeenWalletActivityIds = null;
 let adminAlertPoll = null;
 async function loadAccountApprovals(){
   const {data,error}=await supabase.from('account_approvals').select('user_id,email,full_name,status,created_at,restriction_reason,rejection_reason').order('created_at',{ascending:false}).limit(100);
@@ -2516,6 +2530,7 @@ async function loadAdminOverview(){
     $('adminSection').classList.add('hidden');
     if(adminAlertPoll){clearInterval(adminAlertPoll);adminAlertPoll=null;}
     adminSeenRecordIds=null;
+    adminSeenWalletActivityIds=null;
     return;
   }
   $('adminSection').classList.remove('hidden');
@@ -2525,6 +2540,26 @@ async function loadAdminOverview(){
   const {data,error}=await supabase.from('transfer_history').select('id,user_id,recipient_name,recipient_country,send_amount_usd,fee_usd,total_usd,exchange_rate,payout_amount_etb,tracking_status,created_at,payment_hold_status,payment_hold_reason,payment_held_at,payment_release_reason,payment_released_at').order('created_at',{ascending:false}).limit(200);
   if(error){adminMessage('Admin data could not load: '+error.message+' Check the admin RLS policy in the SQL setup.');return;}
   const rows=data||[];
+  const [walletTxResult,walletWithdrawalResult]=await Promise.all([
+    supabase.from('wallet_transactions').select('id,transaction_type,amount,currency,created_at').order('created_at',{ascending:false}).limit(50),
+    supabase.from('wallet_withdrawal_requests').select('id,amount,currency,destination_country,destination_provider,status,created_at').order('created_at',{ascending:false}).limit(50)
+  ]);
+  const walletTxRows=walletTxResult.data||[], walletWithdrawalRows=walletWithdrawalResult.data||[];
+  const walletIds=new Set([...walletTxRows.map(r=>'tx:'+r.id),...walletWithdrawalRows.map(r=>'wd:'+r.id)]);
+  if(adminSeenWalletActivityIds){
+    const newTx=walletTxRows.filter(r=>!adminSeenWalletActivityIds.has('tx:'+r.id));
+    const newWithdrawals=walletWithdrawalRows.filter(r=>!adminSeenWalletActivityIds.has('wd:'+r.id));
+    if(newTx.length||newWithdrawals.length){
+      const latestWd=newWithdrawals[0], latestTx=newTx[0];
+      const detail=latestWd
+       ? 'Withdrawal request: '+money(latestWd.amount,latestWd.currency||'USD')+' to '+(latestWd.destination_country||'destination')+' ('+(latestWd.destination_provider||'provider')+').'
+       : (latestTx.transaction_type==='test_topup'?'Test wallet top-up: ':'Test wallet transfer: ')+money(latestTx.amount,latestTx.currency||'USD')+'.';
+      $('adminWalletAlert').textContent='New wallet activity alert: '+(newTx.length+newWithdrawals.length)+' new record(s). '+detail+' TEST ONLY — no real money moved.';
+      $('adminWalletAlert').classList.remove('hidden');
+      adminMessage('New wallet activity received. Review wallet activity.','ok');
+    }
+  }
+  adminSeenWalletActivityIds=walletIds;
   const currentIds=new Set(rows.map(r=>String(r.id)));
   if(adminSeenRecordIds){
     const newRows=rows.filter(r=>!adminSeenRecordIds.has(String(r.id)));
