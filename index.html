@@ -1307,7 +1307,7 @@ async function rfVerifyDeviceOtp(){
 }
 $('otpSendButton').addEventListener('click',rfSendDeviceOtp);
 $('otpVerifyButton').addEventListener('click',rfVerifyDeviceOtp);
-$('otpLogoutButton').addEventListener('click',async()=>{rfOtpSessionVerified=false;rfOtpVerificationInProgress=false;await supabase.auth.signOut();$('otpCard').classList.add('hidden');const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');showAuth();setMode('login');});
+$('otpLogoutButton').addEventListener('click',async()=>{rfOtpSessionVerified=false;rfOtpVerificationInProgress=false;try{sessionStorage.removeItem('rf_pending_email_otp');}catch(e){}await supabase.auth.signOut();$('otpCard').classList.add('hidden');const shell=document.querySelector('.shell');if(shell)shell.classList.remove('otp-mode');showAuth();setMode('login');});
 async function showDashboard(user,deviceVerified=false){
   if(!user)return;
   let recoveryAllowed=false;
@@ -1443,7 +1443,7 @@ $('profileForm').addEventListener('submit',async e=>{
   }catch(err){profileMessage(err?.message==='Failed to fetch'?'Could not reach Supabase. Check your internet connection, then reload RemitlyFly and try again.':(err?.message||'Could not save your profile. Please try again.'));}
   finally{button.disabled=false}
 });
-$('logout').addEventListener('click',async()=>{localStorage.removeItem('rf_temp_email_recovery');if(supabase)await supabase.auth.signOut();showAuth();setMode('login');$('password').value='';});
+$('logout').addEventListener('click',async()=>{try{sessionStorage.removeItem('rf_pending_email_otp');}catch(e){}localStorage.removeItem('rf_temp_email_recovery');if(supabase)await supabase.auth.signOut();showAuth();setMode('login');$('password').value='';});
 if(configured && supabase){supabase.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){setTimeout(()=>{showAuth();setMode('login');},0);}});const {data:{session},error:sessionError}=await supabase.auth.getSession();if(session?.user){let pendingOtp=null;try{pendingOtp=JSON.parse(sessionStorage.getItem('rf_pending_email_otp')||'null');}catch(e){}if(pendingOtp?.email){rfShowEmailOtpGate(session.user,pendingOtp.email,pendingOtp.purpose||'new_device',!!pendingOtp.codeAlreadySent);}else{let recoveryAllowed=false;try{const recovery=JSON.parse(localStorage.getItem('rf_temp_email_recovery')||'null');recoveryAllowed=!!(recovery&&recovery.userId===session.user.id&&recovery.expiresAt>Date.now());}catch(e){}if(recoveryAllowed)await showDashboard(session.user);else if(await rfEnsureTrustedDevice(session.user))await showDashboard(session.user,true);}}else if(sessionError)message('Could not restore your sign-in session. Please try logging in again.');} else if (supabaseLoadError) { message('The login form is ready, but the authentication library did not load. Check your internet connection and reload.'); }
 
 // Recipient manager: all records are stored in public.recipients under the signed-in user's ID.
