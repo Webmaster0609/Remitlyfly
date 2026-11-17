@@ -947,10 +947,6 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    </div>
   </div>
   <div class="wallet-panel" style="margin-top:14px"><h4>Saved wallet contacts</h4><p class="muted">People you save here are ready to select for future wallet transfers.</p><div id="walletContactsList"><p class="muted">Loading saved contacts…</p></div></div>
-  <div class="wallet-panel" style="margin-top:14px">
-   <h4>Your wallet discovery settings</h4><p class="muted">Choose whether other signed-in users can find you by your full name and username.</p>
-   <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me by name and username</label><button class="secondary" type="submit" id="walletProfileSave">Save wallet profile</button></form>
-  </div>
   <div class="wallet-panel" style="margin-top:14px"><h4>Wallet activity</h4><div id="walletTransactions"><p class="muted">Your wallet transactions will appear here.</p></div></div>
  </section>
  <div class="quick-heading" data-page="home"><div><h3>Quick actions</h3></div></div>
@@ -1172,6 +1168,15 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
 <section class="profile-card" data-page="profile" id="profileCard" aria-labelledby="profileHeading">
   <h3 id="profileHeading">Edit your profile</h3>
   <p class="muted">Update the name and phone number on your account.</p>
+  <div class="wallet-panel" style="margin:16px 0">
+   <h4>Profile Settings</h4>
+   <p class="muted">Manage how other RemitlyFly users can find your wallet profile.</p>
+   <button type="button" class="secondary" id="walletDiscoveryToggle" aria-expanded="false" aria-controls="walletDiscoverySettings">Wallet discovery settings</button>
+   <div id="walletDiscoverySettings" class="hidden" style="margin-top:14px">
+    <h4>Your wallet discovery settings</h4><p class="muted">Choose whether other signed-in users can find you by your full name and username.</p>
+    <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me by name and username</label><button class="secondary" type="submit" id="walletProfileSave">Save wallet profile</button></form>
+   </div>
+  </div>
   <form id="profileForm">
    <div class="field"><label for="profileName">Full name</label><input id="profileName" autocomplete="name" placeholder="Your full name" required></div>
    <div class="field"><label for="profileDateOfBirth">Date of birth</label><input id="profileDateOfBirth" type="date" autocomplete="bday" required></div>
@@ -1517,6 +1522,10 @@ async function loadWallet(){
   renderSelectedWalletBalance();
  if(profileResult.error){walletStatus('Could not load wallet profile: '+profileResult.error.message);return;}
  $('walletUsername').value=profileResult.data?.username||'';
+ if(!profileResult.data?.username){
+  $('walletDiscoverySettings').classList.remove('hidden');
+  $('walletDiscoveryToggle').setAttribute('aria-expanded','true');
+ }
  await loadWalletContacts();
  await loadWalletBeneficiaries();
  $('walletOwnUsername').textContent=profileResult.data?.username?'@'+profileResult.data.username:'Not set — choose a username below';
@@ -1665,6 +1674,12 @@ $('walletSendForm').addEventListener('submit',async e=>{
   $('walletSendAmount').value='';walletStatus('Wallet transfer submitted for admin approval. The amount is reserved until approval; if rejected, it will be returned to your wallet. New balance: '+walletFormat(data.sender_balance,currency)+'.','ok');
   $('walletSendPanel').classList.add('hidden');$('walletSearch').value='';$('walletSearchResults').innerHTML='';walletSelectedRecipient=null;await loadWallet();
  }catch(err){walletStatus(err.message||'Could not send test money.');}finally{button.disabled=false;}
+});
+$('walletDiscoveryToggle').addEventListener('click',()=>{
+ const panel=$('walletDiscoverySettings');
+ const opening=panel.classList.contains('hidden');
+ panel.classList.toggle('hidden',!opening);
+ $('walletDiscoveryToggle').setAttribute('aria-expanded',String(opening));
 });
 $('walletProfileForm').addEventListener('submit',async e=>{
  e.preventDefault();const button=$('walletProfileSave');let username=$('walletUsername').value.trim().replace(/^@/,'').toLowerCase();
