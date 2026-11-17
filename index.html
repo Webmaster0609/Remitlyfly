@@ -1687,8 +1687,14 @@ async function saveWalletProfile(){
  try{
   const {data:{user}}=await supabase.auth.getUser();
   if(!user)throw new Error('Please sign in again.');
-  const {error}=await supabase.from('wallet_profiles').update({username:username||null,allow_lookup:true}).eq('user_id',user.id);
-  if(error)throw error;
+  const {data:updatedProfile,error:updateError}=await supabase.from('wallet_profiles').update({username:username||null,allow_lookup:true}).eq('user_id',user.id).select('user_id').maybeSingle();
+  if(updateError)throw updateError;
+  if(!updatedProfile){
+   if(!user.email)throw new Error('Your account email is unavailable. Please sign out and sign in again.');
+   const displayName=user.user_metadata?.full_name||user.user_metadata?.name||'RemitlyFly user';
+   const {error:insertError}=await supabase.from('wallet_profiles').insert({user_id:user.id,email:user.email,display_name:displayName,username:username||null,allow_lookup:true});
+   if(insertError)throw insertError;
+  }
   if(version!==walletProfileSaveVersion)return;
   status.textContent='Changes saved automatically.';
   $('walletOwnUsername').textContent=username?'@'+username:'Not set — choose a username below';
