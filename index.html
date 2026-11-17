@@ -883,6 +883,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
  <nav class="app-menu" id="appMenu" aria-label="Main dashboard menu">
   <button type="button" class="app-menu-item active" data-menu-target="dashboardTop" aria-current="page"><span>⌂</span>Home</button>
   <button type="button" class="app-menu-item" data-menu-target="walletSection"><span>◉</span>Wallet</button>
+  <button type="button" class="app-menu-item" data-menu-target="findUsersSection"><span>⌕</span>Find users</button>
   <button type="button" class="app-menu-item" data-menu-target="transferSection"><span>➤</span>Send</button>
   <button type="button" class="app-menu-item" data-menu-target="recipientsSection"><span>♙</span>Recipients</button>
   <button type="button" class="app-menu-item" data-menu-target="historySection"><span>▤</span>History</button>
@@ -936,8 +937,12 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <div id="walletBeneficiariesList" style="margin-top:12px"><p class="muted">Your saved beneficiaries will appear here.</p></div>
    <div id="walletWithdrawalList" style="margin-top:12px"><p class="muted">Your test withdrawal requests will appear here.</p></div>
   </div>
+  <div class="wallet-panel" style="margin-top:14px"><h4>Saved wallet contacts</h4><p class="muted">People you save here are ready to select for future wallet transfers.</p><div id="walletContactsList"><p class="muted">Loading saved contacts…</p></div></div>
+  <div class="wallet-panel" style="margin-top:14px"><h4>Wallet activity</h4><div id="walletTransactions"><p class="muted">Your wallet transactions will appear here.</p></div></div>
+ </section>
+ <section class="profile-card" data-page="findUsers" id="findUsersSection" aria-labelledby="findUsersHeading">
   <div class="wallet-panel" style="margin-top:14px">
-   <h4>Find a RemitlyFly user</h4><p class="muted">Search by a person's full name or RemitlyFly username. Select a result to view and save them.</p>
+   <h3 id="findUsersHeading">Find a RemitlyFly user</h3><p class="muted">Search by a person's full name or RemitlyFly username. Select a result to view and save them.</p>
    <div class="field"><label for="walletSearch">Full name or @username</label><input id="walletSearch" type="search" autocomplete="off" placeholder="Search name or @username..."></div>
    <div id="walletSearchResults" aria-live="polite"></div>
    <div id="walletProfileModal" class="wallet-profile-modal hidden" role="dialog" aria-modal="true" aria-labelledby="walletModalName"><div class="wallet-profile-modal-card"><button type="button" class="secondary" id="walletModalClose" style="float:right">Close</button><div class="wallet-avatar" style="width:58px;height:58px;font-size:23px;margin:8px 0 14px" id="walletModalAvatar">R</div><h4 id="walletModalName">RemitlyFly user</h4><p class="muted" id="walletModalHandle">@username</p><span class="status-pill">RemitlyFly account found</span><p class="muted" style="margin-top:14px">Email, phone number and wallet balance are kept private.</p><button type="button" class="secondary" id="walletSaveContact" style="margin-top:12px">Save contact</button><button type="button" class="primary" id="walletModalContinue" style="margin-top:12px">Continue to send money</button></div></div>
@@ -946,8 +951,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
     <form id="walletSendForm"><div class="field"> <label for="walletSendAmount">Amount</label><input id="walletSendAmount" type="number" min="0.01" max="5000" step="0.01" inputmode="decimal" placeholder="25.00" required></div><button class="primary" type="submit" id="walletSendButton">Review and send test money</button></form>
    </div>
   </div>
-  <div class="wallet-panel" style="margin-top:14px"><h4>Saved wallet contacts</h4><p class="muted">People you save here are ready to select for future wallet transfers.</p><div id="walletContactsList"><p class="muted">Loading saved contacts…</p></div></div>
-  <div class="wallet-panel" style="margin-top:14px"><h4>Wallet activity</h4><div id="walletTransactions"><p class="muted">Your wallet transactions will appear here.</p></div></div>
+
  </section>
  <div class="quick-heading" data-page="home"><div><h3>Quick actions</h3></div></div>
  <div class="tile-grid" data-page="home">
@@ -3029,7 +3033,7 @@ refreshTransferSummary();
  function showPage(page,button){
    if(walletAutoRefreshTimer){clearInterval(walletAutoRefreshTimer);walletAutoRefreshTimer=null;}
    if(page==='wallet')walletAutoRefreshTimer=setInterval(()=>{if(!document.hidden&&typeof loadWallet==='function')loadWallet();},30000);
-  const pageSections=['walletSection','transferSection','historySection','trackingSection','recipientsSection','profileCard','adminSection'];
+  const pageSections=['walletSection','findUsersSection','transferSection','historySection','trackingSection','recipientsSection','profileCard','adminSection'];
   document.querySelectorAll('[data-page]').forEach(el=>{
    const visible=el.dataset.page===page;
    el.classList.toggle('page-hidden',!visible);
@@ -3054,7 +3058,7 @@ refreshTransferSummary();
   const first=document.querySelector('[data-page="'+page+'"]');
   if(first)first.scrollIntoView({behavior:'smooth',block:'start'});
  }
- function pageForTarget(id){return ({dashboardTop:'home',walletSection:'wallet',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile',adminSection:'admin'})[id]||'home';}
+ function pageForTarget(id){return ({dashboardTop:'home',walletSection:'wallet',findUsersSection:'findUsers',transferSection:'send',recipientsSection:'recipients',historySection:'history',trackingSection:'tracking',profileCard:'profile',adminSection:'admin'})[id]||'home';}
  menu.addEventListener('click',event=>{
   const button=event.target.closest('[data-menu-target]');
   if(!button)return;
