@@ -891,6 +891,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <button type="button" class="app-menu-item hidden" id="adminMenuItem" data-menu-target="adminSection"><span>▣</span>Admin</button>
  </nav>
  <p id="menuNavigationStatus" class="navigation-feedback" role="status" aria-live="polite" style="display:none"></p>
+ <div id="walletGlobalNotice" class="profile-status" role="status" aria-live="polite" style="margin:12px 0"></div>
  <div data-page="home"><h2 style="margin-top:18px">Your money, your connections.</h2><p class="intro"></p></div>
  <section class="dashboard-hero" data-page="home" aria-label="Test transfer workspace">
   <div class="eyebrow">REMITLYFLY</div>
@@ -1467,7 +1468,7 @@ async function rfWalletNotifyAdmin(kind,recordId){
  catch(err){console.warn('Wallet admin email alert failed:',err?.message||err);}
  }
 let walletSelectedRecipient=null, walletModalRecipient=null, walletLookupTimer=null, walletLookupSequence=0, walletRealtimeChannel=null;
-function walletStatus(text,type='err'){const el=$('walletStatus');if(el){el.textContent=text;el.className='profile-status show '+type;}}
+function walletStatus(text,type='err'){for(const id of ['walletStatus','walletGlobalNotice']){const el=$(id);if(el){el.textContent=text;el.className='profile-status show '+type;}}}
 function walletFormat(value,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);}
 let walletBalances={USD:0,GBP:0,EUR:0};
 function renderSelectedWalletBalance(){const currency=$('walletCurrencySelect')?.value||'USD';$('walletBalance').textContent=walletFormat(walletBalances[currency]||0,currency);const withdrawLabel=$('walletWithdrawAmountLabel');if(withdrawLabel)withdrawLabel.textContent='Amount ('+currency+' test wallet)';}
