@@ -1176,7 +1176,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
    <h4>Profile Settings</h4>
    <h4 style="margin-top:14px">Your wallet discovery settings</h4>
    <p class="muted">Choose whether other signed-in users can find you by your full name and username.</p>
-   <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me by name and username</label><button class="secondary" type="submit" id="walletProfileSave">Save wallet profile</button></form>
+   <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me by name and username</label><p class="muted" id="walletProfileSaveStatus" role="status" aria-live="polite">Changes save automatically.</p></form>
   </div>
   <form id="profileForm">
    <div class="field"><label for="profileName">Full name</label><input id="profileName" autocomplete="name" placeholder="Your full name" required></div>
@@ -1672,15 +1672,38 @@ $('walletSendForm').addEventListener('submit',async e=>{
   $('walletSendPanel').classList.add('hidden');$('walletSearch').value='';$('walletSearchResults').innerHTML='';walletSelectedRecipient=null;await loadWallet();
  }catch(err){walletStatus(err.message||'Could not send test money.');}finally{button.disabled=false;}
 });
-$('walletProfileForm').addEventListener('submit',async e=>{
- e.preventDefault();const button=$('walletProfileSave');let username=$('walletUsername').value.trim().replace(/^@/,'').toLowerCase();
- if(username&&!/^[a-z0-9_]{3,24}$/.test(username)){walletStatus('Username must be 3–24 characters using letters, numbers or underscores.');return;}
- button.disabled=true;
- try{const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Please sign in again.');
+let walletProfileSaveTimer=null;
+let walletProfileSaveVersion=0;
+async function saveWalletProfile(){
+ const version=++walletProfileSaveVersion;
+ const username=$('walletUsername').value.trim().replace(/^@/,'').toLowerCase();
+ const status=$('walletProfileSaveStatus');
+ if(username&&!/^[a-z0-9_]{3,24}$/.test(username)){
+  status.textContent='Username must be 3–24 characters using letters, numbers or underscores.';
+  return;
+ }
+ status.textContent='Saving changes…';
+ try{
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user)throw new Error('Please sign in again.');
   const {error}=await supabase.from('wallet_profiles').update({username:username||null,allow_lookup:$('walletAllowLookup').checked}).eq('user_id',user.id);
-  if(error)throw error;walletStatus('Wallet profile saved. Other users can find you using the enabled details.','ok');await loadWallet();
- }catch(err){walletStatus(err.message||'Could not save wallet profile.');}finally{button.disabled=false;}
-});
+  if(error)throw error;
+  if(version!==walletProfileSaveVersion)return;
+  status.textContent='Changes saved automatically.';
+  $('walletOwnUsername').textContent=username?'@'+username:'Not set — choose a username below';
+ }catch(err){
+  if(version===walletProfileSaveVersion)status.textContent=err.message||'Could not save changes. Please try again.';
+ }
+}
+function scheduleWalletProfileSave(){
+ clearTimeout(walletProfileSaveTimer);
+ $('walletProfileSaveStatus').textContent='Changes will save automatically…';
+ walletProfileSaveTimer=setTimeout(saveWalletProfile,700);
+}
+$('walletUsername').addEventListener('input',scheduleWalletProfileSave);
+$('walletUsername').addEventListener('blur',()=>{clearTimeout(walletProfileSaveTimer);saveWalletProfile();});
+$('walletAllowLookup').addEventListener('change',()=>{clearTimeout(walletProfileSaveTimer);saveWalletProfile();});
+$('walletProfileForm').addEventListener('submit',e=>{e.preventDefault();clearTimeout(walletProfileSaveTimer);saveWalletProfile();});
 const walletWithdrawProviders={
  ET:{bank:['Commercial Bank of Ethiopia','Awash Bank','Dashen Bank','Bank of Abyssinia','Cooperative Bank of Oromia','Hibret Bank','Wegagen Bank','Other bank (test only)'],mobile_wallet:['Telebirr','M-PESA Ethiopia','Kacha','Other mobile wallet (test only)']},
  KE:{bank:['KCB Bank Kenya','Equity Bank Kenya','Co-operative Bank of Kenya','Absa Bank Kenya','NCBA Bank Kenya','Diamond Trust Bank Kenya','I&M Bank Kenya','Other bank (test only)'],mobile_wallet:['M-PESA','Airtel Money','T-Kash','Other mobile wallet (test only)']},
