@@ -1174,7 +1174,7 @@ body .shell.dashboard-mode .app-menu.menu-open{display:flex!important}
   <p class="muted">Update the name and phone number on your account.</p>
   <div class="wallet-panel" style="margin:16px 0">
    <h4>Profile Settings</h4>
-   <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><label class="wallet-check"><input id="walletAllowLookup" type="checkbox" checked> Allow other RemitlyFly users to find me by name and username</label></form>
+   <form id="walletProfileForm"><div class="field"><label for="walletUsername">Choose a unique username</label><input id="walletUsername" maxlength="24" autocomplete="username" placeholder="e.g. john2026"><small class="muted">3–24 letters, numbers or underscores. Other users can search for @username.</small></div><p class="muted" id="walletProfileSaveStatus" role="status" aria-live="polite"></p></form>
   </div>
   <form id="profileForm">
    <div class="field"><label for="profileName">Full name</label><input id="profileName" autocomplete="name" placeholder="Your full name" required></div>
@@ -1524,7 +1524,7 @@ async function loadWallet(){
  await loadWalletContacts();
  await loadWalletBeneficiaries();
  $('walletOwnUsername').textContent=profileResult.data?.username?'@'+profileResult.data.username:'Not set — choose a username below';
- $('walletAllowLookup').checked=profileResult.data?.allow_lookup!==false;
+ if(profileResult.data?.allow_lookup===false){await supabase.from('wallet_profiles').update({allow_lookup:true}).eq('user_id',user.id);}
  if(txResult.error){$('walletTransactions').innerHTML='<p class="muted">Could not load wallet activity.</p>';return;}
  const rows=txResult.data||[];
  if(!rows.length){$('walletTransactions').innerHTML='<p class="muted">No wallet activity yet. Add funds to begin.</p>';return;}
@@ -1684,7 +1684,7 @@ async function saveWalletProfile(){
  try{
   const {data:{user}}=await supabase.auth.getUser();
   if(!user)throw new Error('Please sign in again.');
-  const {error}=await supabase.from('wallet_profiles').update({username:username||null,allow_lookup:$('walletAllowLookup').checked}).eq('user_id',user.id);
+  const {error}=await supabase.from('wallet_profiles').update({username:username||null,allow_lookup:true}).eq('user_id',user.id);
   if(error)throw error;
   if(version!==walletProfileSaveVersion)return;
   status.textContent='Changes saved automatically.';
@@ -1700,7 +1700,6 @@ function scheduleWalletProfileSave(){
 }
 $('walletUsername').addEventListener('input',scheduleWalletProfileSave);
 $('walletUsername').addEventListener('blur',()=>{clearTimeout(walletProfileSaveTimer);saveWalletProfile();});
-$('walletAllowLookup').addEventListener('change',()=>{clearTimeout(walletProfileSaveTimer);saveWalletProfile();});
 $('walletProfileForm').addEventListener('submit',e=>{e.preventDefault();clearTimeout(walletProfileSaveTimer);saveWalletProfile();});
 const walletWithdrawProviders={
  ET:{bank:['Commercial Bank of Ethiopia','Awash Bank','Dashen Bank','Bank of Abyssinia','Cooperative Bank of Oromia','Hibret Bank','Wegagen Bank','Other bank (test only)'],mobile_wallet:['Telebirr','M-PESA Ethiopia','Kacha','Other mobile wallet (test only)']},
